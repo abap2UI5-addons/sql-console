@@ -17,7 +17,7 @@ SQL Console in Your Browser – No Need for Eclipse or SAP GUI Installation
 #### Credits
 * Logic for Query to ABAP SQL Translation used from [ZTOAD](https://github.com/marianfoo/ztoad), integrated by [choper725](https://github.com/choper725)
 
-#### TODO
+#### Todo
 * Extend the input-to-SQL translation
 * Add authorization checks
 * XLSX Export
