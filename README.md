@@ -1,20 +1,17 @@
 # a2UI5-sql-console
 SQL Console in Your Browser – No Need for Eclipse or SAP GUI Installation
 
-#### Features
+#### Key Features
 * Execute SQL commands
 * Save query history
 * Data preview
 
 #### Compatibility:
-* BTP ABAP Environment (ABAP for Cloud)
-* S/4 Public Cloud ABAP Environment (ABAP for Cloud)
+* S/4 Public Cloud and BTP ABAP Environment (ABAP for Cloud)
 * S/4 Private Cloud or On-Premise (ABAP for Cloud, Standard ABAP)
-* R/3 NetWeaver AS ABAP 7.50 or higher (Standard ABAP)
+* R/3 NetWeaver AS ABAP 7.02 or higher (Standard ABAP)
 
-#### Required Projects:
-* [S-RTTI](https://github.com/sandraros/S-RTTI)
-* abap2UI5
+#### Dependencies
 * [js-libraries](https://github.com/abap2UI5-addons/js-libraries)
 
 #### Credits
