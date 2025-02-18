@@ -1,4 +1,4 @@
-# a2UI5-sql-console
+# sql-console
 SQL Console in Your Browser – No Need for Eclipse or SAP GUI Installation
 
 #### Key Features
