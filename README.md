@@ -9,7 +9,7 @@ SQL Console in Your Browser – No Need for Eclipse or SAP GUI Installation
 #### Compatibility
 * S/4 Public Cloud and BTP ABAP Environment (ABAP for Cloud)
 * S/4 Private Cloud or On-Premise (ABAP for Cloud, Standard ABAP)
-* R/3 NetWeaver AS ABAP 7.02 or higher (Standard ABAP)
+* R/3 NetWeaver AS ABAP 7.50 or higher (Standard ABAP)
 
 #### Dependencies
 * [js-libraries](https://github.com/abap2UI5-addons/js-libraries)
