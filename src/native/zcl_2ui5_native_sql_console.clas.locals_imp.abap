@@ -352,7 +352,7 @@ class srtti_processor implementation.
 
   method serialize.
 
-    data(serializable_results) = zcl_srtti_typedescr=>create_by_data_object( i_data_object ).
+    data(serializable_results) = z2ui5_cl_srt_typedescr=>create_by_data_object( i_data_object ).
 
     call transformation id
       source srtti = serializable_results
@@ -364,7 +364,7 @@ class srtti_processor implementation.
 
     field-symbols <data_object> type any table.
 
-    data srtti type ref to zcl_srtti_typedescr.
+    data srtti type ref to z2ui5_cl_srt_typedescr.
 
     data data_object type ref to data.
 
