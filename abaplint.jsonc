@@ -1,46 +1,36 @@
 {
-    "global": {
-      "files": "/src/**/*.*"
-    },
-    "dependencies": [
-    {
-      "url": "https://github.com/abapedia/steampunk-2305-api-intersect-702",
-      "folder": "/deps",
-      "files": "/src/**/*.*"
+  "global": {
+    "files": "/src/**/*.*"
   },
-    {
-      "url": "https://github.com/abap2UI5-addons/custom-controls",
-      "folder": "/abap2UI5-controls",
-      "files": "/src/**/*.*"
-    },
-    {
-      "url": "https://github.com/sandraros/S-RTTI",
-      "folder": "/srtti",
-      "files": "/src/**/*.*"
-    },
-    {
-      "url": "https://github.com/abap2UI5/abap2UI5",
-      "folder": "/abap2UI5",
-      "files": "/src/**/*.*"
-    }
-  ],
-  "syntax": {
-    "version": "v750",
-    "errorNamespace": "^(Z|Y|LCL_|TY_|LIF_)"
+  "dependencies": [
+  {
+    "url": "https://github.com/abapedia/steampunk-2305-api-intersect-702",
+    "folder": "/deps",
+    "files": "/src/**/*.*"
   },
-  "rules": {
-    "downport": true,
-    "begin_end_names": true,
-    "check_ddic": true,
-    "check_include": true,
-    "check_syntax": true,
-    "global_class": true,
-    "definitions_top": false,
-    "implement_methods": true,
-    "method_implemented_twice": true,
-    "parser_error": true,
-    "superclass_final": true,
-    "unknown_types": true,
-    "xml_consistency": true
+  {
+    "url": "https://github.com/abap2UI5/abap2UI5",
+    "folder": "/abap2UI5",
+    "files": "/src/**/*.*"
   }
+],
+"syntax": {
+  "version": "v750",
+  "errorNamespace": "^(Z|Y|LCL_|TY_|LIF_)"
+},
+"rules": {
+  "downport": true,
+  "begin_end_names": true,
+  "check_ddic": true,
+  "check_include": true,
+  "check_syntax": true,
+  "global_class": true,
+  "definitions_top": false,
+  "implement_methods": true,
+  "method_implemented_twice": true,
+  "parser_error": true,
+  "superclass_final": true,
+  "unknown_types": true,
+  "xml_consistency": true
+}
 }
