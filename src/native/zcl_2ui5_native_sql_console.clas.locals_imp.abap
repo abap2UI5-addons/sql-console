@@ -607,14 +607,16 @@ class data_result_view implementation.
 
     me->a_parser = z2ui5_cl_xml_view=>factory( ).
 
-    assign i_state->results_pane-output_data->* to <data>.
+    data(app) = cast zcl_2ui5_native_sql_console( i_ui5_client->get_app( i_ui5_client->get( )-s_draft-id ) ).
+    app->mr_output_data = i_state->results_pane-output_data.
+    assign app->mr_output_data->* to <data>.
 
     if <data> is assigned.
 
       data(fields) = z2ui5_cl_util=>rtti_get_t_attri_by_any( <data> ).
 
       data(table) = me->a_parser->ui_table( id = `previewTab`
-                                            rows = me->a_ui5_client->_bind_local( <data> )
+                                            rows = me->a_ui5_client->_bind( <data> )
                                             editable = abap_false
                                             alternaterowcolors = abap_true
                                             showcolumnvisibilitymenu = abap_true

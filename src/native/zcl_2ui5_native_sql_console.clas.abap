@@ -32,6 +32,8 @@ class zcl_2ui5_native_sql_console definition
 
     data state type ref to zcl_2ui5_native_sql_console_st.
 
+    data mr_output_data type ref to data.
+
   protected section.
 
     data a_ui5_client type ref to z2ui5_if_client.
