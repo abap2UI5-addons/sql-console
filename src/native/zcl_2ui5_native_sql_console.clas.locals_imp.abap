@@ -614,7 +614,7 @@ class data_result_view implementation.
       data(fields) = z2ui5_cl_util=>rtti_get_t_attri_by_any( <data> ).
 
       data(table) = me->a_parser->ui_table( id = `previewTab`
-                                            rows = me->a_ui5_client->_bind_local( <data> )
+                                            rows = me->a_ui5_client->_bind( <data> )
                                             editable = abap_false
                                             alternaterowcolors = abap_true
                                             showcolumnvisibilitymenu = abap_true

@@ -374,7 +374,7 @@ CLASS Z2UI5_SQL_CL_APP_01 IMPLEMENTATION.
 
       DATA(tab) = lo_view_nested->ui_table(
                             id = `previewTab`
-                            rows = client->_bind_local( <tab> )
+                            rows = client->_bind( <tab> )
                             editable = abap_false
                             alternaterowcolors = abap_true
                             showcolumnvisibilitymenu = abap_true
