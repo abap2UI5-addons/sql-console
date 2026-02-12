@@ -93,6 +93,7 @@ CLASS z2ui5_sql_cl_app_01 DEFINITION PUBLIC.
     DATA t_tab_group TYPE STANDARD TABLE OF ty_sort WITH EMPTY KEY .
     DATA t_tab_filter TYPE STANDARD TABLE OF ty_sort WITH EMPTY KEY .
 
+    DATA mr_preview_tab TYPE REF TO data.
 
   PROTECTED SECTION.
 
@@ -370,7 +371,8 @@ CLASS Z2UI5_SQL_CL_APP_01 IMPLEMENTATION.
 
     IF ms_draft-s_preview-tab IS BOUND.
       FIELD-SYMBOLS <tab> TYPE table.
-      ASSIGN  ms_draft-s_preview-tab->* TO <tab>.
+      mr_preview_tab = ms_draft-s_preview-tab.
+      ASSIGN mr_preview_tab->* TO <tab>.
 
       DATA(tab) = lo_view_nested->ui_table(
                             id = `previewTab`
