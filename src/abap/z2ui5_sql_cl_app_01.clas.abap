@@ -106,8 +106,6 @@ CLASS z2ui5_sql_cl_app_01 DEFINITION PUBLIC.
     DATA client TYPE REF TO z2ui5_if_client.
 
     METHODS z2ui5_view_display.
-    METHODS sql_db_read.
-
 
     METHODS history_db_read.
     METHODS preview_filter_search.
@@ -137,7 +135,7 @@ CLASS z2ui5_sql_cl_app_01 DEFINITION PUBLIC.
       IMPORTING
         fw_table     TYPE string
         fo_result    TYPE REF TO data
-        ft_fieldlist TYPE z2ui5_scl_cl_query_on_prem=>ty_fieldlist_table
+        ft_fieldlist TYPE z2ui5_sql_cl_query=>ty_t_fieldlist
         fw_title     TYPE string.
 
   PRIVATE SECTION.
@@ -475,43 +473,24 @@ CLASS Z2UI5_SQL_CL_APP_01 IMPLEMENTATION.
   ENDMETHOD.
 
 
-  METHOD sql_db_read.
-
-    FIELD-SYMBOLS <tab> TYPE STANDARD TABLE.
-    ASSIGN ms_draft-s_preview-tab->* TO <tab>.
-
-    SELECT FROM (ms_draft-sql_s_command-name) FIELDS *
-        INTO CORRESPONDING FIELDS OF TABLE @<tab>
-        UP TO @ms_draft-sql_max_rows ROWS.
-
-    FIELD-SYMBOLS <tab2> TYPE STANDARD TABLE.
-    ASSIGN ms_draft-s_preview-tab_backup->* TO <tab2>.
-
-    ms_draft-s_preview-t_filter = z2ui5_cl_util=>filter_get_multi_by_data( <tab> ).
-    <tab2> = <tab>.
-    ms_draft-s_preview-title = `Number of Rows: ` && ` ` && z2ui5_cl_util=>c_trim( lines( <tab2> ) ) && ``.
-
-  ENDMETHOD.
-
-
   METHOD sql_on_run.
 
-    z2ui5_scl_cl_query_on_prem=>sql_logic(
-      EXPORTING
-        query         = ms_draft-sql_input
-        max_rows = ms_draft-sql_max_rows
-     IMPORTING
-        lw_from       = DATA(lw_from)
-        lo_result     = DATA(lo_result)
-        lw_query     = DATA(lw_query)
-        lt_fieldlist2 = DATA(lt_fieldlist2)
-    ).
+    TRY.
+        DATA(ls_result) = z2ui5_sql_cl_query=>run( query    = ms_draft-sql_input
+                                                   max_rows = ms_draft-sql_max_rows ).
+      CATCH z2ui5_cx_util_error INTO DATA(lx_error).
+        client->message_box_display( text = lx_error->get_text( )
+                                     type = `error` ).
+        RETURN.
+    ENDTRY.
+
+    ms_draft-sql_s_command-name = ls_result-tabname.
 
     result_display(
-        fw_table     = lw_from
-        fo_result    = lo_result
-        ft_fieldlist = lt_fieldlist2
-        fw_title     = lw_query
+        fw_table     = ls_result-from
+        fo_result    = ls_result-data
+        ft_fieldlist = ls_result-fieldlist
+        fw_title     = ls_result-query
     ).
 
   ENDMETHOD.

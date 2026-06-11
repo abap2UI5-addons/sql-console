@@ -5,8 +5,20 @@ CLASS z2ui5_sql_cl_history_api DEFINITION
 
   PUBLIC SECTION.
 
-    TYPES ty_s_entry TYPE z2ui5_sql_t_01.
-    TYPES ty_t_entry TYPE STANDARD TABLE OF z2ui5_sql_t_01 WITH EMPTY KEY.
+    CONSTANTS c_handle_history TYPE string VALUE `Z2UI5_SQL_CONSOLE_HISTORY` ##NO_TEXT.
+    CONSTANTS c_handle_draft   TYPE string VALUE `Z2UI5_SQL_CONSOLE_DRAFT` ##NO_TEXT.
+
+    TYPES:
+      BEGIN OF ty_s_entry,
+        uuid        TYPE c LENGTH 32,
+        timestampl  TYPE timestampl,
+        uname       TYPE c LENGTH 20,
+        tabname     TYPE c LENGTH 20,
+        counter     TYPE c LENGTH 20,
+        sql_command TYPE string,
+        result_data TYPE string,
+      END OF ty_s_entry.
+    TYPES ty_t_entry TYPE STANDARD TABLE OF ty_s_entry WITH EMPTY KEY.
 
     CLASS-METHODS db_create
       IMPORTING
@@ -47,49 +59,73 @@ CLASS z2ui5_sql_cl_history_api IMPLEMENTATION.
   METHOD db_create.
 
     val-uname = sy-uname.
-    MODIFY z2ui5_sql_t_01 FROM @val.
-    COMMIT WORK AND WAIT.
+    z2ui5_cl_util_db=>save( uname   = val-uname
+                            handle  = c_handle_history
+                            handle2 = val-uuid
+                            data    = val ).
 
   ENDMETHOD.
 
   METHOD db_read_multi_by_user.
 
-    SELECT FROM z2ui5_sql_t_01
-        FIELDS *
-    WHERE uname = @val
-    INTO CORRESPONDING FIELDS OF TABLE @result.
+    DATA ls_entry TYPE ty_s_entry.
+
+    LOOP AT z2ui5_cl_util_db=>load_multi_by_handle( uname  = val
+                                                    handle = c_handle_history ) REFERENCE INTO DATA(lr_db).
+
+      z2ui5_cl_util=>xml_parse( EXPORTING xml = lr_db->data
+                                IMPORTING any = ls_entry ).
+      INSERT ls_entry INTO TABLE result.
+
+    ENDLOOP.
 
   ENDMETHOD.
 
   METHOD db_delete.
 
-    DELETE FROM z2ui5_sql_t_01 WHERE uname = user.
+    LOOP AT z2ui5_cl_util_db=>load_multi_by_handle( uname  = user
+                                                    handle = c_handle_history ) REFERENCE INTO DATA(lr_db).
+
+      z2ui5_cl_util_db=>delete_by_handle( uname        = lr_db->uname
+                                          handle       = lr_db->handle
+                                          handle2      = lr_db->handle2
+                                          check_commit = abap_false ).
+
+    ENDLOOP.
     COMMIT WORK AND WAIT.
 
   ENDMETHOD.
 
   METHOD db_create_draft.
 
-    MODIFY z2ui5_sql_t_01 FROM @( VALUE #( uuid = sy-uname result_data = val ) ).
-    COMMIT WORK AND WAIT.
+    z2ui5_cl_util_db=>save( uname  = sy-uname
+                            handle = c_handle_draft
+                            data   = CONV string( val ) ).
 
   ENDMETHOD.
 
   METHOD db_read_draft.
 
-    SELECT SINGLE FROM z2ui5_sql_t_01
-         FIELDS result_data
-     WHERE uuid = @sy-uname
-     INTO @result.
+    TRY.
+        z2ui5_cl_util_db=>load_by_handle( EXPORTING uname  = sy-uname
+                                                    handle = c_handle_draft
+                                          IMPORTING result = result ).
+      CATCH z2ui5_cx_util_error.
+        CLEAR result.
+    ENDTRY.
 
   ENDMETHOD.
 
   METHOD db_read_by_id.
 
-    SELECT SINGLE FROM z2ui5_sql_t_01
-        FIELDS *
-    WHERE uuid = @val
-    INTO CORRESPONDING FIELDS OF @result.
+    DATA(lt_db) = z2ui5_cl_util_db=>load_multi_by_handle( handle  = c_handle_history
+                                                          handle2 = val ).
+    IF lt_db IS INITIAL.
+      RETURN.
+    ENDIF.
+
+    z2ui5_cl_util=>xml_parse( EXPORTING xml = lt_db[ 1 ]-data
+                              IMPORTING any = result ).
 
   ENDMETHOD.
 
