@@ -1,24 +1,6 @@
 *"* use this source file for the definition and implementation of
 *"* local helper classes, interface definitions and type
 *"* declarations
-class srtti_processor definition
-                      create public ##CLASS_FINAL.
-
-  public section.
-
-    methods serialize
-              importing
-                i_data_object type any
-              returning
-                value(r_val) type xstring.
-
-    methods deserialize
-              importing
-                i_serialized type xstring
-              returning
-                value(r_val) type ref to data.
-
-endclass.
 class history definition
              create public ##CLASS_FINAL.
 
@@ -348,45 +330,6 @@ endclass.
 
 ******************************************************************************************************************************************************************************************************************
 
-class srtti_processor implementation.
-
-  method serialize.
-
-    data(serializable_results) = z2ui5_cl_srt_typedescr=>create_by_data_object( i_data_object ).
-
-    call transformation id
-      source srtti = serializable_results
-             dobj = i_data_object
-      result xml r_val.
-
-  endmethod.
-  method deserialize.
-
-    field-symbols <data_object> type any table.
-
-    data srtti type ref to z2ui5_cl_srt_typedescr.
-
-    data data_object type ref to data.
-
-    call transformation id
-      source xml i_serialized
-      result srtti = srtti.
-
-    data(type) = cast cl_abap_datadescr( srtti->get_rtti( ) ).
-
-    create data data_object type handle type.
-
-    assign data_object->* to <data_object>.
-
-    call transformation id
-      source xml i_serialized
-      result dobj = <data_object>.
-
-    r_val = data_object.
-
-  endmethod.
-
-endclass.
 class history implementation.
 
   method get_sbar_data_for_current_user.
@@ -423,7 +366,7 @@ class history implementation.
       into @data(data).
 
     r_val = value #( base corresponding #( data )
-                     data = new srtti_processor( )->deserialize( data-serialized_results ) ).
+                     data = z2ui5_cl_util=>xml_srtti_parse( z2ui5_cl_util=>conv_get_string_by_xstring( data-serialized_results ) ) ).
 
   endmethod.
   method insert_new.
@@ -441,7 +384,7 @@ class history implementation.
                                               created_at = utclong_current( )
                                               created_by = cl_abap_syst=>get_user_name( )
                                               rows_no = lines( <results> )
-                                              serialized_results = new srtti_processor( )->serialize( <results> ) ).
+                                              serialized_results = z2ui5_cl_util=>conv_get_xstring_by_string( z2ui5_cl_util=>xml_srtti_stringify( <results> ) ) ).
 
     insert into z2ui5_nsql_c_hst
       values @new_entry.
