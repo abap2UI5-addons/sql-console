@@ -228,11 +228,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
     ms_draft-sql_input = ls_entry-sql_command.
 
     DATA lr_preview TYPE REF TO data.
-    FIELD-SYMBOLS <tab2> TYPE any.
-    ASSIGN ms_draft-s_preview-tab->* TO <tab2>.
-    IF sy-subrc = 0.
-      CLEAR ms_draft-s_preview-tab.
-    ENDIF.
+    CLEAR ms_draft-s_preview-tab.
 
     IF ls_entry-result_data IS NOT INITIAL.
       lr_preview = z2ui5_cl_util=>xml_srtti_parse( rtti_data = ls_entry-result_data ).
@@ -394,13 +390,13 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
       DATA(lt_fields) = z2ui5_cl_util=>rtti_get_t_attri_by_any( <tab> ).
 
       DATA(lo_columns) = tab->ui_columns( ).
-      LOOP AT lt_fields INTO DATA(lv_field) FROM 1.
+      LOOP AT lt_fields INTO DATA(lv_field).
         lo_columns->ui_column( width = `auto`  sortproperty = `'` && lv_field-name && `'` filterproperty = `'` && lv_field-name && `'`
           )->text( text = lv_field-name )->ui_template( )->label( text = `{` && lv_field-name && `}` wrapping = abap_true ).
       ENDLOOP.
 
     ELSE.
-      lo_view_nested->text( `data preview...`  ).
+      lo_view_nested->text( `Data preview...` ).
     ENDIF.
 
     client->nest_view_display( val = lo_view_nested->stringify( ) id = `preview` method_insert = `addItem` ).
@@ -427,6 +423,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
 
     lt_comp = lo_descr_line->get_components( ).
 
+    CLEAR mt_column_config.
     LOOP AT lt_comp INTO ls_comp.
 
       ls_comp-name = ft_fieldlist[ sy-tabix ]-ref_field.
