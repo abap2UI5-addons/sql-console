@@ -36,11 +36,6 @@ class zcl_association_processor implementation.
     DATA lv_error              TYPE symsgv.
 
     ls_assoc_nav_data = i_data.
-*    ls_assoc_nav_data = value #( cds_entity_name = `demo_cds_assoc_scarr`
-*                                 association_name = `_spfli`
-*                                 association_target = `demo_cds_assoc_spfli`
-*                                 selected_row_data = value #( ( name = 'CARRID'
-*                                                                value = 'AA' ) ) ).
 
     TRANSLATE ls_assoc_nav_data-association_target TO UPPER CASE.
     TRANSLATE ls_assoc_nav_data-association_name   TO UPPER CASE.
@@ -109,7 +104,6 @@ class zcl_association_processor implementation.
               i_param_values       = ls_assoc_nav_data-param_values.
 
           lo_cds_stmt_gen->get_statement(
-*          lo_cds_stmt_gen->get_new_statement(
             IMPORTING
               e_statement           = r_val
            ).
