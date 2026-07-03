@@ -28,13 +28,25 @@
   "begin_end_names": true,
   "check_ddic": true,
   "check_include": true,
-  "check_syntax": true,
+  // the two excluded test class includes contain test doubles for standard
+  // APIs (cl_sql_statement, if_dd_sobject, if_dd_sobject_util) that are not
+  // part of the dependency stubs, so syntax resolution fails only there
+  "check_syntax": {
+    "exclude": [
+      "zcl_2ui5_native_sql_console\\.clas\\.testclasses\\.abap",
+      "zcl_association_processor\\.clas\\.testclasses\\.abap"
+    ]
+  },
   "global_class": true,
   "definitions_top": false,
   "implement_methods": true,
   "method_implemented_twice": true,
   "parser_error": true,
-  "superclass_final": true,
+  "superclass_final": {
+    "exclude": [
+      "zcl_2ui5_native_sql_console\\.clas\\.testclasses\\.abap"
+    ]
+  },
   "unknown_types": true,
   "xml_consistency": true
 }

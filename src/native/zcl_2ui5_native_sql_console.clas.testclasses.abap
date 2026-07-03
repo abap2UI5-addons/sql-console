@@ -3,7 +3,7 @@
 class _sql_statement_t_double definition
                               create public
                               inheriting from sql_statement ##CLASS_FINAL.
-		
+
   public section.
 
     methods value
@@ -79,7 +79,7 @@ endclass.
 class _sql_statement_stub definition
                           create public
                           inheriting from _sql_statement_t_double ##CLASS_FINAL.
-		
+
   public section.
 
     methods constructor
@@ -164,7 +164,7 @@ endclass.
 class _cl_sql_statement_spy definition
                             create public
                             inheriting from cl_sql_statement ##CLASS_FINAL.
-		
+
   public section.
 
     methods execute_query redefinition.
@@ -202,7 +202,7 @@ class association_processor_dummy implementation.
 endclass.
 class association_processor_spy definition
                                 create public ##CLASS_FINAL.
-		
+
   public section.
 
     interfaces: zif_association_processor.

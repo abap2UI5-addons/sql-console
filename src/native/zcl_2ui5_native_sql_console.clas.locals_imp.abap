@@ -380,7 +380,7 @@ class history implementation.
     assign i_entry-results->* to <results>.
 
     data(new_entry) = value z2ui5_nsql_c_hst( base corresponding #( i_entry )
-                                              id = cl_system_uuid=>if_system_uuid_rfc4122_static~create_uuid_x16_by_version( 4 )
+                                              id = cl_system_uuid=>create_uuid_x16_static( )
                                               created_at = utclong_current( )
                                               created_by = cl_abap_syst=>get_user_name( )
                                               rows_no = lines( <results> )
@@ -464,7 +464,7 @@ class main_view implementation.
                            )->toolbar_spacer(
                            )->label( text = `Shell` ##NO_TEXT
                            )->switch( state = me->a_ui5_client->_bind_edit( i_state->page-app_width_limited )
-                           )->link( text = 'Project on GitHub'(004) target = '_blank' href = 'https://github.com/abap2ui5-apps/abap-sql-console' ).
+                           )->link( text = 'Project on GitHub'(004) target = '_blank' href = 'https://github.com/abap2UI5-addons/sql-console' ).
 
         data(flex_box) = page->flex_box( height = `100%` fitcontainer = abap_true rendertype = `Bare` ) ##NO_TEXT.
 
@@ -728,7 +728,7 @@ class on_delete_history_items implementation.
 
         i_ui5_client->view_model_update( ).
 
-        i_ui5_client->message_toast_display( 'All entries succesfully deleted from database'(014) ).
+        i_ui5_client->message_toast_display( 'All entries successfully deleted from database'(014) ).
 
       endif.
 
@@ -985,7 +985,9 @@ class sql_statement implementation.
     if find( val = me->a_sql_statement
              pcre = at_least_two_path_expressions ) gt 0.
 
-      raise exception new cx_sql_exception( sql_message = 'More than one associations in a single expression path are not allowed'(016) ).
+      raise exception type cx_sql_exception
+        exporting
+          sql_message = 'More than one association in a single expression path is not allowed'(016).
 
     else.
 
@@ -1047,18 +1049,10 @@ class sql_statement implementation.
     data(no_of_ds) = count( val = condensed
                             pcre = data_source ).
 
-    data(no_of_ds_iter) = cond #( when no_of_ds lt 1
-                                  then value string_table( )
-                                  else reduce #( init aggr = value string_table( )
-                                                 for i = 0 until i eq no_of_ds
-                                                 next aggr = value #( base aggr
-                                                                      ( ) ) ) ).
-
-    r_val = value #( "for i = 0 until i eq no_of_ds jesus christ SAP what even is this expression for the love of all that is sacred
-                     for <i> in no_of_ds_iter index into i
+    r_val = value #( for idx = 1 until idx gt no_of_ds
                      let ds_match = match( val = condensed
                                            pcre = data_source
-                                           occ = i )
+                                           occ = idx )
                          after_from_or_join = segment( val = ds_match
                                                        sep = ` `
                                                        index = 2 )
@@ -1122,7 +1116,7 @@ class sql_statement implementation.
 
       if not ( replaced eq abap_true ).
 
-        new_statement &&= ` ` && i_join.
+        new_statement = new_statement && ` ` && i_join.
 
       endif.
 

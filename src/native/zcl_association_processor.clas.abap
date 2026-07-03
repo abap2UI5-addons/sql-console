@@ -23,28 +23,17 @@ class zcl_association_processor implementation.
 
   METHOD navigate_association.
 
-    DATA lo_query_handler      TYPE REF TO cl_adt_dp_open_sql_handler.
     DATA lx_dd_sobject_get     TYPE REF TO cx_dd_sobject_get.
     DATA lx_dd_ddl_check       TYPE REF TO cx_dd_ddl_check.
-    DATA lo_dd_sobject_util    TYPE REF TO if_dd_sobject_util.
     DATA lo_cds_stmt_gen       TYPE REF TO cl_adt_dp_cds_assoc_osql_map.
-    DATA lr_query_result       TYPE REF TO data.
-    DATA ls_table_det          TYPE if_data_preview=>ty_data_preview_table_data.
     DATA ls_assoc_nav_data     TYPE if_data_preview=>ty_cds_assoc_nav_data.
     DATA ls_selected_row_data  TYPE if_data_preview=>ty_table_cell_content.
     DATA lt_source_data        TYPE cl_adt_dp_cds_assoc_osql_map=>ty_component_values.
     DATA ls_source_data        TYPE cl_adt_dp_cds_assoc_osql_map=>ty_component_value.
-    DATA lt_field_details      TYPE ddentity_column_tab.
-    DATA ls_field_detail       TYPE ddentity_column.
-    DATA ls_sobjname           TYPE ddstrucobjname.
-    DATA lt_sobjnames          TYPE if_dd_sobject_types=>ty_t_sobjnames.
-    DATA lv_execution_time     TYPE string.
     DATA lv_view_name          TYPE viewname.
     DATA lv_tab_name           TYPE tabname.
     DATA lv_subrc              LIKE sy-subrc.
     DATA lv_error              TYPE symsgv.
-
-    FIELD-SYMBOLS:  <fs_table_col>     TYPE if_data_preview=>ty_column.
 
     ls_assoc_nav_data = i_data.
 *    ls_assoc_nav_data = value #( cds_entity_name = `demo_cds_assoc_scarr`
@@ -80,7 +69,7 @@ class zcl_association_processor implementation.
             IMPORTING
               subrc   = lv_subrc.
           IF lv_subrc NE 0.
-            lv_error =  lv_view_name.
+            lv_error = lv_tab_name.
             RAISE EXCEPTION TYPE cx_adt_datapreview_common
               EXPORTING
                 textid = cx_adt_datapreview_common=>not_in_database
@@ -99,7 +88,7 @@ class zcl_association_processor implementation.
               subrc    = lv_subrc.
 
           IF lv_subrc NE 0.
-            lv_error =  lv_view_name.
+            lv_error = lv_view_name.
             RAISE EXCEPTION TYPE cx_adt_datapreview_common
               EXPORTING
                 textid = cx_adt_datapreview_common=>not_in_database

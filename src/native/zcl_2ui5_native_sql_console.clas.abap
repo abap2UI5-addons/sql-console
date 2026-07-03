@@ -43,8 +43,9 @@ class zcl_2ui5_native_sql_console implementation.
 
   method class_constructor.
 
-    cl_os_system=>init_and_set_modes( i_external_commit = oscon_false
-                                      i_update_mode = oscon_dmode_default ).
+    "defaults are oscon_false / oscon_dmode_default, passed implicitly
+    "(the constants are not available in the ABAP Cloud language scope)
+    cl_os_system=>init_and_set_modes( ).
 
   endmethod.
   method z2ui5_if_app~main.
