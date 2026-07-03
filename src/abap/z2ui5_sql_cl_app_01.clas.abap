@@ -99,7 +99,6 @@ CLASS z2ui5_sql_cl_app_01 DEFINITION PUBLIC.
 
     DATA:
       BEGIN OF ms_control,
-        check_initialized          TYPE abap_bool,
         callback_pop_session_load  TYPE string,
         callback_pop_history_clear TYPE string,
       END OF ms_control.
@@ -500,8 +499,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
 
         me->client = client.
 
-        IF ms_control-check_initialized = abap_false.
-          ms_control-check_initialized = abap_true.
+        IF client->check_on_init( ).
 
           client->view_display( z2ui5_cl_xml_view=>factory(
             )->_z2ui5( )->timer(  client->_event( `START` )
