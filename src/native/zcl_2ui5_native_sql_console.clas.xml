@@ -94,7 +94,7 @@
     <item>
      <ID>I</ID>
      <KEY>014</KEY>
-     <ENTRY>All entries succesfully deleted from database</ENTRY>
+     <ENTRY>All entries successfully deleted from database</ENTRY>
      <LENGTH>90</LENGTH>
     </item>
     <item>
@@ -106,7 +106,7 @@
     <item>
      <ID>I</ID>
      <KEY>016</KEY>
-     <ENTRY>More than one associations in a single expression path are not allowed</ENTRY>
+     <ENTRY>More than one association in a single expression path is not allowed</ENTRY>
      <LENGTH>132</LENGTH>
     </item>
    </TPOOL>

@@ -1,7 +1,7 @@
 CLASS z2ui5_sql_cl_history_api DEFINITION
   PUBLIC
   FINAL
-  CREATE PUBLIC .
+  CREATE PUBLIC.
 
   PUBLIC SECTION.
 

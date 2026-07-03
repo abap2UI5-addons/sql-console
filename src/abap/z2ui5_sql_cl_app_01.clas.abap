@@ -99,7 +99,6 @@ CLASS z2ui5_sql_cl_app_01 DEFINITION PUBLIC.
 
     DATA:
       BEGIN OF ms_control,
-        check_initialized          TYPE abap_bool,
         callback_pop_session_load  TYPE string,
         callback_pop_history_clear TYPE string,
       END OF ms_control.
@@ -144,7 +143,7 @@ ENDCLASS.
 
 
 
-CLASS Z2UI5_SQL_CL_APP_01 IMPLEMENTATION.
+CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
 
 
   METHOD history_db_read.
@@ -187,7 +186,7 @@ CLASS Z2UI5_SQL_CL_APP_01 IMPLEMENTATION.
     CLEAR ls_preview-tab_backup.
 
     ls_preview-rtti_data = z2ui5_cl_util=>xml_srtti_stringify( <tab> ).
-    IF <tab_back> IS  ASSIGNED.
+    IF <tab_back> IS ASSIGNED.
       ls_preview-rtti_data_back = z2ui5_cl_util=>xml_srtti_stringify( <tab_back> ).
     ENDIF.
 
@@ -228,13 +227,7 @@ CLASS Z2UI5_SQL_CL_APP_01 IMPLEMENTATION.
     ms_draft-sql_input = ls_entry-sql_command.
 
     DATA lr_preview TYPE REF TO data.
-    FIELD-SYMBOLS <tab2> TYPE any.
-    ASSIGN ms_draft-s_preview-tab->* TO <tab2>.
-    IF sy-subrc = 0.
-*      client->_bind_clear( `MS_DRAFT-S_PREVIEW-TAB->*` ).
-*      client->_bind_clear( `MT_COLUMN_CONFIG` ).                     "feng add for bug
-      CLEAR ms_draft-s_preview-tab.
-    ENDIF.
+    CLEAR ms_draft-s_preview-tab.
 
     IF ls_entry-result_data IS NOT INITIAL.
       lr_preview = z2ui5_cl_util=>xml_srtti_parse( rtti_data = ls_entry-result_data ).
@@ -247,10 +240,6 @@ CLASS Z2UI5_SQL_CL_APP_01 IMPLEMENTATION.
       ASSIGN lr_preview->('t_filter') TO <any>.
       ms_draft-s_preview-t_filter = <any>.
 
-      FIELD-SYMBOLS <preview> TYPE data.
-      ASSIGN lr_preview->* TO <preview>.
-
-      FIELD-SYMBOLS <tab> TYPE any.
       DATA lr_data TYPE REF TO data.
 
       ASSIGN lr_preview->('rtti_data') TO <any>.
@@ -265,7 +254,7 @@ CLASS Z2UI5_SQL_CL_APP_01 IMPLEMENTATION.
 
     client->view_model_update( ).
     preview_view( ).
-    client->message_toast_display( `history entry successfully loaded` ).
+    client->message_toast_display( `History entry successfully loaded` ).
 
   ENDMETHOD.
 
@@ -275,20 +264,20 @@ CLASS Z2UI5_SQL_CL_APP_01 IMPLEMENTATION.
     view_history->list(
           items           = client->_bind_edit( ms_draft-history_tab )
           mode            = `SingleSelectMaster`
-          selectionchange = client->_event( val = 'HISTORY_LOAD' )
-           sticky              = 'ColumnHeaders,HeaderToolbar'
+          selectionchange = client->_event( val = `HISTORY_LOAD` )
+          sticky          = `ColumnHeaders,HeaderToolbar`
              )->header_toolbar(
              )->overflow_toolbar(
-                 )->title( 'Query History'
+                 )->title( `Query History`
                  )->toolbar_spacer(
-                )->toolbar_spacer(
+                 )->toolbar_spacer(
                  )->button( text = `New` press = client->_event( `HISTORY_CREATE` ) icon = `sap-icon://create`
                  )->button( text = `Clear` press = client->_event( `HISTORY_CLEAR` ) icon = `sap-icon://delete`
         )->get_parent( )->get_parent(
           )->standard_list_item(
-              title       = '{S_DB/TABNAME} - {DATE} {TIME}'
-              description = '{S_DB/SQL_COMMAND}'
-              info        = '{S_DB/COUNTER}'
+              title       = `{S_DB/TABNAME} - {DATE} {TIME}`
+              description = `{S_DB/SQL_COMMAND}`
+              info        = `{S_DB/COUNTER}`
               selected    = `{SELKZ}`
          ).
 
@@ -355,10 +344,10 @@ CLASS Z2UI5_SQL_CL_APP_01 IMPLEMENTATION.
     ASSIGN ms_draft-s_preview-tab_backup->* TO <tab2>.
     <tab> = <tab2>.
 
-    ms_draft-s_preview-title = `Number of Rows: ` && ` ` && z2ui5_cl_util=>c_trim( lines( <tab> ) ) && ``.
+    ms_draft-s_preview-title = `Number of Rows: ` && ` ` && z2ui5_cl_util=>c_trim( lines( <tab> ) ).
 
     preview_view( ).
-    client->message_toast_display( 'all filter deleted' ).
+    client->message_toast_display( `All filters deleted` ).
 
   ENDMETHOD.
 
@@ -382,14 +371,14 @@ CLASS Z2UI5_SQL_CL_APP_01 IMPLEMENTATION.
                             selectionbehavior = `RowOnly`
                             visiblerowcountmode = `Interactive`
                             visiblerowcount = `7`
-                            selectionmode = 'None' ).
+                            selectionmode = `None` ).
       tab->ui_extension( )->overflow_toolbar( width = `100%`
                  )->title( client->_bind( ms_draft-s_preview-title )
                  )->toolbar_spacer(
                  )->input( width = `30%` value = client->_bind_edit( ms_draft-s_preview-search_field ) description = `All Column Search`
                     submit = client->_event( `PREVIEW_SEARCH` )
                  )->toolbar_spacer(
-                 )->_z2ui5( )->spreadsheet_export( tableid = `previewTab` icon = 'sap-icon://excel-attachment' type = 'Emphasized'
+                 )->_z2ui5( )->spreadsheet_export( tableid = `previewTab` icon = `sap-icon://excel-attachment` type = `Emphasized`
                                                    columnconfig = client->_bind( val = mt_column_config
                                                    custom_filter = NEW z2ui5_cl_cc_spreadsheet( )
                                                    custom_mapper = z2ui5_cl_ajson_mapping=>create_lower_case( )
@@ -400,26 +389,26 @@ CLASS Z2UI5_SQL_CL_APP_01 IMPLEMENTATION.
       DATA(lt_fields) = z2ui5_cl_util=>rtti_get_t_attri_by_any( <tab> ).
 
       DATA(lo_columns) = tab->ui_columns( ).
-      LOOP AT lt_fields INTO DATA(lv_field) FROM 1.
+      LOOP AT lt_fields INTO DATA(lv_field).
         lo_columns->ui_column( width = `auto`  sortproperty = `'` && lv_field-name && `'` filterproperty = `'` && lv_field-name && `'`
           )->text( text = lv_field-name )->ui_template( )->label( text = `{` && lv_field-name && `}` wrapping = abap_true ).
       ENDLOOP.
 
     ELSE.
-      lo_view_nested->text( `data preview...`  ).
+      lo_view_nested->text( `Data preview...` ).
     ENDIF.
 
-    client->nest_view_display( val = lo_view_nested->stringify( ) id = `preview`  method_insert = 'addItem'  ).
+    client->nest_view_display( val = lo_view_nested->stringify( ) id = `preview` method_insert = `addItem` ).
 
   ENDMETHOD.
 
 
   METHOD result_display.
 
-    DATA : lo_descr_table TYPE REF TO cl_abap_tabledescr,
-           lo_descr_line  TYPE REF TO cl_abap_structdescr,
-           lt_comp        TYPE cl_abap_structdescr=>component_table,
-           ls_comp        TYPE cl_abap_structdescr=>component.
+    DATA: lo_descr_table TYPE REF TO cl_abap_tabledescr,
+          lo_descr_line  TYPE REF TO cl_abap_structdescr,
+          lt_comp        TYPE cl_abap_structdescr=>component_table,
+          ls_comp        TYPE cl_abap_structdescr=>component.
 
 
     FIELD-SYMBOLS: <lft_data> TYPE ANY TABLE,
@@ -433,6 +422,7 @@ CLASS Z2UI5_SQL_CL_APP_01 IMPLEMENTATION.
 
     lt_comp = lo_descr_line->get_components( ).
 
+    CLEAR mt_column_config.
     LOOP AT lt_comp INTO ls_comp.
 
       ls_comp-name = ft_fieldlist[ sy-tabix ]-ref_field.
@@ -459,12 +449,10 @@ CLASS Z2UI5_SQL_CL_APP_01 IMPLEMENTATION.
     ASSIGN ms_draft-s_preview-tab_backup->* TO <tab2>.
     <tab2> = <tab>.
 
-*    client->_bind_clear( `MS_DRAFT-S_PREVIEW-TAB->*` ).
-*    client->_bind_clear( `MT_COLUMN_CONFIG` ).
     preview_view( ).
 
     ms_draft-s_preview-t_filter = z2ui5_cl_util=>filter_get_multi_by_data( <tab> ).
-    ms_draft-s_preview-title = `Number of Rows: ` && ` ` && z2ui5_cl_util=>c_trim( lines( <tab2> ) ) && ``.
+    ms_draft-s_preview-title = `Number of Rows: ` && ` ` && z2ui5_cl_util=>c_trim( lines( <tab2> ) ).
 
     history_db_save( ).
     client->view_model_update( ).
@@ -511,8 +499,7 @@ CLASS Z2UI5_SQL_CL_APP_01 IMPLEMENTATION.
 
         me->client = client.
 
-        IF ms_control-check_initialized = abap_false.
-          ms_control-check_initialized = abap_true.
+        IF client->check_on_init( ).
 
           client->view_display( z2ui5_cl_xml_view=>factory(
             )->_z2ui5( )->timer(  client->_event( `START` )
@@ -581,7 +568,7 @@ CLASS Z2UI5_SQL_CL_APP_01 IMPLEMENTATION.
         CLEAR ms_draft-history_tab.
         client->view_model_update( ).
         z2ui5_sql_cl_history_api=>db_delete( ).
-        client->message_toast_display( `All entries succesfully deleted from database` ).
+        client->message_toast_display( `All entries successfully deleted from database` ).
 
     ENDCASE.
 
@@ -593,32 +580,32 @@ CLASS Z2UI5_SQL_CL_APP_01 IMPLEMENTATION.
     z2ui5_sql_cl_history_api=>db_create_draft( client->get( )-s_draft-id ).
 
     CASE client->get( )-event.
-      WHEN 'START'.
+      WHEN `START`.
         z2ui5_on_init_set_app( ).
 
       WHEN `PREVIEW_FILTER`.
         client->nav_app_call( z2ui5_cl_pop_get_range_m=>factory( ms_draft-s_preview-t_filter ) ).
 
-      WHEN 'PREVIEW_CLEAR_FILTER'.
+      WHEN `PREVIEW_CLEAR_FILTER`.
         preview_on_filter_clear( ).
 
-      WHEN 'PREVIEW_SEARCH'.
+      WHEN `PREVIEW_SEARCH`.
         preview_on_filter( ).
 
-      WHEN 'RUN'.
+      WHEN `RUN`.
         sql_on_run( ).
 
-      WHEN 'HISTORY_CLEAR'.
+      WHEN `HISTORY_CLEAR`.
         history_on_clear_pressed( ).
 
-      WHEN 'HISTORY_CREATE'.
+      WHEN `HISTORY_CREATE`.
         INSERT VALUE #( selkz = abap_true ) INTO TABLE ms_draft-history_tab.
         client->view_model_update( ).
 
-      WHEN 'HISTORY_LOAD'.
+      WHEN `HISTORY_LOAD`.
         history_on_load( ).
 
-      WHEN 'BACK'.
+      WHEN `BACK`.
         client->nav_app_leave( client->get_app( client->get( )-s_draft-id_prev_app_stack ) ).
 
     ENDCASE.
@@ -626,7 +613,7 @@ CLASS Z2UI5_SQL_CL_APP_01 IMPLEMENTATION.
   ENDMETHOD.
 
 
-  METHOD z2ui5_on_init_set_app  .
+  METHOD z2ui5_on_init_set_app.
 
     ms_draft-sql_input = `Select * from T100`.
     ms_draft-history_cont_size = `30%`.
@@ -645,24 +632,24 @@ CLASS Z2UI5_SQL_CL_APP_01 IMPLEMENTATION.
 
     DATA(view) = z2ui5_cl_xml_view=>factory( ).
     DATA(page) = view->shell( appwidthlimited = client->_bind_edit( ms_draft-appwidthlimited ) )->page(
-    title = 'ABAP SQL Console'
-    navbuttonpress = client->_event( 'BACK' )
+    title = `ABAP SQL Console`
+    navbuttonpress = client->_event( `BACK` )
     shownavbutton = abap_true
             )->header_content(
                 )->overflow_toolbar(
                 )->label( `Max Rows`
                 )->input( width = `15%` value = client->_bind_edit( ms_draft-sql_max_rows )
                   )->button(
-            text  = 'Run'
-            press = client->_event( 'RUN' )
-            type  = 'Emphasized'
+            text  = `Run`
+            press = client->_event( `RUN` )
+            type  = `Emphasized`
                 )->toolbar_spacer(
                 )->label( `Shell`
                 )->switch( state = client->_bind_edit( ms_draft-appwidthlimited )
-                )->link( text = 'Project on GitHub' target = '_blank' href = 'https://github.com/abap2ui5-apps/abap-sql-console'
+                )->link( text = `Project on GitHub` target = `_blank` href = `https://github.com/abap2UI5-addons/sql-console`
     )->get_parent( )->get_parent( ).
 
-    DATA(grid) = page->grid( 'L7 M12 S12' )->content( 'layout' ).
+    page->grid( `L7 M12 S12` )->content( `layout` ).
 
     DATA(cont_main) = page->responsive_splitter( defaultpane = `default`
          )->pane_container( orientation = `Vertical` ).
@@ -683,7 +670,7 @@ CLASS Z2UI5_SQL_CL_APP_01 IMPLEMENTATION.
 
     history_view( view_history ).
 
-    DATA(view_preview) = cont_main->split_pane( requiredparentwidth = `400`
+    cont_main->split_pane( requiredparentwidth = `400`
          )->layout_data( ns = `layout`
            )->splitter_layout_data( size = client->_bind_edit( ms_draft-s_preview-cont_size )
             )->get_parent( )->get_parent(

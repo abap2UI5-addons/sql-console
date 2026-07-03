@@ -96,28 +96,28 @@ class zcl_2ui5_native_sql_console_st definition
 
   protected section.
 
-    class-data an_instace type zcl_2ui5_native_sql_console_st=>t_self.
+    class-data an_instance type zcl_2ui5_native_sql_console_st=>t_self.
 
 endclass.
 class zcl_2ui5_native_sql_console_st implementation.
 
   method instance.
 
-    if not ( zcl_2ui5_native_sql_console_st=>an_instace is bound ).
+    if not ( zcl_2ui5_native_sql_console_st=>an_instance is bound ).
 
       if i_serialized is bound.
 
-        zcl_2ui5_native_sql_console_st=>an_instace = i_serialized.
+        zcl_2ui5_native_sql_console_st=>an_instance = i_serialized.
 
       else.
 
-        zcl_2ui5_native_sql_console_st=>an_instace = new #( ).
+        zcl_2ui5_native_sql_console_st=>an_instance = new #( ).
 
       endif.
 
     endif.
 
-    r_val = zcl_2ui5_native_sql_console_st=>an_instace.
+    r_val = zcl_2ui5_native_sql_console_st=>an_instance.
 
   endmethod.
 

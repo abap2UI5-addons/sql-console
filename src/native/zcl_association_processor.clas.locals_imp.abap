@@ -354,8 +354,6 @@ CLASS CL_ADT_DP_CDS_ASSOC_OSQL_MAP IMPLEMENTATION.
         FIND FIRST OCCURRENCE OF REGEX source_alias_regex IN r_osql_statement-statement SUBMATCHES submatch_1 source_name submatch_3 r_osql_statement-source_alias.
         REPLACE FIRST OCCURRENCE OF REGEX source_alias_regex IN r_osql_statement-statement WITH `FROM $2 AS $4`.
 
-        SPLIT r_osql_statement-statement AT '(' INTO TABLE data(itab).
-        SPLIT itab[ 2 ] AT ')' INTO TABLE data(itab2).
         data src_name type string.
         split source_name at '(' into TABLE data(itab_src).
         src_name = itab_src[ 1 ].
@@ -428,13 +426,6 @@ CLASS CL_ADT_DP_CDS_ASSOC_OSQL_MAP IMPLEMENTATION.
 *        io_parser_src_filter = io_parser_src_filter
     ).
 
-***    ddl_handler->get_select(
-***      EXPORTING
-***        name            = i_ddl_source-ddlname
-***        ddlsrcv_wa      = i_ddl_source
-***      IMPORTING
-***        select_stmt     = r_select_statement ).
-
   ENDMETHOD.
   METHOD get_ddl_source.
 
@@ -454,7 +445,6 @@ CLASS CL_ADT_DP_CDS_ASSOC_OSQL_MAP IMPLEMENTATION.
     DATA(select_list) = create_select_list( ).
     if structure_headers[ 1 ]-with_parameters = 'X'.
         data parameters type string.
-        concatenate ' ' parameters into parameters.
         parameters = param_values.
         replace all occurrences of '=' in parameters with ':'.
         r_source-source = |{ r_source-source } | &&
@@ -475,19 +465,11 @@ CLASS CL_ADT_DP_CDS_ASSOC_OSQL_MAP IMPLEMENTATION.
 
     DATA(db_select_statement) = get_db_select_statement( ddl_source ).
 
-***    DATA(osql_statement) = convert_statement_to_open_sql( db_select_statement ).
-    DATA(osql_statement) = convert_statement( db_select_statement ). "no thanks
+    DATA(osql_statement) = convert_statement( db_select_statement ).
 
-
-***    DATA(where_clause) = create_where_clause( osql_statement ).
     DATA(where_clause) = create_where_clause_w_client( osql_statement ).
 
     e_statement = osql_statement-statement && ` ` && where_clause.
-
-***    REMOVE_MANDT(
-***      changing
-***        E_STATEMENT = e_statement
-***    ).
 
   ENDMETHOD.
 

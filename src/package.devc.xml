@@ -3,7 +3,7 @@
  <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
   <asx:values>
    <DEVC>
-    <CTEXT>a2UI5-sql-console</CTEXT>
+    <CTEXT>abap2UI5 - sql console</CTEXT>
    </DEVC>
   </asx:values>
  </asx:abap>
