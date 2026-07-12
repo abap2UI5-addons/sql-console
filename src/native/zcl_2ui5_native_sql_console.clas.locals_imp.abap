@@ -227,7 +227,7 @@ class user_approval definition
 
   protected section.
 
-    data a_confirmation_popup type ref to z2ui5_cl_pop_to_confirm.
+    data a_confirmation_popup type ref to z2ui5_cl_popup_to_confirm.
 
 endclass.
 interface popup_dialog.
@@ -249,7 +249,7 @@ class error_acknowledged_interaction definition
 
   protected section.
 
-    data a_downcasted_ref type ref to z2ui5_cl_pop_error ##NEEDED. "as a safeguard that we are actually handling the intended popup
+    data a_downcasted_ref type ref to z2ui5_cl_popup_error ##NEEDED. "as a safeguard that we are actually handling the intended popup
 
 endclass.
 class sql_statement definition
@@ -744,7 +744,7 @@ class on_delete_history_items implementation.
 
       else.
 
-        i_ui5_client->nav_app_call( z2ui5_cl_pop_to_confirm=>factory( conv #( 'Delete selected history entries from database?'(013) ) ) ).
+        i_ui5_client->nav_app_call( z2ui5_cl_popup_to_confirm=>factory( conv #( 'Delete selected history entries from database?'(013) ) ) ).
 
         state->event_awaiting_response = me->event_name( ).
 
@@ -860,7 +860,7 @@ class error_acknowledged_interaction implementation.
   endmethod.
   method ui_interaction~id.
 
-    r_val = `\CLASS=Z2UI5_CL_POP_ERROR`.
+    r_val = `\CLASS=Z2UI5_CL_POPUP_ERROR`.
 
   endmethod.
 

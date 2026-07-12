@@ -76,7 +76,7 @@ class zcl_2ui5_native_sql_console implementation.
 
       t->undo( ).
 
-      me->a_ui5_client->nav_app_call( z2ui5_cl_pop_error=>factory( e ) ).
+      me->a_ui5_client->nav_app_call( z2ui5_cl_popup_error=>factory( e ) ).
 
     endtry.
 
