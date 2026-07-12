@@ -11,6 +11,10 @@ SQL Console in Your Browser – No Need for Eclipse or SAP GUI Installation
 * S/4 Private Cloud or On-Premise (ABAP for Cloud, Standard ABAP)
 * SAP NetWeaver AS ABAP 7.50 or higher (Standard ABAP)
 
+#### Dependencies
+* [abap2UI5](https://github.com/abap2UI5/abap2UI5)
+* [popups](https://github.com/abap2UI5-addons/popups)
+
 #### Credits
 * Logic for Query to ABAP SQL Translation used from [ZTOAD](https://github.com/marianfoo/ztoad), integrated by [choper725](https://github.com/choper725)
 
