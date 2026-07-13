@@ -3,6 +3,7 @@ name: rename_test
 on:
   push:
     branches: [main]
+  pull_request:
 
 permissions:
   contents: read
