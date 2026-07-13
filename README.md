@@ -22,6 +22,7 @@ This is a developer tool. It runs the SQL the user enters, without an authorizat
 #### Dependencies
 * [abap2UI5](https://github.com/abap2UI5/abap2UI5)
 * [popups](https://github.com/abap2UI5-addons/popups)
+* [custom-controls](https://github.com/abap2UI5-addons/custom-controls)
 
 #### Credits
 * Logic for Query to ABAP SQL Translation used from [ZTOAD](https://github.com/marianfoo/ztoad), integrated by [choper725](https://github.com/choper725)
