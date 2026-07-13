@@ -99,7 +99,6 @@ CLASS z2ui5_sql_cl_app_01 DEFINITION PUBLIC.
 
     DATA:
       BEGIN OF ms_control,
-        callback_pop_session_load  TYPE string,
         callback_pop_history_clear TYPE string,
       END OF ms_control.
     DATA client TYPE REF TO z2ui5_if_client.
@@ -533,15 +532,6 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
   METHOD z2ui5_on_callback_pop_confirm.
 
     CASE io_popup->z2ui5_if_app~id_app.
-
-      WHEN ms_control-callback_pop_session_load.
-
-        IF io_popup->result( ).
-          DATA(lv_id) = z2ui5_sql_cl_history_api=>db_read_draft( ).
-          client->nav_app_leave( client->get_app( lv_id ) ).
-        ELSE.
-          z2ui5_on_init_set_app( ).
-        ENDIF.
 
       WHEN ms_control-callback_pop_history_clear.
 
