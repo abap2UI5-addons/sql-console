@@ -54,7 +54,7 @@ CLASS z2ui5_sql_cl_app_01 DEFINITION PUBLIC.
         cont_size      TYPE string,
         title          TYPE string,
         search_field   TYPE string,
-        t_filter       TYPE z2ui5_sql_cl_context=>ty_t_filter_multi,
+        t_filter       TYPE z2ui5_cl_util=>ty_t_filter_multi,
         rtti_data      TYPE string,
         rtti_data_back TYPE string,
       END OF ty_s_preview.
@@ -63,7 +63,7 @@ CLASS z2ui5_sql_cl_app_01 DEFINITION PUBLIC.
       BEGIN OF ms_draft,
         s_preview         TYPE ty_s_preview,
         sql_input         TYPE string,
-        sql_s_command     TYPE z2ui5_sql_cl_context=>ty_s_filter_multi,
+        sql_s_command     TYPE z2ui5_cl_util=>ty_s_filter_multi,
         sql_max_rows      TYPE i,
         sql_cont_size     TYPE string,
         history_cont_size TYPE string,
@@ -99,6 +99,7 @@ CLASS z2ui5_sql_cl_app_01 DEFINITION PUBLIC.
 
     DATA:
       BEGIN OF ms_control,
+        callback_pop_session_load  TYPE string,
         callback_pop_history_clear TYPE string,
       END OF ms_control.
     DATA client TYPE REF TO z2ui5_if_client.
@@ -107,6 +108,7 @@ CLASS z2ui5_sql_cl_app_01 DEFINITION PUBLIC.
 
     METHODS history_db_read.
     METHODS preview_filter_search.
+    METHODS preview_filter_range.
     METHODS history_on_clear_pressed.
     METHODS z2ui5_on_callback.
     METHODS z2ui5_on_event.
@@ -130,8 +132,10 @@ CLASS z2ui5_sql_cl_app_01 DEFINITION PUBLIC.
 
     METHODS result_display
       IMPORTING
+        fw_table     TYPE string
         fo_result    TYPE REF TO data
-        ft_fieldlist TYPE z2ui5_sql_cl_query=>ty_t_fieldlist.
+        ft_fieldlist TYPE z2ui5_sql_cl_query=>ty_t_fieldlist
+        fw_title     TYPE string.
 
   PRIVATE SECTION.
 
@@ -181,14 +185,14 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
     CLEAR ls_preview-tab.
     CLEAR ls_preview-tab_backup.
 
-    ls_preview-rtti_data = z2ui5_sql_cl_context=>xml_srtti_stringify( <tab> ).
+    ls_preview-rtti_data = z2ui5_cl_util=>xml_srtti_stringify( <tab> ).
     IF <tab_back> IS ASSIGNED.
-      ls_preview-rtti_data_back = z2ui5_sql_cl_context=>xml_srtti_stringify( <tab_back> ).
+      ls_preview-rtti_data_back = z2ui5_cl_util=>xml_srtti_stringify( <tab_back> ).
     ENDIF.
 
-    lr_hist->s_db-timestampl = z2ui5_sql_cl_context=>time_get_timestampl( ).
+    lr_hist->s_db-timestampl = z2ui5_cl_util=>time_get_timestampl( ).
     IF lr_hist->s_db-uuid IS INITIAL.
-      lr_hist->s_db-uuid = z2ui5_sql_cl_context=>uuid_get_c32( ).
+      lr_hist->s_db-uuid = z2ui5_cl_util=>uuid_get_c32( ).
     ENDIF.
     z2ui5_sql_cl_history_api=>db_create( VALUE #(
         sql_command = ms_draft-sql_input
@@ -196,7 +200,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
         timestampl  = lr_hist->s_db-timestampl
         uuid = lr_hist->s_db-uuid
         counter     = lines( <tab> )
-        result_data = z2ui5_sql_cl_context=>xml_srtti_stringify( ls_preview ) ) ).
+        result_data = z2ui5_cl_util=>xml_srtti_stringify( ls_preview ) ) ).
 
     lr_hist->s_db-sql_command = ms_draft-sql_input.
     lr_hist->s_db-tabname = ms_draft-sql_s_command-name.
@@ -226,7 +230,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
     CLEAR ms_draft-s_preview-tab.
 
     IF ls_entry-result_data IS NOT INITIAL.
-      lr_preview = z2ui5_sql_cl_context=>xml_srtti_parse( ls_entry-result_data ).
+      lr_preview = z2ui5_cl_util=>xml_srtti_parse( rtti_data = ls_entry-result_data ).
 
       FIELD-SYMBOLS <any> TYPE any.
       ASSIGN lr_preview->('title') TO <any>.
@@ -239,12 +243,12 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
       DATA lr_data TYPE REF TO data.
 
       ASSIGN lr_preview->('rtti_data') TO <any>.
-      lr_data = z2ui5_sql_cl_context=>xml_srtti_parse( <any> ).
-      ms_draft-s_preview-tab = z2ui5_sql_cl_context=>conv_copy_ref_data( lr_data ).
+      lr_data = z2ui5_cl_util=>xml_srtti_parse( <any> ).
+      ms_draft-s_preview-tab = z2ui5_cl_util=>conv_copy_ref_data( lr_data ).
 
       ASSIGN lr_preview->('rtti_data_back') TO <any>.
-      lr_data = z2ui5_sql_cl_context=>xml_srtti_parse( <any> ).
-      ms_draft-s_preview-tab_backup = z2ui5_sql_cl_context=>conv_copy_ref_data( lr_data ).
+      lr_data = z2ui5_cl_util=>xml_srtti_parse( <any> ).
+      ms_draft-s_preview-tab_backup = z2ui5_cl_util=>conv_copy_ref_data( lr_data ).
 
     ENDIF.
 
@@ -280,6 +284,21 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
   ENDMETHOD.
 
 
+  METHOD preview_filter_range.
+
+    FIELD-SYMBOLS <tab> TYPE STANDARD TABLE.
+    ASSIGN ms_draft-s_preview-tab->* TO <tab>.
+
+    LOOP AT ms_draft-s_preview-t_filter INTO DATA(ls_tab).
+
+      DATA(lv_clause) = ls_tab-name && ` not in ls_tab-t_range`.
+      DELETE <tab> WHERE (lv_clause).
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+
   METHOD preview_filter_search.
 
     FIELD-SYMBOLS <tab> TYPE STANDARD TABLE.
@@ -287,7 +306,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
 
     IF ms_draft-s_preview-search_field IS NOT INITIAL.
 
-      z2ui5_sql_cl_context=>itab_filter_by_val(
+      z2ui5_cl_util=>itab_filter_by_val(
         EXPORTING
           val = ms_draft-s_preview-search_field
         CHANGING
@@ -306,7 +325,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
     ASSIGN ms_draft-s_preview-tab_backup->* TO <tab2>.
     <tab> = <tab2>.
     preview_filter_search( ).
-    ms_draft-s_preview-title = |Number of Rows: { lines( <tab> ) }|.
+    ms_draft-s_preview-title = `Number of Rows: ` && ` (` && z2ui5_cl_util=>c_trim( lines( <tab> ) ) && `)`.
 
     preview_view( ).
     history_db_save( ).
@@ -325,7 +344,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
     ASSIGN ms_draft-s_preview-tab_backup->* TO <tab2>.
     <tab> = <tab2>.
 
-    ms_draft-s_preview-title = |Number of Rows: { lines( <tab> ) }|.
+    ms_draft-s_preview-title = `Number of Rows: ` && ` ` && z2ui5_cl_util=>c_trim( lines( <tab> ) ).
 
     preview_view( ).
     client->message_toast_display( `All filters deleted` ).
@@ -367,12 +386,12 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
                   )->get_parent(
                  ).
 
-      DATA(lt_fields) = z2ui5_sql_cl_context=>rtti_get_t_attri_by_any( <tab> ).
+      DATA(lt_fields) = z2ui5_cl_util=>rtti_get_t_attri_by_any( <tab> ).
 
       DATA(lo_columns) = tab->ui_columns( ).
       LOOP AT lt_fields INTO DATA(lv_field).
         lo_columns->ui_column( width = `auto`  sortproperty = `'` && lv_field-name && `'` filterproperty = `'` && lv_field-name && `'`
-          )->text( lv_field-name )->ui_template( )->label( text = `{` && lv_field-name && `}` wrapping = abap_true ).
+          )->text( text = lv_field-name )->ui_template( )->label( text = `{` && lv_field-name && `}` wrapping = abap_true ).
       ENDLOOP.
 
     ELSE.
@@ -432,8 +451,8 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
 
     preview_view( ).
 
-    ms_draft-s_preview-t_filter = z2ui5_sql_cl_context=>filter_get_multi_by_data( <tab> ).
-    ms_draft-s_preview-title = |Number of Rows: { lines( <tab2> ) }|.
+    ms_draft-s_preview-t_filter = z2ui5_cl_util=>filter_get_multi_by_data( <tab> ).
+    ms_draft-s_preview-title = `Number of Rows: ` && ` ` && z2ui5_cl_util=>c_trim( lines( <tab2> ) ).
 
     history_db_save( ).
     client->view_model_update( ).
@@ -456,8 +475,10 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
     ms_draft-sql_s_command-name = ls_result-tabname.
 
     result_display(
+        fw_table     = ls_result-from
         fo_result    = ls_result-data
         ft_fieldlist = ls_result-fieldlist
+        fw_title     = ls_result-query
     ).
 
   ENDMETHOD.
@@ -533,6 +554,15 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
 
     CASE io_popup->z2ui5_if_app~id_app.
 
+      WHEN ms_control-callback_pop_session_load.
+
+        IF io_popup->result( ).
+          DATA(lv_id) = z2ui5_sql_cl_history_api=>db_read_draft( ).
+          client->nav_app_leave( client->get_app( lv_id ) ).
+        ELSE.
+          z2ui5_on_init_set_app( ).
+        ENDIF.
+
       WHEN ms_control-callback_pop_history_clear.
 
         CLEAR ms_draft-history_tab.
@@ -585,7 +615,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
 
   METHOD z2ui5_on_init_set_app.
 
-    ms_draft-sql_input = `SELECT * FROM t100`.
+    ms_draft-sql_input = `Select * from T100`.
     ms_draft-history_cont_size = `30%`.
     ms_draft-sql_cont_size = `auto`.
     ms_draft-s_preview-cont_size = `auto`.
@@ -627,21 +657,21 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
     DATA(cont_sub) = cont_main->pane_container( orientation = `Horizontal` ).
 
     DATA(view_sql) = cont_sub->split_pane( requiredparentwidth = `600`
-         )->layout_data( `layout`
+         )->layout_data( ns = `layout`
            )->splitter_layout_data( size = client->_bind_edit( ms_draft-sql_cont_size )
            )->get_parent( )->get_parent( ).
 
     sql_view_display( view_sql ).
 
     DATA(view_history) = cont_sub->split_pane( requiredparentwidth = `400`
-         )->layout_data( `layout`
+         )->layout_data( ns = `layout`
            )->splitter_layout_data(  size = client->_bind_edit( ms_draft-history_cont_size )
            )->get_parent( )->get_parent( ).
 
     history_view( view_history ).
 
     cont_main->split_pane( requiredparentwidth = `400`
-         )->layout_data( `layout`
+         )->layout_data( ns = `layout`
            )->splitter_layout_data( size = client->_bind_edit( ms_draft-s_preview-cont_size )
             )->get_parent( )->get_parent(
             )->vbox( id = `preview` ).

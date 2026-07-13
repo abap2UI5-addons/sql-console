@@ -366,7 +366,7 @@ class history implementation.
       into @data(data).
 
     r_val = value #( base corresponding #( data )
-                     data = z2ui5_sql_cl_context=>xml_srtti_parse( z2ui5_sql_cl_context=>conv_get_string_by_xstring( data-serialized_results ) ) ).
+                     data = z2ui5_cl_util=>xml_srtti_parse( z2ui5_cl_util=>conv_get_string_by_xstring( data-serialized_results ) ) ).
 
   endmethod.
   method insert_new.
@@ -384,7 +384,7 @@ class history implementation.
                                               created_at = utclong_current( )
                                               created_by = cl_abap_syst=>get_user_name( )
                                               rows_no = lines( <results> )
-                                              serialized_results = z2ui5_sql_cl_context=>conv_get_xstring_by_string( z2ui5_sql_cl_context=>xml_srtti_stringify( <results> ) ) ).
+                                              serialized_results = z2ui5_cl_util=>conv_get_xstring_by_string( z2ui5_cl_util=>xml_srtti_stringify( <results> ) ) ).
 
     insert into z2ui5_nsql_c_hst
       values @new_entry.
@@ -452,7 +452,7 @@ class main_view implementation.
 
     data(shell) = me->a_parser->shell( appwidthlimited = me->a_ui5_client->_bind_edit( i_state->page-app_width_limited ) ).
 
-      data(page) = shell->page( 'Native SQL Console'(001) ).
+      data(page) = shell->page( title = 'Native SQL Console'(001) ).
 
         data(header_content) = page->header_content( ).
 
@@ -462,7 +462,7 @@ class main_view implementation.
                            )->input( width = `15%` value = me->a_ui5_client->_bind_edit( i_state->sql_editor_pane-fallback_max_rows )
                            )->button( text = 'Run'(003) press = me->a_ui5_client->_event( on_run=>event_name( ) ) type = `Emphasized` ##NO_TEXT
                            )->toolbar_spacer(
-                           )->label( `Shell` ##NO_TEXT
+                           )->label( text = `Shell` ##NO_TEXT
                            )->switch( state = me->a_ui5_client->_bind_edit( i_state->page-app_width_limited )
                            )->link( text = 'Project on GitHub'(004) target = '_blank' href = 'https://github.com/abap2UI5-addons/sql-console' ).
 
@@ -477,7 +477,7 @@ class main_view implementation.
                 "SQL Editor Pane
                 data(editor_split_pane) = horizontal_pane_container->split_pane( requiredparentwidth = `600` ).
 
-                  data(esp_layout_data) = editor_split_pane->layout_data( `layout` )  ##NO_TEXT.
+                  data(esp_layout_data) = editor_split_pane->layout_data( ns = `layout` )  ##NO_TEXT.
 
                     esp_layout_data->splitter_layout_data( size = me->a_ui5_client->_bind_edit( i_state->sql_editor_pane-layout_size ) ).
 
@@ -486,7 +486,7 @@ class main_view implementation.
                 "History Pane
                 data(history_split_pane) = horizontal_pane_container->split_pane( requiredparentwidth = `400` ).
 
-                  data(h_layout_data) = history_split_pane->layout_data( `layout` ) ##NO_TEXT.
+                  data(h_layout_data) = history_split_pane->layout_data( ns = `layout` ) ##NO_TEXT.
 
                     h_layout_data->splitter_layout_data( size = me->a_ui5_client->_bind_edit( i_state->history_pane-layout_size ) ).
 
@@ -521,7 +521,7 @@ class main_view implementation.
               "Results Pane
               data(results_split_pane) = vertical_pane_container->split_pane( requiredparentwidth = `400` ).
 
-                data(rsp_layout_data) = results_split_pane->layout_data( `layout` )  ##NO_TEXT.
+                data(rsp_layout_data) = results_split_pane->layout_data( ns = `layout` )  ##NO_TEXT.
 
                   rsp_layout_data->splitter_layout_data( size = me->a_ui5_client->_bind_edit( i_state->results_pane-layout_size ) ).
 
@@ -556,7 +556,7 @@ class data_result_view implementation.
 
     if <data> is assigned.
 
-      data(fields) = z2ui5_sql_cl_context=>rtti_get_t_attri_by_any( <data> ).
+      data(fields) = z2ui5_cl_util=>rtti_get_t_attri_by_any( <data> ).
 
       data(table) = me->a_parser->ui_table( id = `previewTab`
                                             rows = me->a_ui5_client->_bind( <data> )
@@ -686,8 +686,8 @@ class on_run implementation.
                                                             ( label = <e>-name
                                                               property = <e>-name
                                                               type = `String` ) ) ##NO_TEXT
-                                   filters = z2ui5_sql_cl_context=>filter_get_multi_by_data( <table> )
-                                   title = |{ 'Number of Rows:'(010) } { z2ui5_sql_cl_context=>c_trim( lines( <table> ) ) }| ).
+                                   filters = z2ui5_cl_util=>filter_get_multi_by_data( <table> )
+                                   title = |{ 'Number of Rows:'(010) } { z2ui5_cl_util=>c_trim( lines( <table> ) ) }| ).
 
     new data_result_view( i_state = state
                           i_ui5_client = i_ui5_client )->redraw( ).
@@ -777,8 +777,8 @@ class on_load_history_item implementation.
                                                             ( label = <e>-name
                                                               property = <e>-name
                                                               type = `String` ) ) ##NO_TEXT
-                                   filters = z2ui5_sql_cl_context=>filter_get_multi_by_data( <table> )
-                                   title = |{ 'Number of Rows:'(010) } { z2ui5_sql_cl_context=>c_trim( lines( <table> ) ) }| ).
+                                   filters = z2ui5_cl_util=>filter_get_multi_by_data( <table> )
+                                   title = |{ 'Number of Rows:'(010) } { z2ui5_cl_util=>c_trim( lines( <table> ) ) }| ).
 
     new data_result_view( i_state = state
                           i_ui5_client = i_ui5_client )->redraw( ).
@@ -884,7 +884,7 @@ class on_wide_filtering implementation.
 
       <filtered_data> = <db_data>.
 
-      z2ui5_sql_cl_context=>itab_filter_by_val( exporting val = state->results_pane-wide_filter_string
+      z2ui5_cl_util=>itab_filter_by_val( exporting val = state->results_pane-wide_filter_string
                                          changing tab = <filtered_data> ).
 
       state->results_pane-output_data = state->results_pane-filtered_db_data.

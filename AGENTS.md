@@ -18,19 +18,6 @@ documentation must be in English.
 |---|---|
 | `src/abap/` | The app (`z2ui5_sql_cl_*`), Open-SQL query path |
 | `src/native/` | Native-SQL/ADBC path (`zcl_2ui5_native_*`, `zcl_association_processor`), derived from [ZTOAD](https://github.com/marianfoo/ztoad) |
-| `src/abap/z2ui5_sql_cl_context` | Vendored utility copy — **see below** |
-| `src/abap/z2ui5_sql_cl_db` | Vendored persistence copy (reads/writes the shared `z2ui5_t_91`) |
-
-## The Utility Copy Principle
-
-`z2ui5_sql_cl_context` and `z2ui5_sql_cl_db` are **trimmed, renamed copies** of
-the abap2UI5 utility classes (`z2ui5_cl_util` / `z2ui5_cl_util_db` in the core),
-carrying only the methods this addon uses plus the private helpers those need.
-The app calls `z2ui5_sql_cl_context=>…` / `z2ui5_sql_cl_db=>…`, never
-`z2ui5_cl_util=>…` directly. This keeps the install dependency-free (abapGit has
-no dependency management). The core and the other addons use the same pattern.
-When a new utility method is needed, copy it from the core utility class (with
-its private helpers) into the context copy rather than adding a dependency.
 
 ## Dependencies
 

@@ -53,7 +53,8 @@ CLASS lcl_name_generator IMPLEMENTATION.
 
   METHOD lif_name_generator~create_sql_view_name.
     DATA(random_int) = cl_abap_random_int=>create(
-      min  = 0
+      EXPORTING
+        min  = 0
         seed = CONV i( sy-uzeit ) ).
 
     r_name = |Z{ random_int->get_next( ) }{ sy-uname(3) }|.
@@ -415,7 +416,8 @@ CLASS CL_ADT_DP_CDS_ASSOC_OSQL_MAP IMPLEMENTATION.
 
     "does this method exist in older releases?
     r_select_statement = ddl_handler->generate_create_statement(
-      iv_ddlname           = i_ddl_source-ddlname
+      EXPORTING
+        iv_ddlname           = i_ddl_source-ddlname
 *        iv_prid              = -1
         is_source            = i_ddl_source
 *        iv_state             = 'A'
