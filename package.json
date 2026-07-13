@@ -16,7 +16,7 @@
   },
   "homepage": "https://github.com/abap2UI5-addons/sql-console#readme",
   "devDependencies": {
-    "@abaplint/cli": "^2.119.14"
+    "@abaplint/cli": "^2.119.66"
   },
   "engines": {
     "node": ">=22"
