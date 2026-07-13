@@ -25,7 +25,7 @@ SQL Console in Your Browser – No Need for Eclipse or SAP GUI Installation
 * Fix ABAP Cloud Readiness
 
 #### Demo
-<img width="700" alt="image" src="https://github.com/abap2UI5-apps/sql-console/assets/102328295/0be2bb38-d68a-475c-910a-b341757e5862">
+<img width="700" alt="image" src="https://github.com/abap2UI5-addons/sql-console/assets/102328295/0be2bb38-d68a-475c-910a-b341757e5862">
 
 #### Contribution & Support
 Pull Requests are welcome! Whether you're fixing a bug, adding new functionality, or improving the documentation, your contributions are always appreciated. If you run into problems, feel free to open an issue.
