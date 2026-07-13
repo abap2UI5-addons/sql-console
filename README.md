@@ -41,4 +41,4 @@ This is a developer tool. It runs the SQL the user enters, without an authorizat
 <img width="700" alt="image" src="https://github.com/abap2UI5-addons/sql-console/assets/102328295/0be2bb38-d68a-475c-910a-b341757e5862">
 
 #### Contribution & Support
-Pull Requests are welcome! Whether you're fixing a bug, adding new functionality, or improving the documentation, your contributions are always appreciated. If you run into problems, feel free to open an issue.
+Pull requests are welcome! Whether you're fixing bugs, adding new functionality, or improving documentation, your contributions are highly appreciated. If you encounter any issues, feel free to open an issue.

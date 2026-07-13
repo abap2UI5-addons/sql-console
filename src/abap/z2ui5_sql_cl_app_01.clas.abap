@@ -108,7 +108,6 @@ CLASS z2ui5_sql_cl_app_01 DEFINITION PUBLIC.
 
     METHODS history_db_read.
     METHODS preview_filter_search.
-    METHODS preview_filter_range.
     METHODS history_on_clear_pressed.
     METHODS z2ui5_on_callback.
     METHODS z2ui5_on_event.
@@ -132,10 +131,8 @@ CLASS z2ui5_sql_cl_app_01 DEFINITION PUBLIC.
 
     METHODS result_display
       IMPORTING
-        fw_table     TYPE string
         fo_result    TYPE REF TO data
-        ft_fieldlist TYPE z2ui5_sql_cl_query=>ty_t_fieldlist
-        fw_title     TYPE string.
+        ft_fieldlist TYPE z2ui5_sql_cl_query=>ty_t_fieldlist.
 
   PRIVATE SECTION.
 
@@ -280,21 +277,6 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
               info        = `{S_DB/COUNTER}`
               selected    = `{SELKZ}`
          ).
-
-  ENDMETHOD.
-
-
-  METHOD preview_filter_range.
-
-    FIELD-SYMBOLS <tab> TYPE STANDARD TABLE.
-    ASSIGN ms_draft-s_preview-tab->* TO <tab>.
-
-    LOOP AT ms_draft-s_preview-t_filter INTO DATA(ls_tab).
-
-      DATA(lv_clause) = ls_tab-name && ` not in ls_tab-t_range`.
-      DELETE <tab> WHERE (lv_clause).
-
-    ENDLOOP.
 
   ENDMETHOD.
 
@@ -475,10 +457,8 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
     ms_draft-sql_s_command-name = ls_result-tabname.
 
     result_display(
-        fw_table     = ls_result-from
         fo_result    = ls_result-data
         ft_fieldlist = ls_result-fieldlist
-        fw_title     = ls_result-query
     ).
 
   ENDMETHOD.
@@ -615,7 +595,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
 
   METHOD z2ui5_on_init_set_app.
 
-    ms_draft-sql_input = `Select * from T100`.
+    ms_draft-sql_input = `SELECT * FROM t100`.
     ms_draft-history_cont_size = `30%`.
     ms_draft-sql_cont_size = `auto`.
     ms_draft-s_preview-cont_size = `auto`.

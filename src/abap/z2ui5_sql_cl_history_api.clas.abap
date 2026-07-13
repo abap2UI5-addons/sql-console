@@ -32,7 +32,7 @@ CLASS z2ui5_sql_cl_history_api DEFINITION
 
     CLASS-METHODS db_read_by_id
       IMPORTING
-        val           TYPE clike DEFAULT sy-uname
+        val           TYPE clike
       RETURNING
         VALUE(result) TYPE ty_s_entry.
 
