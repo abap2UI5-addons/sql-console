@@ -230,7 +230,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
     CLEAR ms_draft-s_preview-tab.
 
     IF ls_entry-result_data IS NOT INITIAL.
-      lr_preview = z2ui5_sql_cl_context=>xml_srtti_parse( rtti_data = ls_entry-result_data ).
+      lr_preview = z2ui5_sql_cl_context=>xml_srtti_parse( ls_entry-result_data ).
 
       FIELD-SYMBOLS <any> TYPE any.
       ASSIGN lr_preview->('title') TO <any>.
@@ -325,7 +325,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
     ASSIGN ms_draft-s_preview-tab_backup->* TO <tab2>.
     <tab> = <tab2>.
     preview_filter_search( ).
-    ms_draft-s_preview-title = `Number of Rows: ` && ` (` && z2ui5_sql_cl_context=>c_trim( lines( <tab> ) ) && `)`.
+    ms_draft-s_preview-title = |Number of Rows: { lines( <tab> ) }|.
 
     preview_view( ).
     history_db_save( ).
@@ -344,7 +344,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
     ASSIGN ms_draft-s_preview-tab_backup->* TO <tab2>.
     <tab> = <tab2>.
 
-    ms_draft-s_preview-title = `Number of Rows: ` && ` ` && z2ui5_sql_cl_context=>c_trim( lines( <tab> ) ).
+    ms_draft-s_preview-title = |Number of Rows: { lines( <tab> ) }|.
 
     preview_view( ).
     client->message_toast_display( `All filters deleted` ).
@@ -391,7 +391,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
       DATA(lo_columns) = tab->ui_columns( ).
       LOOP AT lt_fields INTO DATA(lv_field).
         lo_columns->ui_column( width = `auto`  sortproperty = `'` && lv_field-name && `'` filterproperty = `'` && lv_field-name && `'`
-          )->text( text = lv_field-name )->ui_template( )->label( text = `{` && lv_field-name && `}` wrapping = abap_true ).
+          )->text( lv_field-name )->ui_template( )->label( text = `{` && lv_field-name && `}` wrapping = abap_true ).
       ENDLOOP.
 
     ELSE.
@@ -452,7 +452,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
     preview_view( ).
 
     ms_draft-s_preview-t_filter = z2ui5_sql_cl_context=>filter_get_multi_by_data( <tab> ).
-    ms_draft-s_preview-title = `Number of Rows: ` && ` ` && z2ui5_sql_cl_context=>c_trim( lines( <tab2> ) ).
+    ms_draft-s_preview-title = |Number of Rows: { lines( <tab2> ) }|.
 
     history_db_save( ).
     client->view_model_update( ).
@@ -657,21 +657,21 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
     DATA(cont_sub) = cont_main->pane_container( orientation = `Horizontal` ).
 
     DATA(view_sql) = cont_sub->split_pane( requiredparentwidth = `600`
-         )->layout_data( ns = `layout`
+         )->layout_data( `layout`
            )->splitter_layout_data( size = client->_bind_edit( ms_draft-sql_cont_size )
            )->get_parent( )->get_parent( ).
 
     sql_view_display( view_sql ).
 
     DATA(view_history) = cont_sub->split_pane( requiredparentwidth = `400`
-         )->layout_data( ns = `layout`
+         )->layout_data( `layout`
            )->splitter_layout_data(  size = client->_bind_edit( ms_draft-history_cont_size )
            )->get_parent( )->get_parent( ).
 
     history_view( view_history ).
 
     cont_main->split_pane( requiredparentwidth = `400`
-         )->layout_data( ns = `layout`
+         )->layout_data( `layout`
            )->splitter_layout_data( size = client->_bind_edit( ms_draft-s_preview-cont_size )
             )->get_parent( )->get_parent(
             )->vbox( id = `preview` ).

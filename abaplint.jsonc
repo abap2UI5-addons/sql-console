@@ -3,56 +3,58 @@
     "files": "/src/**/*.*"
   },
   "dependencies": [
-  {
-    "url": "https://github.com/abapedia/steampunk-2305-api-intersect-702",
-    "folder": "/deps",
-    "files": "/src/**/*.*"
+    {
+      "url": "https://github.com/abapedia/steampunk-2305-api-intersect-702",
+      "folder": "/deps",
+      "files": "/src/**/*.*"
+    },
+    {
+      "url": "https://github.com/abap2UI5/abap2UI5",
+      "folder": "/abap2UI5",
+      "files": "/src/**/*.*"
+    },
+    {
+      "url": "https://github.com/abap2UI5-addons/popups",
+      "folder": "/popups",
+      "files": "/src/**/*.*"
+    },
+    {
+      "url": "https://github.com/abap2UI5-addons/custom-controls",
+      "folder": "/customcontrols",
+      "files": "/src/**/*.*"
+    }
+  ],
+  "syntax": {
+    "version": "v750",
+    "errorNamespace": "^(Z|Y|LCL_|TY_|LIF_)"
   },
-  {
-    "url": "https://github.com/abap2UI5/abap2UI5",
-    "folder": "/abap2UI5",
-    "files": "/src/**/*.*"
-  },
-  {
-    "url": "https://github.com/abap2UI5-addons/popups",
-    "folder": "/popups",
-    "files": "/src/**/*.*"
-  },
-  {
-    "url": "https://github.com/abap2UI5-addons/custom-controls",
-    "folder": "/customcontrols",
-    "files": "/src/**/*.*"
+  "rules": {
+    "downport": true,
+    "begin_end_names": true,
+    "check_ddic": true,
+    "check_include": true,
+    // the two excluded test class includes contain test doubles for standard
+    // APIs (cl_sql_statement, if_dd_sobject, if_dd_sobject_util) that are not
+    // part of the dependency stubs, so syntax resolution fails only there
+    "check_syntax": {
+      "exclude": [
+        "zcl_2ui5_native_sql_console\\.clas\\.testclasses\\.abap",
+        "zcl_association_processor\\.clas\\.testclasses\\.abap"
+      ]
+    },
+    "global_class": true,
+    "definitions_top": false,
+    "implement_methods": true,
+    "method_implemented_twice": true,
+    "parser_error": true,
+    "superclass_final": {
+      "exclude": [
+        "zcl_2ui5_native_sql_console\\.clas\\.testclasses\\.abap"
+      ]
+    },
+    "unknown_types": true,
+    "xml_consistency": true,
+    "exporting": true,
+    "omit_parameter_name": true
   }
-],
-"syntax": {
-  "version": "v750",
-  "errorNamespace": "^(Z|Y|LCL_|TY_|LIF_)"
-},
-"rules": {
-  "downport": true,
-  "begin_end_names": true,
-  "check_ddic": true,
-  "check_include": true,
-  // the two excluded test class includes contain test doubles for standard
-  // APIs (cl_sql_statement, if_dd_sobject, if_dd_sobject_util) that are not
-  // part of the dependency stubs, so syntax resolution fails only there
-  "check_syntax": {
-    "exclude": [
-      "zcl_2ui5_native_sql_console\\.clas\\.testclasses\\.abap",
-      "zcl_association_processor\\.clas\\.testclasses\\.abap"
-    ]
-  },
-  "global_class": true,
-  "definitions_top": false,
-  "implement_methods": true,
-  "method_implemented_twice": true,
-  "parser_error": true,
-  "superclass_final": {
-    "exclude": [
-      "zcl_2ui5_native_sql_console\\.clas\\.testclasses\\.abap"
-    ]
-  },
-  "unknown_types": true,
-  "xml_consistency": true
-}
 }
