@@ -1,4 +1,4 @@
-name: rename_test
+name: renaming
 
 on:
   push:
