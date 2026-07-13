@@ -16,11 +16,6 @@
   },
   "homepage": "https://github.com/abap2UI5-addons/sql-console#readme",
   "devDependencies": {
-    "@abaplint/cli": "^2.119.14",
-    "@abaplint/database-sqlite": "^2.11.78",
-    "@abaplint/runtime": "^2.13.22",
-    "@abaplint/transpiler-cli": "^2.13.22",
-    "@types/node": "^22.10.5",
-    "npm-check-updates": "^17.1.18"
+    "@abaplint/cli": "^2.119.14"
   }
 }
