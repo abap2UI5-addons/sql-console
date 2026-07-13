@@ -366,7 +366,7 @@ class history implementation.
       into @data(data).
 
     r_val = value #( base corresponding #( data )
-                     data = z2ui5_cl_util=>xml_srtti_parse( z2ui5_cl_util=>conv_get_string_by_xstring( data-serialized_results ) ) ).
+                     data = z2ui5_sql_cl_context=>xml_srtti_parse( z2ui5_sql_cl_context=>conv_get_string_by_xstring( data-serialized_results ) ) ).
 
   endmethod.
   method insert_new.
@@ -384,7 +384,7 @@ class history implementation.
                                               created_at = utclong_current( )
                                               created_by = cl_abap_syst=>get_user_name( )
                                               rows_no = lines( <results> )
-                                              serialized_results = z2ui5_cl_util=>conv_get_xstring_by_string( z2ui5_cl_util=>xml_srtti_stringify( <results> ) ) ).
+                                              serialized_results = z2ui5_sql_cl_context=>conv_get_xstring_by_string( z2ui5_sql_cl_context=>xml_srtti_stringify( <results> ) ) ).
 
     insert into z2ui5_nsql_c_hst
       values @new_entry.
@@ -556,7 +556,7 @@ class data_result_view implementation.
 
     if <data> is assigned.
 
-      data(fields) = z2ui5_cl_util=>rtti_get_t_attri_by_any( <data> ).
+      data(fields) = z2ui5_sql_cl_context=>rtti_get_t_attri_by_any( <data> ).
 
       data(table) = me->a_parser->ui_table( id = `previewTab`
                                             rows = me->a_ui5_client->_bind( <data> )
@@ -686,8 +686,8 @@ class on_run implementation.
                                                             ( label = <e>-name
                                                               property = <e>-name
                                                               type = `String` ) ) ##NO_TEXT
-                                   filters = z2ui5_cl_util=>filter_get_multi_by_data( <table> )
-                                   title = |{ 'Number of Rows:'(010) } { z2ui5_cl_util=>c_trim( lines( <table> ) ) }| ).
+                                   filters = z2ui5_sql_cl_context=>filter_get_multi_by_data( <table> )
+                                   title = |{ 'Number of Rows:'(010) } { z2ui5_sql_cl_context=>c_trim( lines( <table> ) ) }| ).
 
     new data_result_view( i_state = state
                           i_ui5_client = i_ui5_client )->redraw( ).
@@ -777,8 +777,8 @@ class on_load_history_item implementation.
                                                             ( label = <e>-name
                                                               property = <e>-name
                                                               type = `String` ) ) ##NO_TEXT
-                                   filters = z2ui5_cl_util=>filter_get_multi_by_data( <table> )
-                                   title = |{ 'Number of Rows:'(010) } { z2ui5_cl_util=>c_trim( lines( <table> ) ) }| ).
+                                   filters = z2ui5_sql_cl_context=>filter_get_multi_by_data( <table> )
+                                   title = |{ 'Number of Rows:'(010) } { z2ui5_sql_cl_context=>c_trim( lines( <table> ) ) }| ).
 
     new data_result_view( i_state = state
                           i_ui5_client = i_ui5_client )->redraw( ).
@@ -884,7 +884,7 @@ class on_wide_filtering implementation.
 
       <filtered_data> = <db_data>.
 
-      z2ui5_cl_util=>itab_filter_by_val( exporting val = state->results_pane-wide_filter_string
+      z2ui5_sql_cl_context=>itab_filter_by_val( exporting val = state->results_pane-wide_filter_string
                                          changing tab = <filtered_data> ).
 
       state->results_pane-output_data = state->results_pane-filtered_db_data.

@@ -73,7 +73,7 @@ class zcl_2ui5_native_sql_console_st definition
              title type string,
              column_config type zcl_2ui5_native_sql_console_st=>t_columns_config,
              wide_filter_string type string,
-             filters type z2ui5_cl_util=>ty_t_filter_multi,
+             filters type z2ui5_sql_cl_context=>ty_t_filter_multi,
            end of t_results_pane.
 
     class-methods instance
