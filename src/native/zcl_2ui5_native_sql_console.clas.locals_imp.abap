@@ -91,7 +91,7 @@ class main_view definition
 
     data a_ui5_client type ref to z2ui5_if_client.
 
-    data a_parser type ref to z2ui5_cl_xml_view.
+    data a_parser type ref to z2ui5_cl_ui5_view_builder.
 
 endclass.
 class data_result_view definition
@@ -116,7 +116,7 @@ class data_result_view definition
 
     data a_ui5_client type ref to z2ui5_if_client.
 
-    data a_parser type ref to z2ui5_cl_xml_view.
+    data a_parser type ref to z2ui5_cl_ui5_view_builder.
 
 endclass.
 interface ui_interaction.
@@ -448,84 +448,135 @@ class main_view implementation.
 
     me->a_ui5_client = i_ui5_client.
 
-    me->a_parser = z2ui5_cl_xml_view=>factory( ).
+    me->a_parser = z2ui5_cl_ui5_view_builder=>factory( 
+                       )->ele( n = `View` ns = `mvc` 
+                       )->a( n = `xmlns` v = `sap.m` 
+                       )->a( n = `xmlns:mvc` v = `sap.ui.core.mvc` 
+                       )->a( n = `xmlns:core` v = `sap.ui.core` 
+                       )->a( n = `xmlns:editor` v = `sap.ui.codeeditor` 
+                       )->a( n = `xmlns:layout` v = `sap.ui.layout` 
+                       )->a( n = `xmlns:table` v = `sap.ui.table` 
+                       )->a( n = `xmlns:z2ui5` v = `z2ui5.cc` 
+                       )->a( n = `displayBlock` v = `true` 
+                       )->a( n = `height` v = `100%` ).
 
-    data(shell) = me->a_parser->shell( appwidthlimited = me->a_ui5_client->_bind_edit( i_state->page-app_width_limited ) ).
+    data(shell) = me->a_parser->ele( `Shell` 
+                      )->a( n = `appWidthLimited` v = me->a_ui5_client->_bind_edit( i_state->page-app_width_limited ) ).
 
-      data(page) = shell->page( title = 'Native SQL Console'(001) ).
+      data(page) = shell->ele( `Page` 
+                       )->a( n = `title` v = 'Native SQL Console'(001) ).
 
-        data(header_content) = page->header_content( ).
+        data(header_content) = page->ele( `headerContent` ).
 
-          data(overflow_toolbar) = header_content->overflow_toolbar( ).
+          data(overflow_toolbar) = header_content->ele( `OverflowToolbar` ).
 
-            overflow_toolbar->label( 'Fallback Limit'(002)
-                           )->input( width = `15%` value = me->a_ui5_client->_bind_edit( i_state->sql_editor_pane-fallback_max_rows )
-                           )->button( text = 'Run'(003) press = me->a_ui5_client->_event( on_run=>event_name( ) ) type = `Emphasized` ##NO_TEXT
-                           )->toolbar_spacer(
-                           )->label( text = `Shell` ##NO_TEXT
-                           )->switch( state = me->a_ui5_client->_bind_edit( i_state->page-app_width_limited )
-                           )->link( text = 'Project on GitHub'(004) target = '_blank' href = 'https://github.com/abap2UI5-addons/sql-console' ).
+            overflow_toolbar->tag( `Label` 
+                )->a( n = `text` v = 'Fallback Limit'(002) 
+                )->tag( `Input` 
+                )->a( n = `width` v = `15%` 
+                )->a( n = `value` v = me->a_ui5_client->_bind_edit( i_state->sql_editor_pane-fallback_max_rows ) 
+                )->tag( `Button` 
+                )->a( n = `text` v = 'Run'(003) 
+                )->a( n = `press` v = me->a_ui5_client->_event( on_run=>event_name( ) ) 
+                )->a( n = `type` v = `Emphasized` ##NO_TEXT 
+                )->tag( `ToolbarSpacer` 
+                )->tag( `Label` 
+                )->a( n = `text` v = `Shell` ##NO_TEXT 
+                )->tag( `Switch` 
+                )->a( n = `state` v = me->a_ui5_client->_bind_edit( i_state->page-app_width_limited ) 
+                )->tag( `Link` 
+                )->a( n = `text` v = 'Project on GitHub'(004) 
+                )->a( n = `target` v = '_blank' 
+                )->a( n = `href` v = 'https://github.com/abap2UI5-addons/sql-console' ).
 
-        data(flex_box) = page->flex_box( height = `100%` fitcontainer = abap_true rendertype = `Bare` ) ##NO_TEXT.
+        data(flex_box) = page->ele( `FlexBox` 
+                             )->a( n = `height` v = `100%` 
+                             )->a( n = `fitContainer` b = abap_true 
+                             )->a( n = `renderType` v = `Bare` ) ##NO_TEXT.
 
-          data(responsive_splitter) = flex_box->responsive_splitter( defaultpane = `default` height = `100%` ) ##NO_TEXT.
+          data(responsive_splitter) = flex_box->ele( n = `ResponsiveSplitter` ns = `layout` 
+                                          )->a( n = `defaultPane` v = `default` 
+                                          )->a( n = `height` v = `100%` ) ##NO_TEXT.
 
-            data(vertical_pane_container) = responsive_splitter->pane_container( orientation = `Vertical` ) ##NO_TEXT.
+            data(vertical_pane_container) = responsive_splitter->ele( n = `PaneContainer` ns = `layout` 
+                                                )->a( n = `orientation` v = `Vertical` ) ##NO_TEXT.
 
-              data(horizontal_pane_container) = vertical_pane_container->pane_container( orientation = `Horizontal` ) ##NO_TEXT.
+              data(horizontal_pane_container) = vertical_pane_container->ele( n = `PaneContainer` ns = `layout` 
+                                                    )->a( n = `orientation` v = `Horizontal` ) ##NO_TEXT.
 
                 "SQL Editor Pane
-                data(editor_split_pane) = horizontal_pane_container->split_pane( requiredparentwidth = `600` ).
+                data(editor_split_pane) = horizontal_pane_container->ele( n = `SplitPane` ns = `layout` 
+                                              )->a( n = `requiredParentWidth` v = `600` ).
 
-                  data(esp_layout_data) = editor_split_pane->layout_data( ns = `layout` )  ##NO_TEXT.
+                  data(esp_layout_data) = editor_split_pane->ele( n = `layoutData` ns = `layout` )  ##NO_TEXT.
 
-                    esp_layout_data->splitter_layout_data( size = me->a_ui5_client->_bind_edit( i_state->sql_editor_pane-layout_size ) ).
+                    esp_layout_data->ele( n = `SplitterLayoutData` ns = `layout` 
+                        )->a( n = `size` v = me->a_ui5_client->_bind_edit( i_state->sql_editor_pane-layout_size ) ).
 
-                  editor_split_pane->code_editor( type = `sql` value = me->a_ui5_client->_bind_edit( i_state->sql_editor_pane-statement ) ).
+                  editor_split_pane->tag( n = `CodeEditor` ns = `editor` 
+                      )->a( n = `type` v = `sql` 
+                      )->a( n = `value` v = me->a_ui5_client->_bind_edit( i_state->sql_editor_pane-statement ) ).
 
                 "History Pane
-                data(history_split_pane) = horizontal_pane_container->split_pane( requiredparentwidth = `400` ).
+                data(history_split_pane) = horizontal_pane_container->ele( n = `SplitPane` ns = `layout` 
+                                               )->a( n = `requiredParentWidth` v = `400` ).
 
-                  data(h_layout_data) = history_split_pane->layout_data( ns = `layout` ) ##NO_TEXT.
+                  data(h_layout_data) = history_split_pane->ele( n = `layoutData` ns = `layout` ) ##NO_TEXT.
 
-                    h_layout_data->splitter_layout_data( size = me->a_ui5_client->_bind_edit( i_state->history_pane-layout_size ) ).
+                    h_layout_data->ele( n = `SplitterLayoutData` ns = `layout` 
+                        )->a( n = `size` v = me->a_ui5_client->_bind_edit( i_state->history_pane-layout_size ) ).
 
-                  data(h_list) = history_split_pane->list( items = me->a_ui5_client->_bind_edit( i_state->history_pane-items )
-                                                           mode = `MultiSelect`
-                                                           sticky = `ColumnHeaders,HeaderToolbar` ).
+                  data(h_list) = history_split_pane->ele( `List` 
+                                     )->a( n = `items` v = me->a_ui5_client->_bind_edit( i_state->history_pane-items ) 
+                                     )->a( n = `mode` v = `MultiSelect` 
+                                     )->a( n = `sticky` v = `ColumnHeaders,HeaderToolbar` ).
 
-                    data(h_list_header_toolbar) = h_list->header_toolbar( ).
+                    data(h_list_header_toolbar) = h_list->ele( `headerToolbar` ).
 
-                      data(hlt_overflow_toolbar) = h_list_header_toolbar->overflow_toolbar( ).
+                      data(hlt_overflow_toolbar) = h_list_header_toolbar->ele( `OverflowToolbar` ).
 
-                        hlt_overflow_toolbar->title( 'Query History'(006) ).
+                        hlt_overflow_toolbar->tag( `Title` 
+                            )->a( n = `text` v = 'Query History'(006) ).
 
-                        hlt_overflow_toolbar->toolbar_spacer( ).
+                        hlt_overflow_toolbar->tag( `ToolbarSpacer` ).
 
-                        hlt_overflow_toolbar->button( press = me->a_ui5_client->_event( on_select_all_history_items=>event_name( ) ) icon = `sap-icon://multiselect-all` ) ##NO_TEXT.
+                        hlt_overflow_toolbar->tag( `Button` 
+                            )->a( n = `press` v = me->a_ui5_client->_event( on_select_all_history_items=>event_name( ) ) 
+                            )->a( n = `icon` v = `sap-icon://multiselect-all` ) ##NO_TEXT.
 
-                        hlt_overflow_toolbar->button( press = me->a_ui5_client->_event( on_deselect_all_history_items=>event_name( ) ) icon = `sap-icon://multiselect-none` ) ##NO_TEXT.
+                        hlt_overflow_toolbar->tag( `Button` 
+                            )->a( n = `press` v = me->a_ui5_client->_event( on_deselect_all_history_items=>event_name( ) ) 
+                            )->a( n = `icon` v = `sap-icon://multiselect-none` ) ##NO_TEXT.
 
-                        hlt_overflow_toolbar->button( text = 'Delete'(007) press = me->a_ui5_client->_event( on_delete_history_items=>event_name( ) ) icon = `sap-icon://delete` ) ##NO_TEXT.
+                        hlt_overflow_toolbar->tag( `Button` 
+                            )->a( n = `text` v = 'Delete'(007) 
+                            )->a( n = `press` v = me->a_ui5_client->_event( on_delete_history_items=>event_name( ) ) 
+                            )->a( n = `icon` v = `sap-icon://delete` ) ##NO_TEXT.
 
-                    h_list->standard_list_item( type = `Navigation` ##NO_TEXT
-                                                title = '{NATURAL_ID} - {CREATED_AT}'
-                                                description = '{SQL_STATEMENT}'
-                                                info = '{ROWS_NO}'
-                                                infostate = '{INFOSTATE}'
-                                                highlight = '{HIGHLIGHT}'
-                                                press = me->a_ui5_client->_event( val = on_load_history_item=>event_name( )
-                                                                                  t_arg = value #( ( `${ID}` ) ) )
-                                                selected = `{SELECTED}` ).
+                    h_list->tag( `StandardListItem` 
+                        )->a( n = `type` v = `Navigation` ##NO_TEXT 
+                        )->a( n = `title` v = '{NATURAL_ID} - {CREATED_AT}' 
+                        )->a( n = `description` v = '{SQL_STATEMENT}' 
+                        )->a( n = `info` v = '{ROWS_NO}' 
+                        )->a( n = `infoState` v = '{INFOSTATE}' 
+                        )->a( n = `highlight` v = '{HIGHLIGHT}' 
+                        )->a( n = `press` v = me->a_ui5_client->_event( val = on_load_history_item=>event_name( )
+                                                                                  t_arg = value #( ( `${ID}` ) ) ) 
+                        )->a( n = `selected` v = `{SELECTED}` ).
 
               "Results Pane
-              data(results_split_pane) = vertical_pane_container->split_pane( requiredparentwidth = `400` ).
+              data(results_split_pane) = vertical_pane_container->ele( n = `SplitPane` ns = `layout` 
+                                             )->a( n = `requiredParentWidth` v = `400` ).
 
-                data(rsp_layout_data) = results_split_pane->layout_data( ns = `layout` )  ##NO_TEXT.
+                data(rsp_layout_data) = results_split_pane->ele( n = `layoutData` ns = `layout` )  ##NO_TEXT.
 
-                  rsp_layout_data->splitter_layout_data( size = me->a_ui5_client->_bind_edit( i_state->results_pane-layout_size ) ).
+                  rsp_layout_data->ele( n = `SplitterLayoutData` ns = `layout` 
+                      )->a( n = `size` v = me->a_ui5_client->_bind_edit( i_state->results_pane-layout_size ) ).
 
-                results_split_pane->vbox( id = `preview` fitcontainer = abap_true direction = `Row` )  ##NO_TEXT.
+                results_split_pane->ele( `VBox` 
+                    )->a( n = `id` v = `preview` 
+                    )->a( n = `fitContainer` b = abap_true 
+                    )->a( n = `direction` v = `Row` )  ##NO_TEXT.
 
     new data_result_view( i_state = i_state
                           i_ui5_client = i_ui5_client )->set_for_display( ).
@@ -548,7 +599,17 @@ class data_result_view implementation.
 
     me->a_ui5_client = i_ui5_client.
 
-    me->a_parser = z2ui5_cl_xml_view=>factory( ).
+    me->a_parser = z2ui5_cl_ui5_view_builder=>factory( 
+                       )->ele( n = `View` ns = `mvc` 
+                       )->a( n = `xmlns` v = `sap.m` 
+                       )->a( n = `xmlns:mvc` v = `sap.ui.core.mvc` 
+                       )->a( n = `xmlns:core` v = `sap.ui.core` 
+                       )->a( n = `xmlns:editor` v = `sap.ui.codeeditor` 
+                       )->a( n = `xmlns:layout` v = `sap.ui.layout` 
+                       )->a( n = `xmlns:table` v = `sap.ui.table` 
+                       )->a( n = `xmlns:z2ui5` v = `z2ui5.cc` 
+                       )->a( n = `displayBlock` v = `true` 
+                       )->a( n = `height` v = `100%` ).
 
     data(app) = cast zcl_2ui5_native_sql_console( i_ui5_client->get_app( i_ui5_client->get( )-s_draft-id ) ).
     app->mr_output_data = i_state->results_pane-output_data.
@@ -558,60 +619,71 @@ class data_result_view implementation.
 
       data(fields) = z2ui5_cl_util=>rtti_get_t_attri_by_any( <data> ).
 
-      data(table) = me->a_parser->ui_table( id = `previewTab`
-                                            rows = me->a_ui5_client->_bind( <data> )
-                                            editable = abap_false
-                                            alternaterowcolors = abap_true
-                                            showcolumnvisibilitymenu = abap_true
-                                            enablegrouping = abap_true
-                                            enableselectall = abap_true
-                                            enablecellfilter = abap_true
-                                            selectionbehavior = `RowOnly`
-                                            visiblerowcountmode = `Auto`
-                                            selectionmode = `MultiToggle` ) ##NO_TEXT.
+      data(table) = me->a_parser->ele( n = `Table` ns = `table` 
+                        )->a( n = `id` v = `previewTab` 
+                        )->a( n = `rows` v = me->a_ui5_client->_bind( <data> ) 
+                        )->a( n = `editable` b = abap_false 
+                        )->a( n = `alternateRowColors` b = abap_true 
+                        )->a( n = `showColumnVisibilityMenu` b = abap_true 
+                        )->a( n = `enableGrouping` b = abap_true 
+                        )->a( n = `enableSelectAll` b = abap_true 
+                        )->a( n = `enableCellFilter` b = abap_true 
+                        )->a( n = `selectionBehavior` v = `RowOnly` 
+                        )->a( n = `visibleRowCountMode` v = `Auto` 
+                        )->a( n = `selectionMode` v = `MultiToggle` ) ##NO_TEXT.
 
-        data(table_extension) = table->ui_extension( ).
+        data(table_extension) = table->ele( n = `extension` ns = `table` ).
 
-          data(te_overflow_toolbar) = table_extension->overflow_toolbar( width = `100%` ).
+          data(te_overflow_toolbar) = table_extension->ele( `OverflowToolbar` 
+                                          )->a( n = `width` v = `100%` ).
 
-            te_overflow_toolbar->title( me->a_ui5_client->_bind( i_state->results_pane-title ) ).
+            te_overflow_toolbar->tag( `Title` 
+                )->a( n = `text` v = me->a_ui5_client->_bind( i_state->results_pane-title ) ).
 
-            te_overflow_toolbar->toolbar_spacer( ).
+            te_overflow_toolbar->tag( `ToolbarSpacer` ).
 
-            te_overflow_toolbar->input( width = `50%`
-                                        value = me->a_ui5_client->_bind_edit( i_state->results_pane-wide_filter_string )
-                                        description = 'Filter any column on enter'(008)
-                                        submit = me->a_ui5_client->_event( on_wide_filtering=>event_name( ) ) ).
+            te_overflow_toolbar->tag( `Input` 
+                )->a( n = `width` v = `50%` 
+                )->a( n = `value` v = me->a_ui5_client->_bind_edit( i_state->results_pane-wide_filter_string ) 
+                )->a( n = `description` v = 'Filter any column on enter'(008) 
+                )->a( n = `submit` v = me->a_ui5_client->_event( on_wide_filtering=>event_name( ) ) ).
 
-            te_overflow_toolbar->toolbar_spacer( ).
+            te_overflow_toolbar->tag( `ToolbarSpacer` ).
 
-            te_overflow_toolbar->_z2ui5( )->spreadsheet_export( tableid = `previewTab`
-                                                                icon = 'sap-icon://excel-attachment'
-                                                                type = `Emphasized` ##NO_TEXT
-                                                                columnconfig = me->a_ui5_client->_bind( val = i_state->results_pane-column_config
-                                                                                                        custom_filter = new z2ui5_cl_cc_spreadsheet( )
+            te_overflow_toolbar->tag( n = `ExportSpreadsheet` ns = `z2ui5` 
+                )->a( n = `tableId` v = `previewTab` 
+                )->a( n = `icon` v = 'sap-icon://excel-attachment' 
+                )->a( n = `type` v = `Emphasized` ##NO_TEXT 
+                )->a( n = `columnconfig` v = me->a_ui5_client->_bind( val = i_state->results_pane-column_config
+                                                                                                        custom_filter = new z2ui5_cl_cci_json_filter( )
                                                                                                         custom_mapper = z2ui5_cl_ajson_mapping=>create_lower_case( ) ) ).
 
-        data(columns) = table->ui_columns( ).
+        data(columns) = table->ele( n = `columns` ns = `table` ).
 
         loop at fields reference into data(field).
 
-          data(column) = columns->ui_column( width = `auto` ##NO_TEXT
-                                             sortproperty = field->*-name
-                                             filterproperty = field->*-name
-                                             autoresizable = abap_true ).
+          data(column) = columns->ele( n = `Column` ns = `table` 
+                             )->a( n = `width` v = `auto` ##NO_TEXT 
+                             )->a( n = `sortProperty` v = field->*-name 
+                             )->a( n = `filterProperty` v = field->*-name 
+                             )->a( n = `autoResizable` b = abap_true ).
 
-            column->text( text = field->*-name
-                          emptyindicatormode = abap_true
-                          renderwhitespace = abap_true
-                          wrapping = abap_false )->ui_template( )->label( text = `{` && field->*-name && `}`
-                                                                          wrapping = abap_false ).
+            column->tag( `Text` 
+                )->a( n = `text` v = field->*-name 
+                )->a( n = `emptyIndicatorMode` b = abap_true 
+                )->a( n = `renderWhitespace` b = abap_true 
+                )->a( n = `wrapping` b = abap_false 
+                )->ele( n = `template` ns = `table` 
+                )->tag( `Label` 
+                )->a( n = `text` v = `{` && field->*-name && `}` 
+                )->a( n = `wrapping` b = abap_false ).
 
         endloop.
 
     else.
 
-      me->a_parser->text( 'Data preview...'(009)  ).
+      me->a_parser->tag( `Text` 
+          )->a( n = `text` v = 'Data preview...'(009) ).
 
     endif.
 

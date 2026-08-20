@@ -94,11 +94,20 @@ class zcl_2ui5_native_sql_console implementation.
       importing
         dbuser = standard_connection_schema.
 
-    me->a_ui5_client->view_display( z2ui5_cl_xml_view=>factory( )->_z2ui5( )->timer( me->a_ui5_client->_event( on_start=>event_name( ) )
-                                                                           )->_generic( ns = `html` ##NO_TEXT
-                                                                                        name = `script`
-                                                                           )->_cc_plain_xml( z2ui5_cl_cc_spreadsheet=>get_js( )
-                                                                )->stringify( ) ).
+    " the exporter's JavaScript used to be injected into an html:script tag
+    " here; custom-controls now ships it as a BSP, so the view only needs the
+    " timer that kicks the app off
+    me->a_ui5_client->view_display( z2ui5_cl_ui5_view_builder=>factory(
+        )->ele( n = `View` ns = `mvc`
+        )->a( n = `xmlns` v = `sap.m`
+        )->a( n = `xmlns:mvc` v = `sap.ui.core.mvc`
+        )->a( n = `xmlns:core` v = `sap.ui.core`
+        )->a( n = `xmlns:z2ui5` v = `z2ui5.cc`
+        )->a( n = `displayBlock` v = `true`
+        )->a( n = `height` v = `100%`
+        )->tag( n = `Timer` ns = `z2ui5`
+        )->a( n = `finished` v = me->a_ui5_client->_event( on_start=>event_name( ) )
+        )->stringify( ) ).
 
     me->state->page = value #( app_width_limited = abap_true ).
 

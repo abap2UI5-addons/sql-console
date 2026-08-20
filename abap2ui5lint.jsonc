@@ -1,0 +1,42 @@
+{
+  // abap2UI5-linter - checks a whole app class without an SAP system: the ABAP
+  // and the view it produces, together. Its last rule group is about the
+  // relationship between the two, which is where the defects live that stay
+  // silent at runtime and that no UI5 tooling can see.
+  // https://github.com/abap2UI5/linter
+  "$schema": "./node_modules/@abap2ui5/linter/data/abap2ui5lint.schema.json",
+
+  "paths": ["src"],
+
+  // The oldest release this addon promises to run on. Raise it only when the
+  // code genuinely needs a newer member: a floor above what is used stops the
+  // gate reporting members that are missing on the systems people run.
+  "ui5": "1.71",
+  "distribution": "openui5",
+
+  // Required, not merely left on. It is on by default, and a default-on gate
+  // whose runtime is missing steps aside and the run stays green - which for
+  // views nobody can otherwise open would be the wrong kind of quiet.
+  "render": true,
+
+  // Adoption-time debt. These views only became readable when the repository
+  // moved onto z2ui5_cl_ui5_view_builder; before that the linter found nothing
+  // to check here at all, so the whole backlog arrived in one run. The
+  // baseline freezes exactly what existed at that moment: those findings are
+  // counted and never listed, a NEW one fails normally, and an entry whose
+  // finding is gone is stale and fails too - so this file only shrinks.
+  // Refresh it with `npx abap2ui5lint --update-baseline` after fixing things.
+  "baseline": "abap2ui5lint-baseline.json",
+
+  // The two README badges, rewritten on every run. They say two different
+  // things: what is here, and what CI made of it. A green workflow badge only
+  // means the job exited zero - which was also true while the linter could not
+  // read a single view in this repository.
+  "badge": [
+    { "kind": "corpus", "file": ".github/badges/abap2ui5.json" },
+    { "kind": "checks", "file": ".github/badges/check-abap2ui5.json" }
+  ],
+
+
+  "failOn": "warning"
+}

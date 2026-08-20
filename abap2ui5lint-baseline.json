@@ -1,0 +1,16 @@
+{
+  "note": "abap2ui5-linter baseline: findings that existed when the linter was adopted. Suppressed on every run; NEW findings still fail, a STALE entry fails too. Regenerate with --update-baseline.",
+  "findings": {
+    "src/abap/z2ui5_sql_cl_app_01.clas.abap|non-released-api||src/00/01|z2ui5_cl_ajson_mapping": 1,
+    "src/abap/z2ui5_sql_cl_app_01.clas.abap|non-released-api||src/99/01|z2ui5_cl_util": 1,
+    "src/abap/z2ui5_sql_cl_app_01.clas.abap|non-released-api||src/99/01|z2ui5_cx_util_error": 1,
+    "src/abap/z2ui5_sql_cl_app_01.clas.abap|obsolete-binder||_bind_edit|": 1,
+    "src/abap/z2ui5_sql_cl_app_01.clas.abap|obsolete-model-update||view_model_update|": 1,
+    "src/abap/z2ui5_sql_cl_app_01.clas.abap|unused-public-attribute||mv_column_config|": 1,
+    "src/abap/z2ui5_sql_cl_app_01.clas.abap|unused-public-attribute||t_tab_filter|": 1,
+    "src/abap/z2ui5_sql_cl_app_01.clas.abap|unused-public-attribute||t_tab_group|": 1,
+    "src/abap/z2ui5_sql_cl_app_01.clas.abap|unused-public-attribute||t_tab_sort|": 1,
+    "src/abap/z2ui5_sql_cl_app_01.clas.abap|unused-public-attribute||t_tab|": 1,
+    "src/native/zcl_2ui5_native_sql_console.clas.abap|unused-public-attribute||mr_output_data|": 1
+  }
+}

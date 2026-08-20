@@ -1,11 +1,15 @@
-[![ABAP_STANDARD](https://github.com/abap2UI5-addons/sql-console/actions/workflows/ABAP_STANDARD.yaml/badge.svg)](https://github.com/abap2UI5-addons/sql-console/actions/workflows/ABAP_STANDARD.yaml)
-[![ABAP_CLOUD](https://github.com/abap2UI5-addons/sql-console/actions/workflows/ABAP_CLOUD.yaml/badge.svg)](https://github.com/abap2UI5-addons/sql-console/actions/workflows/ABAP_CLOUD.yaml)
-[![ABAP_702](https://github.com/abap2UI5-addons/sql-console/actions/workflows/ABAP_702.yaml/badge.svg)](https://github.com/abap2UI5-addons/sql-console/actions/workflows/ABAP_702.yaml)
+![ABAP](https://img.shields.io/badge/ABAP-Standard%20%E2%86%92%20Cloud-blue)
+[![namespace](https://img.shields.io/badge/namespace-z2ui5__sql__cl-blue)](abaplint.jsonc)
+[![dependency](https://img.shields.io/badge/dependency-abap2UI5-blue)](https://github.com/abap2UI5/abap2UI5)
+[![abap2UI5](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fabap2UI5-addons%2Fsql-console%2Fmain%2F.github%2Fbadges%2Fabap2ui5.json)](https://github.com/abap2UI5-addons/sql-console/actions/workflows/check-abap2ui5.yaml)
+<br><br>
+[![abap-standard](https://github.com/abap2UI5-addons/sql-console/actions/workflows/abap-standard.yaml/badge.svg)](https://github.com/abap2UI5-addons/sql-console/actions/workflows/abap-standard.yaml)
+[![abap-cloud](https://github.com/abap2UI5-addons/sql-console/actions/workflows/abap-cloud.yaml/badge.svg)](https://github.com/abap2UI5-addons/sql-console/actions/workflows/abap-cloud.yaml)
 <br>
-[![auto_cloud](https://github.com/abap2UI5-addons/sql-console/actions/workflows/auto_cloud.yaml/badge.svg)](https://github.com/abap2UI5-addons/sql-console/actions/workflows/auto_cloud.yaml)
-[![auto_downport](https://github.com/abap2UI5-addons/sql-console/actions/workflows/auto_downport.yaml/badge.svg)](https://github.com/abap2UI5-addons/sql-console/actions/workflows/auto_downport.yaml)
+[![check-abap2UI5](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fabap2UI5-addons%2Fsql-console%2Fmain%2F.github%2Fbadges%2Fcheck-abap2ui5.json)](https://github.com/abap2UI5-addons/sql-console/actions/workflows/check-abap2ui5.yaml)
+[![check-rename](https://github.com/abap2UI5-addons/sql-console/actions/workflows/check-rename.yaml/badge.svg)](https://github.com/abap2UI5-addons/sql-console/actions/workflows/check-rename.yaml)
 <br>
-[![renaming](https://github.com/abap2UI5-addons/sql-console/actions/workflows/rename_test.yaml/badge.svg)](https://github.com/abap2UI5-addons/sql-console/actions/workflows/rename_test.yaml)
+[![build-rename](https://github.com/abap2UI5-addons/sql-console/actions/workflows/build-rename.yaml/badge.svg)](https://github.com/abap2UI5-addons/sql-console/actions/workflows/build-rename.yaml)
 
 # sql-console
 SQL Console in Your Browser – No Need for Eclipse or SAP GUI Installation

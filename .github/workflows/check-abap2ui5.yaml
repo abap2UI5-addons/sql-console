@@ -1,0 +1,83 @@
+name: check-abap2ui5
+
+# The abap2UI5-specific lint, as opposed to abap-standard/cloud/702, which lint
+# ABAP itself. It reads a whole app class and the view it builds: the controls
+# and members it writes, the structure of the document, the UI5 version floor,
+# the data behind the bindings, and the abap2ui5 semantics no UI5 tooling sees.
+# Settings live in abap2ui5lint.jsonc.
+#
+# @abap2ui5/render-runtime is a devDependency because the render gate is the
+# only reason for it: it carries the OpenUI5 packages and the browser the gate
+# serves. The linter names it an OPTIONAL PEER, the one dependency kind npm
+# does not install by itself - without it the views stop being rendered and the
+# run still passes.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  # nothing else notices when an upstream rename breaks the views here
+  schedule:
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: check-abap2ui5-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-abap2ui5:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        # the branch, not the merge commit, so the badges can be pushed back
+        ref: ${{ github.event.pull_request.head.ref || github.ref }}
+        repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: '22'
+        cache: 'npm'
+    - run: npm ci
+    # the render gate drives a headless browser
+    - run: npx playwright install chromium --with-deps
+    - run: npx abap2ui5lint
+
+    # the same run once more as markdown, into the run's own page - findings
+    # and totals without expanding a log. --no-render because whether the views
+    # load was already decided above; --no-badge so a pass that skipped a gate
+    # cannot overwrite what the real run wrote.
+    - name: Job summary
+      if: always()
+      run: npx abap2ui5lint --no-render --advisory --no-progress --no-badge --format markdown >> "$GITHUB_STEP_SUMMARY"
+
+    # The badges are committed onto the PULL REQUEST branch: main is protected
+    # and github-actions[bot] cannot be given a bypass, so the pull request that
+    # changes the views is what changes the badges, and main picks them up when
+    # it merges. Only after a green gate - a red pull request cannot merge, so
+    # its badges would never reach main, and a badge commit on top of a failing
+    # run reads as if something had been fixed.
+    - name: Publish the badges
+      if: success()
+      env:
+        PUSHABLE: ${{ github.event_name == 'pull_request'
+                      && github.event.pull_request.head.repo.full_name == github.repository }}
+      run: |
+        if git diff --quiet -- .github/badges; then
+          echo "The linter badges are up to date."
+          exit 0
+        fi
+        git diff -- .github/badges
+        if [ "$PUSHABLE" != "true" ]; then
+          echo "::warning::The linter badges are out of date and this ref cannot be pushed to. Run 'npm run check:abap2ui5' and commit .github/badges/."
+          exit 0
+        fi
+        git config user.name 'github-actions[bot]'
+        git config user.email 'github-actions[bot]@users.noreply.github.com'
+        git commit -qm 'Refresh the abap2UI5-linter badges' -- .github/badges
+        git push
+        echo "Badges refreshed and pushed onto the pull request branch."
