@@ -1,0 +1,32 @@
+name: abap-cloud
+
+on:
+  # the sibling repositories are resolved from their main branch with no
+  # version pin, so an upstream rename breaks this one silently. Nothing
+  # else notices while there is no pull request open.
+  schedule:
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: abap-cloud-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  abap-cloud:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: '22'
+        cache: 'npm'
+    - run: npm ci
+    - run: npx abaplint .github/abaplint/abap_cloud.jsonc
