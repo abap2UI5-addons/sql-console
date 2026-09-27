@@ -4,40 +4,12 @@ CLASS z2ui5_sql_cl_app_01 DEFINITION PUBLIC.
 
     INTERFACES z2ui5_if_app.
 
-    TYPES:
-      BEGIN OF ty_value_map,
-        pc TYPE string,
-        ea TYPE string,
-      END OF ty_value_map.
-
-    TYPES:
-      BEGIN OF ty_column_config,
-        label             TYPE string,
-        property          TYPE string,
-        type              TYPE string,
-        unit              TYPE string,
-        delimiter         TYPE abap_bool,
-        unit_property     TYPE string,
-        width             TYPE string,
-        scale             TYPE i,
-        text_align        TYPE string,
-        display_unit      TYPE string,
-        true_value        TYPE string,
-        false_value       TYPE string,
-        template          TYPE string,
-        input_format      TYPE string,
-        wrap              TYPE abap_bool,
-        auto_scale        TYPE abap_bool,
-        timezone          TYPE string,
-        timezone_property TYPE string,
-        display_timezone  TYPE abap_bool,
-        utc               TYPE abap_bool,
-        value_map         TYPE ty_value_map,
-      END OF ty_column_config.
-
-    DATA: mt_column_config TYPE STANDARD TABLE OF ty_column_config WITH EMPTY KEY.
-    DATA: mv_column_config TYPE string.
-
+    " the spreadsheet exporter's column list, written as JSON and bound with
+    " json = abap_true: the exporter reads lower-case keys, which an ABAP
+    " component name never serializes to
+    DATA mv_column_config TYPE string.
+    " the preview table the nested view binds (through a field symbol)
+    DATA mr_preview_tab TYPE REF TO data.
 
     TYPES:
       BEGIN OF ty_history_out,
@@ -92,8 +64,6 @@ CLASS z2ui5_sql_cl_app_01 DEFINITION PUBLIC.
     DATA t_tab_sort TYPE STANDARD TABLE OF ty_sort WITH EMPTY KEY .
     DATA t_tab_group TYPE STANDARD TABLE OF ty_sort WITH EMPTY KEY .
     DATA t_tab_filter TYPE STANDARD TABLE OF ty_sort WITH EMPTY KEY .
-
-    DATA mr_preview_tab TYPE REF TO data.
 
   PROTECTED SECTION.
 
@@ -261,31 +231,31 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
 
   METHOD history_view.
 
-    view_history->ele( `List` 
-        )->a( n = `items` v = client->_bind_edit( ms_draft-history_tab ) 
-        )->a( n = `mode` v = `SingleSelectMaster` 
-        )->a( n = `selectionChange` v = client->_event( val = `HISTORY_LOAD` ) 
-        )->a( n = `sticky` v = `ColumnHeaders,HeaderToolbar` 
-        )->ele( `headerToolbar` 
-        )->ele( `OverflowToolbar` 
-        )->tag( `Title` 
-        )->a( n = `text` v = `Query History` 
-        )->tag( `ToolbarSpacer` 
-        )->tag( `ToolbarSpacer` 
-        )->tag( `Button` 
-        )->a( n = `text` v = `New` 
-        )->a( n = `press` v = client->_event( `HISTORY_CREATE` ) 
-        )->a( n = `icon` v = `sap-icon://create` 
-        )->tag( `Button` 
-        )->a( n = `text` v = `Clear` 
-        )->a( n = `press` v = client->_event( `HISTORY_CLEAR` ) 
-        )->a( n = `icon` v = `sap-icon://delete` 
-        )->end( 
-        )->end( 
-        )->tag( `StandardListItem` 
-        )->a( n = `title` v = `{S_DB/TABNAME} - {DATE} {TIME}` 
-        )->a( n = `description` v = `{S_DB/SQL_COMMAND}` 
-        )->a( n = `info` v = `{S_DB/COUNTER}` 
+    view_history->ele( `List`
+        )->a( n = `items` v = client->_bind_edit( ms_draft-history_tab )
+        )->a( n = `mode` v = `SingleSelectMaster`
+        )->a( n = `selectionChange` v = client->_event( val = `HISTORY_LOAD` )
+        )->a( n = `sticky` v = `ColumnHeaders,HeaderToolbar`
+        )->ele( `headerToolbar`
+        )->ele( `OverflowToolbar`
+        )->tag( `Title`
+        )->a( n = `text` v = `Query History`
+        )->tag( `ToolbarSpacer`
+        )->tag( `ToolbarSpacer`
+        )->tag( `Button`
+        )->a( n = `text` v = `New`
+        )->a( n = `press` v = client->_event( `HISTORY_CREATE` )
+        )->a( n = `icon` v = `sap-icon://create`
+        )->tag( `Button`
+        )->a( n = `text` v = `Clear`
+        )->a( n = `press` v = client->_event( `HISTORY_CLEAR` )
+        )->a( n = `icon` v = `sap-icon://delete`
+        )->end(
+        )->end(
+        )->tag( `StandardListItem`
+        )->a( n = `title` v = `{S_DB/TABNAME} - {DATE} {TIME}`
+        )->a( n = `description` v = `{S_DB/SQL_COMMAND}`
+        )->a( n = `info` v = `{S_DB/COUNTER}`
         )->a( n = `selected` v = `{SELKZ}` ).
 
   ENDMETHOD.
@@ -361,18 +331,14 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
 
   METHOD preview_view.
 
-    DATA(lo_view_nested) = z2ui5_cl_ui5_view_builder=>factory( 
-                               )->ele( n = `View` ns = `mvc` 
-                               )->a( n = `xmlns` v = `sap.m` 
-                               )->a( n = `xmlns:mvc` v = `sap.ui.core.mvc` 
-                               )->a( n = `xmlns:core` v = `sap.ui.core` 
-                               )->a( n = `xmlns:editor` v = `sap.ui.codeeditor` 
-                               )->a( n = `xmlns:html` v = `http://www.w3.org/1999/xhtml` 
-                               )->a( n = `xmlns:layout` v = `sap.ui.layout` 
-                               )->a( n = `xmlns:table` v = `sap.ui.table` 
-                               )->a( n = `xmlns:z2ui5` v = `z2ui5.cc` 
-                               )->a( n = `xmlns:z2ui5_cci` v = `z2ui5_cci.cc` 
-                               )->a( n = `displayBlock` v = `true` 
+    DATA(lo_view_nested) = z2ui5_cl_ui5_view_builder=>factory(
+                               )->ele( n = `View` ns = `mvc`
+                               )->a( n = `xmlns` v = `sap.m`
+                               )->a( n = `xmlns:mvc` v = `sap.ui.core.mvc`
+                               )->a( n = `xmlns:table` v = `sap.ui.table`
+                               " abap2ui5lint-disable-next-line unused-namespace-declaration -- z2ui5_cl_cci_spreadsheet=>render( ) writes the prefix
+                               )->a( n = `xmlns:z2ui5_cci` v = `z2ui5_cci.cc`
+                               )->a( n = `displayBlock` v = `true`
                                )->a( n = `height` v = `100%` ).
 
     IF ms_draft-s_preview-tab IS BOUND.
@@ -380,29 +346,43 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
       mr_preview_tab = ms_draft-s_preview-tab.
       ASSIGN mr_preview_tab->* TO <tab>.
 
-      DATA(tab) = lo_view_nested->ele( n = `Table` ns = `table` 
-                      )->a( n = `id` v = `previewTab` 
-                      )->a( n = `rows` v = client->_bind( <tab> ) 
-                      )->a( n = `editable` b = abap_false 
-                      )->a( n = `alternateRowColors` b = abap_true 
-                      )->a( n = `showColumnVisibilityMenu` b = abap_true 
-                      )->a( n = `enableSelectAll` b = abap_false 
-                      )->a( n = `selectionBehavior` v = `RowOnly` 
-                      )->a( n = `visibleRowCountMode` v = `Interactive` 
-                      )->a( n = `visibleRowCount` v = `7` 
+      DATA(tab) = lo_view_nested->ele( n = `Table` ns = `table`
+                      )->a( n = `id` v = `previewTab`
+                      )->a( n = `rows` v = client->_bind( <tab> )
+                      )->a( n = `editable` b = abap_false
+                      )->a( n = `alternateRowColors` b = abap_true
+                      )->a( n = `showColumnVisibilityMenu` b = abap_true
+                      )->a( n = `enableSelectAll` b = abap_false
+                      )->a( n = `selectionBehavior` v = `RowOnly`
+                      )->a( n = `visibleRowCountMode` v = `Interactive`
+                      )->a( n = `visibleRowCount` v = `7`
                       )->a( n = `selectionMode` v = `None` ).
-      DATA(toolbar) = tab->ele( n = `extension` ns = `table` 
-                          )->ele( `OverflowToolbar` 
-                          )->a( n = `width` v = `100%` 
-                          )->tag( `Title` 
-                          )->a( n = `text` v = client->_bind( ms_draft-s_preview-title ) 
-                          )->tag( `ToolbarSpacer` 
-                          )->tag( `Input` 
-                          )->a( n = `width` v = `30%` 
-                          )->a( n = `value` v = client->_bind_edit( ms_draft-s_preview-search_field ) 
-                          )->a( n = `description` v = `All Column Search` 
-                          )->a( n = `submit` v = client->_event( `PREVIEW_SEARCH` ) 
+      DATA(toolbar) = tab->ele( n = `extension` ns = `table`
+                          )->ele( `OverflowToolbar`
+                          )->a( n = `width` v = `100%`
+                          )->tag( `Title`
+                          )->a( n = `text` v = client->_bind( ms_draft-s_preview-title )
+                          )->tag( `ToolbarSpacer`
+                          )->tag( `Input`
+                          )->a( n = `width` v = `30%`
+                          )->a( n = `value` v = client->_bind_edit( ms_draft-s_preview-search_field )
+                          )->a( n = `description` v = `All Column Search`
+                          )->a( n = `submit` v = client->_event( `PREVIEW_SEARCH` )
+                          )->tag( `Button`
+                          )->a( n = `text` v = `Filter`
+                          )->a( n = `press` v = client->_event( `PREVIEW_FILTER` )
+                          )->a( n = `icon` v = `sap-icon://filter`
+                          )->tag( `Button`
+                          )->a( n = `tooltip` v = `Clear Filter`
+                          )->a( n = `press` v = client->_event( `PREVIEW_CLEAR_FILTER` )
+                          )->a( n = `icon` v = `sap-icon://clear-filter`
                           )->tag( `ToolbarSpacer` ).
+
+      " a preview restored from the history has no column list of its own -
+      " json = abap_true needs valid JSON, so an empty list it is
+      IF mv_column_config IS INITIAL.
+        mv_column_config = `[]`.
+      ENDIF.
 
       " the control's XML element belongs to custom-controls, which delivers
       " the matching JavaScript as a BSP - building the tag here by hand is
@@ -412,32 +392,34 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
           tableid = `previewTab`
           icon    = `sap-icon://excel-attachment`
           type    = `Emphasized`
-          columns = client->_bind( val           = mt_column_config
-                                   custom_filter = NEW z2ui5_cl_cci_json_filter( )
-                                   custom_mapper = z2ui5_cl_ajson_mapping=>create_lower_case( ) ) ).
+          columns = client->_bind( val  = mv_column_config
+                                   json = abap_true ) ).
 
       DATA(lt_fields) = z2ui5_cl_util=>rtti_get_t_attri_by_any( <tab> ).
 
       DATA(lo_columns) = tab->ele( n = `columns` ns = `table` ).
       LOOP AT lt_fields INTO DATA(lv_field).
-        lo_columns->ele( n = `Column` ns = `table` 
-            )->a( n = `width` v = `auto` 
-            )->a( n = `sortProperty` v = `'` && lv_field-name && `'` 
-            )->a( n = `filterProperty` v = `'` && lv_field-name && `'` 
-            )->tag( `Text` 
-            )->a( n = `text` v = lv_field-name 
-            )->ele( n = `template` ns = `table` 
-            )->tag( `Label` 
-            )->a( n = `text` v = `{` && lv_field-name && `}` 
+        lo_columns->ele( n = `Column` ns = `table`
+            )->a( n = `width` v = `auto`
+            )->a( n = `sortProperty` t = `'` && lv_field-name && `'`
+            )->a( n = `filterProperty` t = `'` && lv_field-name && `'`
+            )->tag( `Text`
+            )->a( n = `text` t = lv_field-name
+            )->ele( n = `template` ns = `table`
+            )->tag( `Label`
+            )->a( n = `text` v = `{` && lv_field-name && `}`
             )->a( n = `wrapping` b = abap_true ).
       ENDLOOP.
 
     ELSE.
-      lo_view_nested->tag( `Text` 
+      lo_view_nested->tag( `Text`
           )->a( n = `text` v = `Data preview...` ).
     ENDIF.
 
-    client->nest_view_display( val = lo_view_nested->stringify( ) id = `preview` method_insert = `addItem` ).
+    client->nest_view_display( val            = lo_view_nested->stringify( )
+                               id             = `preview`
+                               method_insert  = `addItem`
+                               method_destroy = `removeAllItems` ).
 
   ENDMETHOD.
 
@@ -461,16 +443,17 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
 
     lt_comp = lo_descr_line->get_components( ).
 
-    CLEAR mt_column_config.
+    DATA(lt_column_json) = VALUE string_table( ).
     LOOP AT lt_comp INTO ls_comp.
 
       ls_comp-name = ft_fieldlist[ sy-tabix ]-ref_field.
 
       MODIFY lt_comp FROM ls_comp.
 
-      APPEND VALUE ty_column_config( label = ls_comp-name property = ls_comp-name type = `String` ) TO mt_column_config.
+      APPEND |\{"label":"{ ls_comp-name }","property":"{ ls_comp-name }","type":"String"\}| TO lt_column_json.
 
     ENDLOOP.
+    mv_column_config = |[{ concat_lines_of( table = lt_column_json sep = `,` ) }]|.
 
     DATA(lo_new_type) = cl_abap_structdescr=>create( lt_comp ).
     DATA(lo_new_tab) = cl_abap_tabledescr=>create(
@@ -525,12 +508,8 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
 
   METHOD sql_view_display.
 
-    view_sql->tag( `Button` 
-        )->a( n = `text` v = `Filter` 
-        )->a( n = `press` v = client->_event( `PREVIEW_FILTER` ) 
-        )->a( n = `icon` v = `sap-icon://filter` 
-        )->tag( n = `CodeEditor` ns = `editor` 
-        )->a( n = `type` v = `sql` 
+    view_sql->tag( n = `CodeEditor` ns = `editor`
+        )->a( n = `type` v = `sql`
         )->a( n = `value` v = client->_bind_edit( ms_draft-sql_input ) ).
 
   ENDMETHOD.
@@ -577,7 +556,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
         DATA(lo_popup_confirm) = CAST z2ui5_cl_popup_to_confirm( client->get_app( client->get( )-s_draft-id_prev_app ) ).
         z2ui5_on_callback_pop_confirm( lo_popup_confirm ).
         RETURN.
-      CATCH cx_root.
+      CATCH cx_root ##NO_HANDLER.
     ENDTRY.
 
     TRY.
@@ -587,13 +566,13 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
           preview_on_filter( ).
         ENDIF.
         RETURN.
-      CATCH cx_root.
+      CATCH cx_root ##NO_HANDLER.
     ENDTRY.
 
     TRY.
         z2ui5_view_display( ).
         RETURN.
-      CATCH cx_root.
+      CATCH cx_root ##NO_HANDLER.
     ENDTRY.
 
   ENDMETHOD.
@@ -679,87 +658,82 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
 
   METHOD z2ui5_view_display.
 
-    DATA(view) = z2ui5_cl_ui5_view_builder=>factory( 
-                     )->ele( n = `View` ns = `mvc` 
-                     )->a( n = `xmlns` v = `sap.m` 
-                     )->a( n = `xmlns:mvc` v = `sap.ui.core.mvc` 
-                     )->a( n = `xmlns:core` v = `sap.ui.core` 
-                     )->a( n = `xmlns:editor` v = `sap.ui.codeeditor` 
-                     )->a( n = `xmlns:html` v = `http://www.w3.org/1999/xhtml` 
-                     )->a( n = `xmlns:layout` v = `sap.ui.layout` 
-                     )->a( n = `xmlns:table` v = `sap.ui.table` 
-                     )->a( n = `xmlns:z2ui5` v = `z2ui5.cc` 
-                     )->a( n = `displayBlock` v = `true` 
+    DATA(view) = z2ui5_cl_ui5_view_builder=>factory(
+                     )->ele( n = `View` ns = `mvc`
+                     )->a( n = `xmlns` v = `sap.m`
+                     )->a( n = `xmlns:mvc` v = `sap.ui.core.mvc`
+                     )->a( n = `xmlns:editor` v = `sap.ui.codeeditor`
+                     )->a( n = `xmlns:layout` v = `sap.ui.layout`
+                     )->a( n = `displayBlock` v = `true`
                      )->a( n = `height` v = `100%` ).
-    DATA(page) = view->ele( `Shell` 
-                     )->a( n = `appWidthLimited` v = client->_bind_edit( ms_draft-appwidthlimited ) 
-                     )->ele( `Page` 
-                     )->a( n = `title` v = `ABAP SQL Console` 
-                     )->a( n = `navButtonPress` v = client->_event( `BACK` ) 
-                     )->a( n = `showNavButton` b = abap_true 
-                     )->ele( `headerContent` 
-                     )->ele( `OverflowToolbar` 
-                     )->tag( `Label` 
-                     )->a( n = `text` v = `Max Rows` 
-                     )->tag( `Input` 
-                     )->a( n = `width` v = `15%` 
-                     )->a( n = `value` v = client->_bind_edit( ms_draft-sql_max_rows ) 
-                     )->tag( `Button` 
-                     )->a( n = `text` v = `Run` 
-                     )->a( n = `press` v = client->_event( `RUN` ) 
-                     )->a( n = `type` v = `Emphasized` 
-                     )->tag( `ToolbarSpacer` 
-                     )->tag( `Label` 
-                     )->a( n = `text` v = `Shell` 
-                     )->tag( `Switch` 
-                     )->a( n = `state` v = client->_bind_edit( ms_draft-appwidthlimited ) 
-                     )->tag( `Link` 
-                     )->a( n = `text` v = `Project on GitHub` 
-                     )->a( n = `target` v = `_blank` 
-                     )->a( n = `href` v = `https://github.com/abap2UI5-addons/sql-console` 
-                     )->end( 
+    DATA(page) = view->ele( `Shell`
+                     )->a( n = `appWidthLimited` v = client->_bind_edit( ms_draft-appwidthlimited )
+                     )->ele( `Page`
+                     )->a( n = `title` v = `ABAP SQL Console`
+                     )->a( n = `navButtonPress` v = client->_event( `BACK` )
+                     )->a( n = `showNavButton` b = abap_true
+                     )->ele( `headerContent`
+                     )->ele( `OverflowToolbar`
+                     )->tag( `Label`
+                     )->a( n = `text` v = `Max Rows`
+                     )->tag( `Input`
+                     )->a( n = `width` v = `15%`
+                     )->a( n = `value` v = client->_bind_edit( ms_draft-sql_max_rows )
+                     )->tag( `Button`
+                     )->a( n = `text` v = `Run`
+                     )->a( n = `press` v = client->_event( `RUN` )
+                     )->a( n = `type` v = `Emphasized`
+                     )->tag( `ToolbarSpacer`
+                     )->tag( `Label`
+                     )->a( n = `text` v = `Shell`
+                     )->tag( `Switch`
+                     )->a( n = `state` v = client->_bind_edit( ms_draft-appwidthlimited )
+                     )->tag( `Link`
+                     )->a( n = `text` v = `Project on GitHub`
+                     )->a( n = `target` v = `_blank`
+                     )->a( n = `href` v = `https://github.com/abap2UI5-addons/sql-console`
+                     )->end(
                      )->end( ).
 
-    page->ele( n = `Grid` ns = `layout` 
-        )->a( n = `defaultSpan` v = `L7 M12 S12` 
+    page->ele( n = `Grid` ns = `layout`
+        )->a( n = `defaultSpan` v = `L7 M12 S12`
         )->ele( n = `content` ns = `layout` ).
 
-    DATA(cont_main) = page->ele( n = `ResponsiveSplitter` ns = `layout` 
-                          )->a( n = `defaultPane` v = `default` 
-                          )->ele( n = `PaneContainer` ns = `layout` 
+    DATA(cont_main) = page->ele( n = `ResponsiveSplitter` ns = `layout`
+                          )->ele( n = `PaneContainer` ns = `layout`
                           )->a( n = `orientation` v = `Vertical` ).
 
-    DATA(cont_sub) = cont_main->ele( n = `PaneContainer` ns = `layout` 
+    DATA(cont_sub) = cont_main->ele( n = `PaneContainer` ns = `layout`
                          )->a( n = `orientation` v = `Horizontal` ).
 
-    DATA(view_sql) = cont_sub->ele( n = `SplitPane` ns = `layout` 
-                         )->a( n = `requiredParentWidth` v = `600` 
-                         )->ele( n = `layoutData` ns = `layout` 
-                         )->ele( n = `SplitterLayoutData` ns = `layout` 
-                         )->a( n = `size` v = client->_bind_edit( ms_draft-sql_cont_size ) 
-                         )->end( 
+    DATA(view_sql) = cont_sub->ele( n = `SplitPane` ns = `layout`
+                         )->a( n = `requiredParentWidth` v = `600`
+                         )->ele( n = `layoutData` ns = `layout`
+                         )->ele( n = `SplitterLayoutData` ns = `layout`
+                         )->a( n = `size` v = client->_bind_edit( ms_draft-sql_cont_size )
+                         )->end(
                          )->end( ).
 
     sql_view_display( view_sql ).
 
-    DATA(view_history) = cont_sub->ele( n = `SplitPane` ns = `layout` 
-                             )->a( n = `requiredParentWidth` v = `400` 
-                             )->ele( n = `layoutData` ns = `layout` 
-                             )->ele( n = `SplitterLayoutData` ns = `layout` 
-                             )->a( n = `size` v = client->_bind_edit( ms_draft-history_cont_size ) 
-                             )->end( 
+    DATA(view_history) = cont_sub->ele( n = `SplitPane` ns = `layout`
+                             )->a( n = `requiredParentWidth` v = `400`
+                             )->ele( n = `layoutData` ns = `layout`
+                             )->ele( n = `SplitterLayoutData` ns = `layout`
+                             )->a( n = `size` v = client->_bind_edit( ms_draft-history_cont_size )
+                             )->end(
                              )->end( ).
 
     history_view( view_history ).
 
-    cont_main->ele( n = `SplitPane` ns = `layout` 
-        )->a( n = `requiredParentWidth` v = `400` 
-        )->ele( n = `layoutData` ns = `layout` 
-        )->ele( n = `SplitterLayoutData` ns = `layout` 
-        )->a( n = `size` v = client->_bind_edit( ms_draft-s_preview-cont_size ) 
-        )->end( 
-        )->end( 
-        )->ele( `VBox` 
+    cont_main->ele( n = `SplitPane` ns = `layout`
+        )->a( n = `requiredParentWidth` v = `400`
+        )->ele( n = `layoutData` ns = `layout`
+        )->ele( n = `SplitterLayoutData` ns = `layout`
+        )->a( n = `size` v = client->_bind_edit( ms_draft-s_preview-cont_size )
+        )->end(
+        )->end(
+        )->ele( `VBox`
         )->a( n = `id` v = `preview` ).
 
     preview_view(  ).

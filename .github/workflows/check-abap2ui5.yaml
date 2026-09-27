@@ -6,7 +6,7 @@ name: check-abap2ui5
 # the data behind the bindings, and the abap2ui5 semantics no UI5 tooling sees.
 # Settings live in abap2ui5lint.jsonc.
 #
-# @abap2ui5/render-runtime is a devDependency because the render gate is the
+# @abap2ui5/linter-render is a devDependency because the render gate is the
 # only reason for it: it carries the OpenUI5 packages and the browser the gate
 # serves. The linter names it an OPTIONAL PEER, the one dependency kind npm
 # does not install by itself - without it the views stop being rendered and the
