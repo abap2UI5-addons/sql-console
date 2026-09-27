@@ -1,6 +1,14 @@
 {
   "global": {
-    "files": "/../../src/**/*.*"
+    "files": "/../../src/**/*.*",
+    // src/native, the native SQL console (ADBC, derived from ZTOAD), is
+    // Standard ABAP only by design: ABAP Cloud forbids EXEC SQL and releases
+    // neither ADBC (cl_sql_statement, cx_sql_exception) nor the DDIC and ADT
+    // internals the package reads (if_dd_sobject, cl_dd_ddl_handler_factory,
+    // dd03p, if_data_preview, ...). abap-standard lints it with abaplint.jsonc;
+    // this check keeps covering src/abap, the Open SQL console, which is the
+    // part that runs on ABAP Cloud.
+    "exclude": ["/src/native/"]
   },
   "dependencies": [
     {

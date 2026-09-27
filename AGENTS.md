@@ -16,8 +16,8 @@ documentation must be in English.
 
 | Package | Content |
 |---|---|
-| `src/abap/` | The app (`z2ui5_sql_cl_*`), Open-SQL query path |
-| `src/native/` | Native-SQL/ADBC path (`zcl_2ui5_native_*`, `zcl_association_processor`), derived from [ZTOAD](https://github.com/marianfoo/ztoad) |
+| `src/abap/` | The app (`z2ui5_sql_cl_*`), Open-SQL query path — Standard ABAP and ABAP Cloud |
+| `src/native/` | Native-SQL/ADBC path (`zcl_2ui5_native_*`, `zcl_association_processor`), derived from [ZTOAD](https://github.com/marianfoo/ztoad) — Standard ABAP only |
 
 ## Dependencies
 
@@ -42,20 +42,29 @@ Follows the abap2UI5 core conventions (see its
 [AGENTS.md](https://github.com/abap2UI5/abap2UI5/blob/main/AGENTS.md)): Clean
 ABAP with backtick string literals and string templates (`|…{ }…|`). The
 `src/native/` classes are ZTOAD-derived and keep their own style
-(`errorNamespace` in `abaplint.jsonc` is loosened for them, with `check_syntax`
-excludes for their test doubles).
+(`errorNamespace` in `abaplint.jsonc` and `.github/abaplint/rename.json` is
+loosened for them, with `check_syntax` excludes for their test doubles).
 
 ## Validation
 
-Run `npx abaplint` before considering changes complete (config `abaplint.jsonc`,
-0 issues expected on the standard config). CI:
+Run `npm run check` before considering changes complete: it runs the same steps
+as CI, and all of them must pass. CI:
 
-* `ABAP_STANDARD` — lint against Standard ABAP
-* `ABAP_CLOUD` — lint against ABAP Cloud; the `src/native/` ADBC/DDIC code is
-  **not** ABAP-Cloud-ready, so this check has known findings there
-* `renaming` (`rename_test.yaml`) — namespace-rename check
-* `build_rename` — manual workflow that pushes a namespace-renamed branch
-  `rename_<name>` for a parallel install
+* `abap-standard` — lint against Standard ABAP (`abaplint.jsonc`)
+* `abap-cloud` — lint against ABAP Cloud (`.github/abaplint/abap_cloud.jsonc`).
+  `src/native/` is excluded there because it is Standard ABAP only by design:
+  ABAP Cloud forbids EXEC SQL and does not release ADBC or the DDIC/ADT
+  internals the package reads. `src/abap/` must stay ABAP-Cloud-clean.
+* `check-abap2ui5` — the abap2UI5-linter over the app classes and their views
+  (`abap2ui5lint.jsonc`)
+* `check-rename` — namespace-rename check (`.github/abaplint/rename.json`,
+  against the 9-character placeholder `zabap2ui5`). It resolves types like
+  `abaplint.jsonc` and lints `src/native/` too, but leaves that package out of
+  the renamed output: its classes are named outside the z2ui5 namespace, and
+  its history table `z2ui5_nsql_c_hst` is already at the 16-character DDIC
+  limit, so it cannot take a longer namespace
+* `build-rename` — manual workflow that pushes a namespace-renamed branch
+  `rename_<name>` for a parallel install; the branch carries `src/abap/` only
 
 There is no 702 downport (the native code uses APIs unavailable at 7.02).
 All `.abap`/`.xml`/config files are LF-only (`.gitattributes` enforces it).

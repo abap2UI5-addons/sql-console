@@ -26,6 +26,19 @@
     ],
     "rename": {
       "output": "output",
+      // src/native is linted below like the rest, but left out of the renamed
+      // output. Its classes and interface (zcl_2ui5_native_sql_console*,
+      // zcl_association_processor, zif_association_processor) are named
+      // outside the z2ui5 namespace, so the pattern cannot move them, and a
+      // rename_<name> branch carrying them would collide with the original
+      // install instead of sitting next to it. Its one z2ui5 object, the
+      // history table z2ui5_nsql_c_hst, already has the 16 characters a
+      // transparent table may have, so it cannot take a namespace longer than
+      // z2ui5 either: left in, the rename aborts with "Name not allowed".
+      // Including the package means moving those objects into the z2ui5
+      // namespace under names short enough, which renames a table that holds
+      // user data.
+      "skip": ["/src/native/"],
       "patterns": [
         {
           "type": "CLAS|INTF|TABL",
@@ -36,7 +49,12 @@
     },
     "syntax": {
       "version": "v750",
-      "errorNamespace": "."
+      // resolved like abaplint.jsonc (abap-standard): Z and Y objects and local
+      // names must resolve, which covers every object the rename touches. The
+      // ADBC, DDIC and ADT types of src/native (cl_sql_statement, if_dd_sobject,
+      // dd03p, ...) are in no dependency stub, so with "." every one of them
+      // was an error and the rename never ran.
+      "errorNamespace": "^(Z|Y|LCL_|TY_|LIF_)"
     },
     "rules": {
       "allowed_object_types": {
@@ -51,12 +69,25 @@
       "begin_end_names": true,
       "check_ddic": true,
       "check_include": true,
-      "check_syntax": true,
+      // the same two test class includes as in abaplint.jsonc: their test
+      // doubles inherit from or implement standard APIs (cl_sql_statement,
+      // if_dd_sobject, if_dd_sobject_util) that are not in the dependency
+      // stubs. They name no z2ui5 object, so no reference to rename hides here.
+      "check_syntax": {
+        "exclude": [
+          "zcl_2ui5_native_sql_console\\.clas\\.testclasses\\.abap",
+          "zcl_association_processor\\.clas\\.testclasses\\.abap"
+        ]
+      },
       "global_class": true,
       "implement_methods": true,
       "method_implemented_twice": true,
       "parser_error": true,
-      "superclass_final": true,
+      "superclass_final": {
+        "exclude": [
+          "zcl_2ui5_native_sql_console\\.clas\\.testclasses\\.abap"
+        ]
+      },
       "unknown_types": true,
       "xml_consistency": true
     }
