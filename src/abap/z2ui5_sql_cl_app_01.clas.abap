@@ -527,12 +527,14 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
             )->a( n = `xmlns` v = `sap.m`
             )->a( n = `xmlns:mvc` v = `sap.ui.core.mvc`
             )->a( n = `xmlns:core` v = `sap.ui.core`
-            )->a( n = `xmlns:z2ui5` v = `z2ui5.cc`
             )->a( n = `displayBlock` v = `true`
             )->a( n = `height` v = `100%`
-            )->tag( n = `Timer` ns = `z2ui5`
-            )->a( n = `finished` v = client->_event( `START` )
             )->stringify( ) ).
+          " the empty view is on screen first; START builds the console in
+          " the roundtrip the client timer fires right after it rendered
+          client->follow_up_action(
+              val   = z2ui5_if_client=>cs_event-start_timer
+              t_arg = VALUE #( ( `START` ) ( `0` ) ) ).
 
           RETURN.
         ENDIF.
