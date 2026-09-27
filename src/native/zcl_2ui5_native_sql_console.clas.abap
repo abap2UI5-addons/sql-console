@@ -101,7 +101,6 @@ class zcl_2ui5_native_sql_console implementation.
         )->ele( n = `View` ns = `mvc`
         )->a( n = `xmlns` v = `sap.m`
         )->a( n = `xmlns:mvc` v = `sap.ui.core.mvc`
-        )->a( n = `xmlns:core` v = `sap.ui.core`
         )->a( n = `xmlns:z2ui5` v = `z2ui5.cc`
         )->a( n = `displayBlock` v = `true`
         )->a( n = `height` v = `100%`
