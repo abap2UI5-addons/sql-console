@@ -24,6 +24,8 @@ SQL Console in Your Browser – No Need for Eclipse or SAP GUI Installation
 * S/4 Private Cloud or On-Premise (ABAP for Cloud, Standard ABAP)
 * SAP NetWeaver AS ABAP 7.50 or higher (Standard ABAP)
 
+The native SQL console (`src/native`, ADBC) needs Standard ABAP. On ABAP Cloud, use the Open SQL console (`src/abap`).
+
 #### Security
 This is a developer tool. It runs the SQL the user enters, without an authorization check of its own; the native path additionally uses ADBC and therefore bypasses ABAP authorizations and client separation. Before using it beyond a development system, add your own authorization checks and restrict who may run the app (see the Todo below).
 

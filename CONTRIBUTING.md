@@ -21,9 +21,9 @@ executed.
 | Gate | What it proves |
 | --- | --- |
 | `npm run lint` | abaplint: syntax and style, resolved against the abap2UI5 core and the sibling addons |
-| `npm run check:cloud` | the same source compiles under ABAP Cloud restrictions |
+| `npm run check:cloud` | the same source compiles under ABAP Cloud restrictions — all but `src/native`, the ADBC console, which is Standard ABAP only |
 | `npm run check:abap2ui5` | [abap2UI5-linter](https://github.com/abap2UI5/linter): the app class and the view it builds, judged together — controls, members, bindings, the UI5 version floor, and a headless render of every view |
-| `npm run rename` | the namespace rename still applies cleanly |
+| `npm run rename` | the namespace rename still applies cleanly; `src/native` is linted but left out of the renamed output (see `.github/abaplint/rename.json`) |
 
 The abap2UI5-linter keeps a baseline in `abap2ui5lint-baseline.json`. Findings
 recorded there are counted and never listed; a **new** finding fails the gate,
