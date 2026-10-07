@@ -53,6 +53,7 @@
       ]
     },
     "unknown_types": true,
+    "whitespace_end": true,
     "xml_consistency": true
   }
 }
