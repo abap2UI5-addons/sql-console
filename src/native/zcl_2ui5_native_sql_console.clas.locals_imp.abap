@@ -464,19 +464,19 @@ class main_view implementation.
                       )->a( n = `appWidthLimited` v = me->a_ui5_client->_bind_edit( i_state->page-app_width_limited ) ).
 
       data(page) = shell->ele( `Page`
-                       )->a( n = `title` v = 'Native SQL Console'(001) ).
+                       )->a( n = `title` v = |{ 'Native SQL Console'(001) }| ).
 
         data(header_content) = page->ele( `headerContent` ).
 
           data(overflow_toolbar) = header_content->ele( `OverflowToolbar` ).
 
             overflow_toolbar->tag( `Label`
-                )->a( n = `text` v = 'Fallback Limit'(002)
+                )->a( n = `text` v = |{ 'Fallback Limit'(002) }|
                 )->tag( `Input`
                 )->a( n = `width` v = `15%`
                 )->a( n = `value` v = me->a_ui5_client->_bind_edit( i_state->sql_editor_pane-fallback_max_rows )
                 )->tag( `Button`
-                )->a( n = `text` v = 'Run'(003)
+                )->a( n = `text` v = |{ 'Run'(003) }|
                 )->a( n = `press` v = me->a_ui5_client->_event( on_run=>event_name( ) )
                 )->a( n = `type` v = `Emphasized` ##NO_TEXT
                 )->tag( `ToolbarSpacer`
@@ -485,7 +485,7 @@ class main_view implementation.
                 )->tag( `Switch`
                 )->a( n = `state` v = me->a_ui5_client->_bind_edit( i_state->page-app_width_limited )
                 )->tag( `Link`
-                )->a( n = `text` v = 'Project on GitHub'(004)
+                )->a( n = `text` v = |{ 'Project on GitHub'(004) }|
                 )->a( n = `target` v = '_blank'
                 )->a( n = `href` v = 'https://github.com/abap2UI5-addons/sql-console' ).
 
@@ -536,7 +536,7 @@ class main_view implementation.
                       data(hlt_overflow_toolbar) = h_list_header_toolbar->ele( `OverflowToolbar` ).
 
                         hlt_overflow_toolbar->tag( `Title`
-                            )->a( n = `text` v = 'Query History'(006) ).
+                            )->a( n = `text` v = |{ 'Query History'(006) }| ).
 
                         hlt_overflow_toolbar->tag( `ToolbarSpacer` ).
 
@@ -549,7 +549,7 @@ class main_view implementation.
                             )->a( n = `icon` v = `sap-icon://multiselect-none` ) ##NO_TEXT.
 
                         hlt_overflow_toolbar->tag( `Button`
-                            )->a( n = `text` v = 'Delete'(007)
+                            )->a( n = `text` v = |{ 'Delete'(007) }|
                             )->a( n = `press` v = me->a_ui5_client->_event( on_delete_history_items=>event_name( ) )
                             )->a( n = `icon` v = `sap-icon://delete` ) ##NO_TEXT.
 
@@ -645,7 +645,7 @@ class data_result_view implementation.
             te_overflow_toolbar->tag( `Input`
                 )->a( n = `width` v = `50%`
                 )->a( n = `value` v = me->a_ui5_client->_bind_edit( i_state->results_pane-wide_filter_string )
-                )->a( n = `description` v = 'Filter any column on enter'(008)
+                )->a( n = `description` v = |{ 'Filter any column on enter'(008) }|
                 )->a( n = `submit` v = me->a_ui5_client->_event( on_wide_filtering=>event_name( ) ) ).
 
             te_overflow_toolbar->tag( `ToolbarSpacer` ).
@@ -683,7 +683,7 @@ class data_result_view implementation.
     else.
 
       me->a_parser->tag( `Text`
-          )->a( n = `text` v = 'Data preview...'(009) ).
+          )->a( n = `text` v = |{ 'Data preview...'(009) }| ).
 
     endif.
 
