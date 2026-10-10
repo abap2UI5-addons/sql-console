@@ -97,6 +97,10 @@ CLASS z2ui5_sql_cl_app_01 DEFINITION PUBLIC.
         io_popup TYPE REF TO z2ui5_cl_popup_to_confirm.
     METHODS history_on_load.
     METHODS history_db_save.
+    "! DATE and TIME of a history row, from its timestamp (UTC)
+    METHODS history_set_date_time
+      CHANGING
+        cs_out TYPE ty_history_out.
     METHODS z2ui5_on_init_set_app.
     METHODS preview_on_filter.
 
@@ -121,10 +125,9 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
     CLEAR ms_draft-history_tab.
     LOOP AT z2ui5_sql_cl_history_api=>db_read_multi_by_user( ) REFERENCE INTO DATA(lr_history).
 
-      INSERT VALUE #(
-          s_db =  CORRESPONDING #( lr_history->* EXCEPT result_data )
-          time = |{ lr_history->timestampl TIMESTAMP = ISO }|
-          ) INTO TABLE ms_draft-history_tab.
+      DATA(ls_out) = VALUE ty_history_out( s_db = CORRESPONDING #( lr_history->* EXCEPT result_data ) ).
+      history_set_date_time( CHANGING cs_out = ls_out ).
+      INSERT ls_out INTO TABLE ms_draft-history_tab.
 
     ENDLOOP.
 
@@ -175,6 +178,22 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
     lr_hist->s_db-sql_command = ms_draft-sql_input.
     lr_hist->s_db-tabname = ms_draft-sql_s_command-name.
     lr_hist->s_db-counter = lines( <tab> ).
+    history_set_date_time( CHANGING cs_out = lr_hist->* ).
+
+  ENDMETHOD.
+
+
+  METHOD history_set_date_time.
+
+    " the list shows {DATE} {TIME}; DATE stayed empty and TIME carried the
+    " whole ISO timestamp - split it at the T, without the fraction
+    CLEAR: cs_out-date, cs_out-time.
+    IF cs_out-s_db-timestampl IS INITIAL.
+      RETURN.
+    ENDIF.
+    DATA(lv_iso) = |{ cs_out-s_db-timestampl TIMESTAMP = ISO }|.
+    SPLIT lv_iso AT `T` INTO cs_out-date cs_out-time.
+    SPLIT cs_out-time AT `,` INTO cs_out-time DATA(lv_fraction) ##NEEDED.
 
   ENDMETHOD.
 
