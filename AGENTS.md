@@ -25,7 +25,7 @@ Installed alongside via abapGit; declared in the abaplint configs:
 
 * [abap2UI5](https://github.com/abap2UI5/abap2UI5)
 * [popups](https://github.com/abap2UI5-addons/popups)
-* [custom-controls](https://github.com/abap2UI5-addons/custom-controls) — `z2ui5_cl_cc_spreadsheet`
+* [custom-controls](https://github.com/abap2UI5-addons/custom-controls) — `z2ui5_cl_cci_spreadsheet`
 
 ## Security
 
