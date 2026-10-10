@@ -595,6 +595,11 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
 
       WHEN ms_control-callback_pop_history_clear.
 
+        " Cancel keeps the history
+        IF io_popup->result( ) = abap_false.
+          RETURN.
+        ENDIF.
+
         CLEAR ms_draft-history_tab.
         client->view_model_update( ).
         z2ui5_sql_cl_history_api=>db_delete( ).
