@@ -420,8 +420,8 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
       LOOP AT lt_fields INTO DATA(lv_field).
         lo_columns->ele( n = `Column` ns = `table`
             )->a( n = `width` v = `auto`
-            )->a( n = `sortProperty` t = `'` && lv_field-name && `'`
-            )->a( n = `filterProperty` t = `'` && lv_field-name && `'`
+            )->a( n = `sortProperty` t = lv_field-name
+            )->a( n = `filterProperty` t = lv_field-name
             )->tag( `Text`
             )->a( n = `text` t = lv_field-name
             )->ele( n = `template` ns = `table`
