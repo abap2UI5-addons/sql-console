@@ -118,7 +118,10 @@ CLASS z2ui5_sql_cl_history_api IMPLEMENTATION.
 
   METHOD db_read_by_id.
 
-    DATA(lt_db) = z2ui5_cl_util_db=>load_multi_by_handle( handle  = c_handle_history
+    " the id comes from the history list, which is bound to the view - only
+    " an entry of the user's own history is read, as db_read_multi_by_user
+    DATA(lt_db) = z2ui5_cl_util_db=>load_multi_by_handle( uname   = sy-uname
+                                                          handle  = c_handle_history
                                                           handle2 = val ).
     IF lt_db IS INITIAL.
       RETURN.
