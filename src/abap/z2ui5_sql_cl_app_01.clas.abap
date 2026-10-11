@@ -653,6 +653,11 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
         history_on_clear_pressed( ).
 
       WHEN `HISTORY_CREATE`.
+        " the new entry is the selected one - history_db_save writes into the
+        " first selected row, which would still be the old entry otherwise
+        LOOP AT ms_draft-history_tab REFERENCE INTO DATA(lr_hist) WHERE selkz = abap_true.
+          lr_hist->selkz = abap_false.
+        ENDLOOP.
         INSERT VALUE #( selkz = abap_true ) INTO TABLE ms_draft-history_tab.
         client->view_model_update( ).
 
