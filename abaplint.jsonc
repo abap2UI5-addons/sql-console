@@ -10,6 +10,10 @@
     },
     {
       "url": "https://github.com/abap2UI5/abap2UI5",
+      // the framework's main branch, declared rather than left off (abap2UI5
+      // CONVENTIONS §9): this repository has no release pin and no bump
+      // workflow for one yet
+      "branch": "main",
       "folder": "/abap2UI5",
       "files": "/src/**/*.*"
     },
