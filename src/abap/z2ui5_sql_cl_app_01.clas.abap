@@ -219,7 +219,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
     CLEAR ms_draft-s_preview-tab.
 
     IF ls_entry-result_data IS NOT INITIAL.
-      lr_preview = z2ui5_cl_util=>xml_srtti_parse( rtti_data = ls_entry-result_data ).
+      lr_preview = z2ui5_cl_util=>xml_srtti_parse( ls_entry-result_data ).
 
       FIELD-SYMBOLS <any> TYPE any.
       ASSIGN lr_preview->('title') TO <any>.
@@ -467,7 +467,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
 
       ls_comp-name = ft_fieldlist[ sy-tabix ]-ref_field.
 
-      MODIFY lt_comp FROM ls_comp.
+      MODIFY lt_comp FROM ls_comp USING KEY loop_key.
 
       APPEND |\{"label":"{ ls_comp-name }","property":"{ ls_comp-name }","type":"String"\}| TO lt_column_json.
 
