@@ -22,7 +22,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: check-abap2ui5-${{ github.ref }}
@@ -32,6 +32,8 @@ jobs:
   check-abap2ui5:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      badges: ${{ steps.badges.outputs.found }}
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -52,18 +54,53 @@ jobs:
       run: npx abap2ui5lint --no-render --advisory --no-progress --no-badge --format markdown >> "$GITHUB_STEP_SUMMARY"
 
     # The gate above rewrote .github/badges/ (abap2ui5lint.jsonc "badge"), and
-    # this step publishes those two files to the `badges` branch - an
-    # orphan branch that holds nothing else and is what the README badges
-    # read. Only on main: main is protected and github-actions[bot] cannot
-    # bypass that, and the old way round - committing the badges onto the
-    # pull request branch - started a second set of runs on that commit which
-    # waited for a maintainer's approval and left the pull request blocked.
-    # A pull request run publishes nothing; the run on main after the merge
-    # does. Only after a green gate, as before. A failed push (a ruleset on
-    # the branch) is a warning: the README then keeps showing the previous
-    # state rather than a wrong one.
-    - name: Publish the badges
+    # the publish-badges job below pushes those two files to the `badges`
+    # branch - an orphan branch that holds nothing else and is what the README
+    # badges read. This job only hands them over: it runs pull request code and
+    # so keeps the read-only token. The push lives in a job of its own, the only
+    # one with contents: write, and that job never runs for a pull request.
+    - name: Check for badge files
+      id: badges
       if: success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+      run: |
+        if ls .github/badges/*.json >/dev/null 2>&1; then
+          echo "found=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "::warning::The gate wrote no badge files - nothing to publish."
+        fi
+    # only the badge files travel to the writing job - not node_modules, not
+    # anything else the run could have written
+    - name: Hand the badges over
+      if: steps.badges.outputs.found == 'true'
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+      with:
+        name: badges
+        path: .github/badges/*.json
+        if-no-files-found: error
+        retention-days: 1
+
+  # Publishes the badge files the gate wrote to the `badges` branch. Only on
+  # main (push, the weekly schedule, a manual run - never a pull request) and
+  # only after a green gate: main is protected and github-actions[bot] cannot
+  # bypass that, and the old way round - committing the badges onto the pull
+  # request branch - started a second set of runs on that commit which waited
+  # for a maintainer's approval and left the pull request blocked. A failed push
+  # (a ruleset on the branch) is a warning: the README then keeps showing the
+  # previous state rather than a wrong one.
+  publish-badges:
+    needs: check-abap2ui5
+    if: needs.check-abap2ui5.outputs.badges == 'true' && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+    - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+      with:
+        name: badges
+        path: .github/badges
+    - name: Publish the badges
       run: |
         ls .github/badges/*.json >/dev/null 2>&1 || { echo "::warning::The gate wrote no badge files - nothing to publish."; exit 0; }
         dir="$RUNNER_TEMP/badges"
