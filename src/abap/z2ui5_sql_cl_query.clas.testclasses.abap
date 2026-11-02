@@ -145,7 +145,7 @@ CLASS ltcl_parser IMPLEMENTATION.
     TRY.
         z2ui5_sql_cl_query=>parse( `DELETE FROM t100` ).
         cl_abap_unit_assert=>fail( ).
-      CATCH z2ui5_cx_util_error ##NO_HANDLER.
+      CATCH z2ui5_sql_cx_error ##NO_HANDLER.
     ENDTRY.
 
   ENDMETHOD.
@@ -155,7 +155,7 @@ CLASS ltcl_parser IMPLEMENTATION.
     TRY.
         z2ui5_sql_cl_query=>parse( `SELECT carrid` ).
         cl_abap_unit_assert=>fail( ).
-      CATCH z2ui5_cx_util_error ##NO_HANDLER.
+      CATCH z2ui5_sql_cx_error ##NO_HANDLER.
     ENDTRY.
 
   ENDMETHOD.

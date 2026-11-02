@@ -372,9 +372,19 @@
       "severity": "Error"
     },
     "rfc_error_handling": true,
-    "select_add_order_by": true,
+    "select_add_order_by": {
+      // z2ui5_sql_cl_db is a renamed copy of abap-util's zabaputil_cl_util_db,
+      // kept as-is so the periodic sync can diff it against the master: its
+      // key/value reads look up by handle, not by the full key
+      "exclude": ["z2ui5_sql_cl_db\\.clas\\.abap"]
+    },
     "select_performance": true,
-    "select_single_full_key": true,
+    "select_single_full_key": {
+      // z2ui5_sql_cl_db is a renamed copy of abap-util's zabaputil_cl_util_db,
+      // kept as-is so the periodic sync can diff it against the master: its
+      // key/value reads look up by handle, not by the full key
+      "exclude": ["z2ui5_sql_cl_db\\.clas\\.abap"]
+    },
     "selection_screen_naming": true,
     "sequential_blank": {
       "exclude": [],
