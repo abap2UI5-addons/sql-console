@@ -28,12 +28,10 @@
     "rename": {
       "output": "output",
       // src/native is linted below like the rest, but left out of the renamed
-      // output: its names have no room for a longer namespace. The history
-      // table z2ui5_nsql_c_hst already has the 16 characters a transparent
-      // table may have (left in, the rename aborts with "Name not allowed"),
-      // and z2ui5_cl_sql_native_console_st has the 30 a class may have.
-      // Including the package means shorter names, which renames a table
-      // that holds user data.
+      // output: z2ui5_cl_sql_native_console_st already has the 30
+      // characters a class may have, so it cannot take a longer namespace
+      // (left in, the rename aborts with "Name not allowed"). Including the
+      // package means a shorter name for that class.
       "skip": ["/src/native/"],
       "patterns": [
         {

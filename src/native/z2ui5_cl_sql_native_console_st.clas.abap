@@ -19,11 +19,11 @@ class z2ui5_cl_sql_native_console_st definition
            end of t_sql_editor_pane.
 
     types: begin of t_history_element,
-             id type z2ui5_nsql_c_hst-id,
-             natural_id type z2ui5_nsql_c_hst-natural_id,
+             id type z2ui5_t_32-id,
+             natural_id type z2ui5_t_32-natural_id,
              created_at type string,
-             sql_statement type z2ui5_nsql_c_hst-sql_statement,
-             rows_no type z2ui5_nsql_c_hst-rows_no,
+             sql_statement type z2ui5_t_32-sql_statement,
+             rows_no type z2ui5_t_32-rows_no,
              selected type abap_bool,
              infostate type string,
              highlight type string,
@@ -33,7 +33,7 @@ class z2ui5_cl_sql_native_console_st definition
                                                                                                          with unique hashed key by_key components id,
            begin of t_history_pane,
              layout_size type string,
-             last_item_successfully_added type z2ui5_nsql_c_hst-id,
+             last_item_successfully_added type z2ui5_t_32-id,
              items type z2ui5_cl_sql_native_console_st=>t_history_collection,
            end of t_history_pane.
 

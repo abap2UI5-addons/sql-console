@@ -6,25 +6,25 @@ class history definition
 
   public section.
 
-    types t_delete_entries type hashed table of z2ui5_nsql_c_hst-id with unique key table_line.
+    types t_delete_entries type hashed table of z2ui5_t_32-id with unique key table_line.
 
     types: begin of t_input_entry,
-             natural_id type z2ui5_nsql_c_hst-natural_id,
-             sql_statement type z2ui5_nsql_c_hst-sql_statement,
+             natural_id type z2ui5_t_32-natural_id,
+             sql_statement type z2ui5_t_32-sql_statement,
              results type ref to data,
            end of t_input_entry.
 
     types: begin of t_history_pane_item,
-             id type z2ui5_nsql_c_hst-id,
-             natural_id type z2ui5_nsql_c_hst-natural_id,
-             created_at type z2ui5_nsql_c_hst-created_at,
-             sql_statement type z2ui5_nsql_c_hst-sql_statement,
-             rows_no type z2ui5_nsql_c_hst-rows_no,
+             id type z2ui5_t_32-id,
+             natural_id type z2ui5_t_32-natural_id,
+             created_at type z2ui5_t_32-created_at,
+             sql_statement type z2ui5_t_32-sql_statement,
+             rows_no type z2ui5_t_32-rows_no,
            end of t_history_pane_item,
            t_history_pane_items type standard table of history=>t_history_pane_item with empty key.
 
     types: begin of t_results_entry,
-             id type z2ui5_nsql_c_hst-id,
+             id type z2ui5_t_32-id,
              data type ref to data,
            end of t_results_entry.
 
@@ -40,13 +40,13 @@ class history definition
 
     methods get_rslt_data_for_current_user
               importing
-                i_id type z2ui5_nsql_c_hst-id
+                i_id type z2ui5_t_32-id
               returning
                 value(r_val) type history=>t_results_entry.
 
     methods get_rslt_data_for_user
               importing
-                i_id type z2ui5_nsql_c_hst-id
+                i_id type z2ui5_t_32-id
                 i_user type xubname
               returning
                 value(r_val) type history=>t_results_entry.
@@ -55,7 +55,7 @@ class history definition
               importing
                 i_entry type history=>t_input_entry
               returning
-                value(r_val) type z2ui5_nsql_c_hst-id
+                value(r_val) type z2ui5_t_32-id
               raising
                 cx_uuid_error.
 
@@ -344,7 +344,7 @@ class history implementation.
            created_at,
            sql_statement,
            rows_no
-      from z2ui5_nsql_c_hst
+      from z2ui5_t_32
       where created_by eq @i_user
       order by created_at descending
       into table @r_val.
@@ -360,7 +360,7 @@ class history implementation.
 
     select single id,
                   serialized_results
-      from z2ui5_nsql_c_hst
+      from z2ui5_t_32
       where id eq @i_id
             and created_by eq @i_user
       into @data(data).
@@ -379,14 +379,14 @@ class history implementation.
 
     assign i_entry-results->* to <results>.
 
-    data(new_entry) = value z2ui5_nsql_c_hst( base corresponding #( i_entry )
+    data(new_entry) = value z2ui5_t_32( base corresponding #( i_entry )
                                               id = cl_system_uuid=>create_uuid_x16_static( )
                                               created_at = utclong_current( )
                                               created_by = cl_abap_syst=>get_user_name( )
                                               rows_no = lines( <results> )
                                               serialized_results = z2ui5_cl_sql_context=>conv_get_xstring_by_string( z2ui5_cl_sql_context=>xml_srtti_stringify( <results> ) ) ).
 
-    insert into z2ui5_nsql_c_hst
+    insert into z2ui5_t_32
       values @new_entry.
 
     t->end( ).
@@ -402,7 +402,7 @@ class history implementation.
   endmethod.
   method delete_for_user.
 
-    types ids type range of z2ui5_nsql_c_hst-id.
+    types ids type range of z2ui5_t_32-id.
 
     if i_entries is not initial.
 
@@ -417,7 +417,7 @@ class history implementation.
                                option = 'EQ'
                                ( low = <e> ) ).
 
-        delete from z2ui5_nsql_c_hst
+        delete from z2ui5_t_32
           where created_by eq @i_user
                 and id in @ids.
 
@@ -425,7 +425,7 @@ class history implementation.
 
         loop at i_entries reference into data(id).
 
-          delete from z2ui5_nsql_c_hst
+          delete from z2ui5_t_32
             where created_by eq @i_user
                   and id eq @id->*.
 

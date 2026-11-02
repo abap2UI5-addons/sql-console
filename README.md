@@ -57,6 +57,18 @@ before you use it beyond a development system.
 
 **Renamed (2026-11).** The classes follow the abap2UI5 naming now: `z2ui5_sql_cl_*` is `z2ui5_cl_sql_*`, `z2ui5_sql_cx_error` is `z2ui5_cx_sql_error`, `zcl_2ui5_native_sql_console(_st)` is `z2ui5_cl_sql_native_console(_st)` and `zcl_`/`zif_association_processor` is `z2ui5_cl_`/`z2ui5_if_sql_assoc_processor`. After the pull abapGit lists the old classes as deleted in the repository: delete them, and update `?app_start=` links.
 
+**Renumbered tables (2026-11).** The tables follow the numbering all addons share now: `Z2UI5_NSQL_C_HST` is `Z2UI5_T_32`, `Z2UI5_SQL_DB` is `Z2UI5_T_33`. The pull creates the new tables empty, and the data stays in the old ones. Copy it once per client before you delete an old table - for each pair, in a scratch report:
+
+```abap
+DATA lr_rows TYPE REF TO data.
+FIELD-SYMBOLS <rows> TYPE STANDARD TABLE.
+CREATE DATA lr_rows TYPE STANDARD TABLE OF ('Z2UI5_T_32').
+ASSIGN lr_rows->* TO <rows>.
+SELECT * FROM ('Z2UI5_NSQL_C_HST') INTO TABLE <rows>.
+MODIFY ('Z2UI5_T_32') FROM TABLE <rows>.
+COMMIT WORK.
+```
+
 **Steps** - with [abapGit](https://abapgit.org), in this order:
 
 1. [abap2UI5](https://github.com/abap2UI5/abap2UI5)
@@ -87,7 +99,7 @@ before you use it beyond a development system.
 The same idea for native SQL: the statement runs through ADBC, with a
 **Fallback Limit** (default 100) added when the statement has no limit of its
 own, a data preview and a query history (table
-`Z2UI5_NSQL_C_HST`) whose entries you load again or delete. Association path
+`Z2UI5_T_32`) whose entries you load again or delete. Association path
 expressions in the statement are mapped to joins (`z2ui5_cl_sql_assoc_processor`).
 
 ## Features
