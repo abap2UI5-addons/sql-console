@@ -42,8 +42,8 @@
     // part of the dependency stubs, so syntax resolution fails only there
     "check_syntax": {
       "exclude": [
-        "zcl_2ui5_native_sql_console\\.clas\\.testclasses\\.abap",
-        "zcl_association_processor\\.clas\\.testclasses\\.abap"
+        "z2ui5_cl_sql_native_console\\.clas\\.testclasses\\.abap",
+        "z2ui5_cl_sql_assoc_processor\\.clas\\.testclasses\\.abap"
       ]
     },
     "global_class": true,
@@ -53,7 +53,7 @@
     "parser_error": true,
     "superclass_final": {
       "exclude": [
-        "zcl_2ui5_native_sql_console\\.clas\\.testclasses\\.abap"
+        "z2ui5_cl_sql_native_console\\.clas\\.testclasses\\.abap"
       ]
     },
     "unknown_types": true,
@@ -373,17 +373,17 @@
     },
     "rfc_error_handling": true,
     "select_add_order_by": {
-      // z2ui5_sql_cl_db is a renamed copy of abap-util's zabaputil_cl_util_db,
+      // z2ui5_cl_sql_db is a renamed copy of abap-util's zabaputil_cl_util_db,
       // kept as-is so the periodic sync can diff it against the master: its
       // key/value reads look up by handle, not by the full key
-      "exclude": ["z2ui5_sql_cl_db\\.clas\\.abap"]
+      "exclude": ["z2ui5_cl_sql_db\\.clas\\.abap"]
     },
     "select_performance": true,
     "select_single_full_key": {
-      // z2ui5_sql_cl_db is a renamed copy of abap-util's zabaputil_cl_util_db,
+      // z2ui5_cl_sql_db is a renamed copy of abap-util's zabaputil_cl_util_db,
       // kept as-is so the periodic sync can diff it against the master: its
       // key/value reads look up by handle, not by the full key
-      "exclude": ["z2ui5_sql_cl_db\\.clas\\.abap"]
+      "exclude": ["z2ui5_cl_sql_db\\.clas\\.abap"]
     },
     "selection_screen_naming": true,
     "sequential_blank": {

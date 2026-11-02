@@ -1,4 +1,4 @@
-CLASS z2ui5_sql_cl_query DEFINITION
+CLASS z2ui5_cl_sql_query DEFINITION
   PUBLIC
   FINAL
   CREATE PUBLIC.
@@ -50,7 +50,7 @@ CLASS z2ui5_sql_cl_query DEFINITION
       RETURNING
         VALUE(result) TYPE ty_s_result
       RAISING
-        z2ui5_sql_cx_error.
+        z2ui5_cx_sql_error.
 
     CLASS-METHODS normalize
       IMPORTING
@@ -65,7 +65,7 @@ CLASS z2ui5_sql_cl_query DEFINITION
       RETURNING
         VALUE(result) TYPE ty_t_clauses
       RAISING
-        z2ui5_sql_cx_error.
+        z2ui5_cx_sql_error.
 
     CLASS-METHODS get_sources
       IMPORTING
@@ -100,7 +100,7 @@ CLASS z2ui5_sql_cl_query DEFINITION
       RETURNING
         VALUE(result) TYPE ty_s_clauses
       RAISING
-        z2ui5_sql_cx_error.
+        z2ui5_cx_sql_error.
 
     CLASS-METHODS get_items
       IMPORTING
@@ -114,7 +114,7 @@ CLASS z2ui5_sql_cl_query DEFINITION
       RETURNING
         VALUE(result) TYPE ty_s_target
       RAISING
-        z2ui5_sql_cx_error.
+        z2ui5_cx_sql_error.
 
     CLASS-METHODS resolve_field
       IMPORTING
@@ -125,7 +125,7 @@ CLASS z2ui5_sql_cl_query DEFINITION
         ev_table  TYPE string
         ev_field  TYPE string
       RAISING
-        z2ui5_sql_cx_error.
+        z2ui5_cx_sql_error.
 
     CLASS-METHODS get_struct_by_name
       IMPORTING
@@ -133,7 +133,7 @@ CLASS z2ui5_sql_cl_query DEFINITION
       RETURNING
         VALUE(result) TYPE REF TO cl_abap_structdescr
       RAISING
-        z2ui5_sql_cx_error.
+        z2ui5_cx_sql_error.
 
     CLASS-METHODS append_field
       IMPORTING
@@ -163,12 +163,12 @@ CLASS z2ui5_sql_cl_query DEFINITION
       CHANGING
         ct_data     TYPE STANDARD TABLE
       RAISING
-        z2ui5_sql_cx_error.
+        z2ui5_cx_sql_error.
 
 ENDCLASS.
 
 
-CLASS z2ui5_sql_cl_query IMPLEMENTATION.
+CLASS z2ui5_cl_sql_query IMPLEMENTATION.
 
   METHOD run.
 
@@ -281,7 +281,7 @@ CLASS z2ui5_sql_cl_query IMPLEMENTATION.
 
     FIND FIRST OCCURRENCE OF `SELECT ` IN lv_segment IGNORING CASE MATCH OFFSET DATA(lv_select_offset).
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE z2ui5_sql_cx_error
+      RAISE EXCEPTION TYPE z2ui5_cx_sql_error
         EXPORTING
           val = `SQL_PARSER_ERROR - no SELECT found in query`.
     ENDIF.
@@ -289,7 +289,7 @@ CLASS z2ui5_sql_cl_query IMPLEMENTATION.
     FIND FIRST OCCURRENCE OF ` FROM ` IN SECTION OFFSET lv_select_offset OF lv_segment
          IGNORING CASE MATCH OFFSET DATA(lv_from_offset).
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE z2ui5_sql_cx_error
+      RAISE EXCEPTION TYPE z2ui5_cx_sql_error
         EXPORTING
           val = `SQL_PARSER_ERROR - no FROM found in query`.
     ENDIF.
@@ -297,7 +297,7 @@ CLASS z2ui5_sql_cl_query IMPLEMENTATION.
     DATA(lv_select_start) = lv_select_offset + 7.
     DATA(lv_length) = lv_from_offset - lv_select_start.
     IF lv_length <= 0.
-      RAISE EXCEPTION TYPE z2ui5_sql_cx_error
+      RAISE EXCEPTION TYPE z2ui5_cx_sql_error
         EXPORTING
           val = `SQL_PARSER_ERROR - empty select list`.
     ENDIF.
@@ -529,7 +529,7 @@ CLASS z2ui5_sql_cl_query IMPLEMENTATION.
 
     DATA(lt_source) = get_sources( is_clauses-from ).
     IF lt_source IS INITIAL.
-      RAISE EXCEPTION TYPE z2ui5_sql_cx_error
+      RAISE EXCEPTION TYPE z2ui5_cx_sql_error
         EXPORTING
           val = `SQL_PARSER_ERROR - no data source found in FROM clause`.
     ENDIF.
@@ -624,7 +624,7 @@ CLASS z2ui5_sql_cl_query IMPLEMENTATION.
     ENDLOOP.
 
     IF lt_comp IS INITIAL.
-      RAISE EXCEPTION TYPE z2ui5_sql_cx_error
+      RAISE EXCEPTION TYPE z2ui5_cx_sql_error
         EXPORTING
           val = `SQL_PARSER_ERROR - empty select list`.
     ENDIF.
@@ -635,7 +635,7 @@ CLASS z2ui5_sql_cl_query IMPLEMENTATION.
                                                      p_table_kind = cl_abap_tabledescr=>tablekind_std
                                                      p_unique     = abap_false ).
       CATCH cx_root INTO DATA(lx_error).
-        RAISE EXCEPTION TYPE z2ui5_sql_cx_error
+        RAISE EXCEPTION TYPE z2ui5_cx_sql_error
           EXPORTING
             val = lx_error.
     ENDTRY.
@@ -673,7 +673,7 @@ CLASS z2ui5_sql_cl_query IMPLEMENTATION.
       ENDIF.
     ENDLOOP.
 
-    RAISE EXCEPTION TYPE z2ui5_sql_cx_error
+    RAISE EXCEPTION TYPE z2ui5_cx_sql_error
       EXPORTING
         val = |SQL_PARSER_ERROR - field { val } not found in FROM clause|.
 
@@ -688,7 +688,7 @@ CLASS z2ui5_sql_cl_query IMPLEMENTATION.
                                          EXCEPTIONS type_not_found = 1
                                                     OTHERS         = 2 ).
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE z2ui5_sql_cx_error
+      RAISE EXCEPTION TYPE z2ui5_cx_sql_error
         EXPORTING
           val = |SQL_PARSER_ERROR - table { val } not found|.
     ENDIF.
@@ -696,7 +696,7 @@ CLASS z2ui5_sql_cl_query IMPLEMENTATION.
     TRY.
         result = CAST cl_abap_structdescr( lo_descr ).
       CATCH cx_sy_move_cast_error.
-        RAISE EXCEPTION TYPE z2ui5_sql_cx_error
+        RAISE EXCEPTION TYPE z2ui5_cx_sql_error
           EXPORTING
             val = |SQL_PARSER_ERROR - { val } is not a structured data source|.
     ENDTRY.
@@ -737,7 +737,7 @@ CLASS z2ui5_sql_cl_query IMPLEMENTATION.
           INTO TABLE @ct_data
           UP TO @is_clauses-rows ROWS.
       CATCH cx_root INTO DATA(lx_error).
-        RAISE EXCEPTION TYPE z2ui5_sql_cx_error
+        RAISE EXCEPTION TYPE z2ui5_cx_sql_error
           EXPORTING
             val = lx_error.
     ENDTRY.

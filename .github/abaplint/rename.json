@@ -28,17 +28,12 @@
     "rename": {
       "output": "output",
       // src/native is linted below like the rest, but left out of the renamed
-      // output. Its classes and interface (zcl_2ui5_native_sql_console*,
-      // zcl_association_processor, zif_association_processor) are named
-      // outside the z2ui5 namespace, so the pattern cannot move them, and a
-      // rename_<name> branch carrying them would collide with the original
-      // install instead of sitting next to it. Its one z2ui5 object, the
-      // history table z2ui5_nsql_c_hst, already has the 16 characters a
-      // transparent table may have, so it cannot take a namespace longer than
-      // z2ui5 either: left in, the rename aborts with "Name not allowed".
-      // Including the package means moving those objects into the z2ui5
-      // namespace under names short enough, which renames a table that holds
-      // user data.
+      // output: its names have no room for a longer namespace. The history
+      // table z2ui5_nsql_c_hst already has the 16 characters a transparent
+      // table may have (left in, the rename aborts with "Name not allowed"),
+      // and z2ui5_cl_sql_native_console_st has the 30 a class may have.
+      // Including the package means shorter names, which renames a table
+      // that holds user data.
       "skip": ["/src/native/"],
       "patterns": [
         {
@@ -76,8 +71,8 @@
       // stubs. They name no z2ui5 object, so no reference to rename hides here.
       "check_syntax": {
         "exclude": [
-          "zcl_2ui5_native_sql_console\\.clas\\.testclasses\\.abap",
-          "zcl_association_processor\\.clas\\.testclasses\\.abap"
+          "z2ui5_cl_sql_native_console\\.clas\\.testclasses\\.abap",
+          "z2ui5_cl_sql_assoc_processor\\.clas\\.testclasses\\.abap"
         ]
       },
       "global_class": true,
@@ -86,7 +81,7 @@
       "parser_error": true,
       "superclass_final": {
         "exclude": [
-          "zcl_2ui5_native_sql_console\\.clas\\.testclasses\\.abap"
+          "z2ui5_cl_sql_native_console\\.clas\\.testclasses\\.abap"
         ]
       },
       "unknown_types": true,

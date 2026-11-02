@@ -1,4 +1,4 @@
-CLASS z2ui5_sql_cl_db DEFINITION
+CLASS z2ui5_cl_sql_db DEFINITION
   PUBLIC
   FINAL
   CREATE PUBLIC .
@@ -59,7 +59,7 @@ ENDCLASS.
 
 
 
-CLASS z2ui5_sql_cl_db IMPLEMENTATION.
+CLASS z2ui5_cl_sql_db IMPLEMENTATION.
 
 
 
@@ -90,12 +90,12 @@ CLASS z2ui5_sql_cl_db IMPLEMENTATION.
         AND handle3 = @handle3 "#EC WARNOK
       INTO @DATA(lv_data).
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE z2ui5_sql_cx_error
+      RAISE EXCEPTION TYPE z2ui5_cx_sql_error
         EXPORTING
           val = `NO_ENTRY_FOR_HANDLE_EXISTS`.
     ENDIF.
 
-    z2ui5_sql_cl_context=>xml_parse(
+    z2ui5_cl_sql_context=>xml_parse(
       EXPORTING
         xml = lv_data
       IMPORTING
@@ -141,12 +141,12 @@ CLASS z2ui5_sql_cl_db IMPLEMENTATION.
       WHERE id = @id  "#EC WARNOK
       INTO @DATA(lv_data).
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE z2ui5_sql_cx_error
+      RAISE EXCEPTION TYPE z2ui5_cx_sql_error
         EXPORTING
           val = |NO_ENTRY_FOR_ID_EXISTS: { id }|.
     ENDIF.
 
-    z2ui5_sql_cl_context=>xml_parse(
+    z2ui5_cl_sql_context=>xml_parse(
       EXPORTING
         xml = lv_data
       IMPORTING
@@ -171,17 +171,17 @@ CLASS z2ui5_sql_cl_db IMPLEMENTATION.
         handle  = handle
         handle2 = handle2
         handle3 = handle3
-        data    = z2ui5_sql_cl_context=>xml_stringify( data ) ).
+        data    = z2ui5_cl_sql_context=>xml_stringify( data ) ).
 
     IF lv_id IS NOT INITIAL.
       ls_db-id = lv_id.
     ELSE.
-      ls_db-id = z2ui5_sql_cl_context=>uuid_get_c32( ).
+      ls_db-id = z2ui5_cl_sql_context=>uuid_get_c32( ).
     ENDIF.
 
     MODIFY z2ui5_sql_db FROM @ls_db.
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE z2ui5_sql_cx_error
+      RAISE EXCEPTION TYPE z2ui5_cx_sql_error
         EXPORTING
           val = `DB_SAVE_FAILED`.
     ENDIF.

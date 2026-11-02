@@ -188,12 +188,12 @@ class association_processor_dummy definition
 
   public section.
 
-    interfaces: zif_association_processor.
+    interfaces: z2ui5_if_sql_assoc_processor.
 
 endclass.
 class association_processor_dummy implementation.
 
-  method zif_association_processor~map_association_to_join.
+  method z2ui5_if_sql_assoc_processor~map_association_to_join.
 
     return.
 
@@ -205,16 +205,16 @@ class association_processor_spy definition
 
   public section.
 
-    interfaces: zif_association_processor.
+    interfaces: z2ui5_if_sql_assoc_processor.
 
-    data data_sources type zif_association_processor=>t_data_sources.
+    data data_sources type z2ui5_if_sql_assoc_processor=>t_data_sources.
 
     data association type string.
 
 endclass.
 class association_processor_spy implementation.
 
-  method zif_association_processor~map_association_to_join.
+  method z2ui5_if_sql_assoc_processor~map_association_to_join.
 
     me->data_sources = i_potential_data_sources.
 
@@ -343,7 +343,7 @@ class _t_sql_statement implementation.
 
   method constructor.
 
-    data(assoc_proc) = new zcl_association_processor( ).
+    data(assoc_proc) = new z2ui5_cl_sql_assoc_processor( ).
 
     me->statements = value #( non_delimited = value #( basic = value #( field = new sql_statement( i_sql_statement = `SELECT field,`
                                                                                                    i_processor = new cl_sql_statement( )
@@ -603,7 +603,7 @@ class _t_sql_statement implementation.
 
         "act
         new sql_statement( i_sql_statement = statement->*
-                           i_association_processor = new zcl_association_processor( )
+                           i_association_processor = new z2ui5_cl_sql_assoc_processor( )
                            i_processor = new cl_sql_statement( ) )->sole_associaton_if_any( ).
 
         "assert
@@ -633,7 +633,7 @@ class _t_sql_statement implementation.
 
         "act
         new sql_statement( i_sql_statement = statement->*
-                           i_association_processor = new zcl_association_processor( )
+                           i_association_processor = new z2ui5_cl_sql_assoc_processor( )
                            i_processor = new cl_sql_statement( ) )->sole_associaton_if_any( ).
 
       catch cx_sql_exception.
@@ -650,7 +650,7 @@ class _t_sql_statement implementation.
   method with_row_cap_does_nothing.
 
     "arrange
-    data(assoc_proc) = new zcl_association_processor( ).
+    data(assoc_proc) = new z2ui5_cl_sql_assoc_processor( ).
 
     data(statements) = value string_table( ( `SELECT TOP 1 * FROM dbtab;` )
                                            ( |SELECT{ cl_abap_char_utilities=>cr_lf }TOP{ cl_abap_char_utilities=>cr_lf }1{ cl_abap_char_utilities=>cr_lf }*{ cl_abap_char_utilities=>cr_lf }FROM dbtab| )
@@ -685,7 +685,7 @@ class _t_sql_statement implementation.
 
       "act & assert
       cl_abap_unit_assert=>assert_char_cp( act = cast _sql_statement_t_double( new _sql_statement_t_double( i_sql_statement = statement->*
-                                                                                                            i_association_processor = new zcl_association_processor( )
+                                                                                                            i_association_processor = new z2ui5_cl_sql_assoc_processor( )
                                                                                                             i_processor = new cl_sql_statement( ) )->add_limit_if_none( max_no_of_rows ) )->value( )
                                            exp = |* LIMIT { max_no_of_rows };|
                                            quit = if_abap_unit_constant=>quit-no
@@ -700,7 +700,7 @@ class _t_sql_statement implementation.
     data(processor) = new _cl_sql_statement_spy( ).
 
     data(statement) = new _sql_statement_spy( i_processor = processor
-                                              i_association_processor = new zcl_association_processor( )
+                                              i_association_processor = new z2ui5_cl_sql_assoc_processor( )
                                               i_sql_statement = `test` ).
 
     "act
@@ -754,7 +754,7 @@ class _t_sql_statement implementation.
 
     "assert
     cl_abap_unit_assert=>assert_true( act = xsdbool( assoc_proc->association eq association
-                                                     and assoc_proc->data_sources eq conv zif_association_processor=>t_data_sources( data_sources ) )
+                                                     and assoc_proc->data_sources eq conv z2ui5_if_sql_assoc_processor=>t_data_sources( data_sources ) )
                                       msg = `GENERATED_JOIN_FOR_ASSOCIATION calls AN_ASSOCIATION_PROCESSOR->MAP_ASSOCIATION_TO_JOIN using the result of DATA_SOURCES` ).
 
   endmethod.
@@ -827,7 +827,7 @@ class _t_sql_statement implementation.
 
       "act & assert
       cl_abap_unit_assert=>assert_equals( act = new sql_statement( i_sql_statement = statement->*-val
-                                                                   i_association_processor = new zcl_association_processor( )
+                                                                   i_association_processor = new z2ui5_cl_sql_assoc_processor( )
                                                                    i_processor = new cl_sql_statement( ) )->data_sources( )
                                           exp = statement->*-ds
                                           quit = if_abap_unit_constant=>quit-no
@@ -889,7 +889,7 @@ class _t_sql_statement implementation.
 
       "act & assert
       cl_abap_unit_assert=>assert_equals( act = new _sql_statement_stub( i_sql_statement = statement->*-original
-                                                                         i_association_processor = new zcl_association_processor( )
+                                                                         i_association_processor = new z2ui5_cl_sql_assoc_processor( )
                                                                          i_processor = new cl_sql_statement( ) )->assoc_mapped_to_join_if_any( i_association = statement->*-association
                                                                                                                                                i_join = statement->*-join_fragment )
                                           exp = statement->*-mapped

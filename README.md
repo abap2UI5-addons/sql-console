@@ -55,6 +55,8 @@ before you use it beyond a development system.
 - [abap2UI5-addons/custom-controls](https://github.com/abap2UI5-addons/custom-controls) -
   the spreadsheet export (`z2ui5_cl_cci_spreadsheet`)
 
+**Renamed (2026-11).** The classes follow the abap2UI5 naming now: `z2ui5_sql_cl_*` is `z2ui5_cl_sql_*`, `z2ui5_sql_cx_error` is `z2ui5_cx_sql_error`, `zcl_2ui5_native_sql_console(_st)` is `z2ui5_cl_sql_native_console(_st)` and `zcl_`/`zif_association_processor` is `z2ui5_cl_`/`z2ui5_if_sql_assoc_processor`. After the pull abapGit lists the old classes as deleted in the repository: delete them, and update `?app_start=` links.
+
 **Steps** - with [abapGit](https://abapgit.org), in this order:
 
 1. [abap2UI5](https://github.com/abap2UI5/abap2UI5)
@@ -66,12 +68,12 @@ before you use it beyond a development system.
 
 | App | Class | Start |
 |---|---|---|
-| ABAP SQL Console (Open SQL) | `z2ui5_sql_cl_app_01` | `?app_start=z2ui5_sql_cl_app_01` |
-| Native SQL Console (ADBC, Standard ABAP only) | `zcl_2ui5_native_sql_console` | `?app_start=zcl_2ui5_native_sql_console` |
+| ABAP SQL Console (Open SQL) | `z2ui5_cl_sql_app_01` | `?app_start=z2ui5_cl_sql_app_01` |
+| Native SQL Console (ADBC, Standard ABAP only) | `z2ui5_cl_sql_native_console` | `?app_start=z2ui5_cl_sql_native_console` |
 
 ## Usage
 
-**ABAP SQL Console** (`z2ui5_sql_cl_app_01`, package `src/abap`)
+**ABAP SQL Console** (`z2ui5_cl_sql_app_01`, package `src/abap`)
 
 1. Type an ABAP SQL query into the editor - it starts with `Select * from T100`.
 2. Set **Max Rows** (default 500) and press **Run**.
@@ -80,13 +82,13 @@ before you use it beyond a development system.
 4. Every query goes into your history. Select an entry to load the query and
    its result again, or clear the history.
 
-**Native SQL Console** (`zcl_2ui5_native_sql_console`, package `src/native`)
+**Native SQL Console** (`z2ui5_cl_sql_native_console`, package `src/native`)
 
 The same idea for native SQL: the statement runs through ADBC, with a
 **Fallback Limit** (default 100) added when the statement has no limit of its
 own, a data preview and a query history (table
 `Z2UI5_NSQL_C_HST`) whose entries you load again or delete. Association path
-expressions in the statement are mapped to joins (`zcl_association_processor`).
+expressions in the statement are mapped to joins (`z2ui5_cl_sql_assoc_processor`).
 
 ## Features
 

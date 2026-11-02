@@ -3,9 +3,9 @@
  <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
   <asx:values>
    <VSEOCLASS>
-    <CLSNAME>Z2UI5_SQL_CL_HISTORY_API</CLSNAME>
+    <CLSNAME>Z2UI5_CL_SQL_CONTEXT</CLSNAME>
     <LANGU>E</LANGU>
-    <DESCRIPT>sql - history API</DESCRIPT>
+    <DESCRIPT>sql - util context (abap-util copy)</DESCRIPT>
     <STATE>1</STATE>
     <CLSCCINCL>X</CLSCCINCL>
     <FIXPT>X</FIXPT>

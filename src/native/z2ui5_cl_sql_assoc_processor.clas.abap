@@ -1,12 +1,12 @@
-class zcl_association_processor definition
+class z2ui5_cl_sql_assoc_processor definition
                                 public
                                 create public.
 
   public section.
 
-    interfaces: zif_association_processor.
+    interfaces: z2ui5_if_sql_assoc_processor.
 
-    aliases: map_association_to_join for zif_association_processor~map_association_to_join.
+    aliases: map_association_to_join for z2ui5_if_sql_assoc_processor~map_association_to_join.
 
     methods navigate_association
               importing
@@ -19,7 +19,7 @@ class zcl_association_processor definition
   protected section.
 
 endclass.
-class zcl_association_processor implementation.
+class z2ui5_cl_sql_assoc_processor implementation.
 
   METHOD navigate_association.
 
@@ -125,7 +125,7 @@ class zcl_association_processor implementation.
     ENDTRY.
 
   ENDMETHOD.
-  METHOD zif_association_processor~map_association_to_join.
+  METHOD z2ui5_if_sql_assoc_processor~map_association_to_join.
 
     constants statement_after_join type string value `(?i)\b(?:left|inner)\b.*` ##NO_TEXT.
 

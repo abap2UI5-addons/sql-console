@@ -81,7 +81,7 @@ class main_view definition
     methods constructor
               importing
                 i_ui5_client type ref to z2ui5_if_client
-                i_state type ref to zcl_2ui5_native_sql_console_st.
+                i_state type ref to z2ui5_cl_sql_native_console_st.
 
     methods set_for_display
               returning
@@ -102,7 +102,7 @@ class data_result_view definition
     methods constructor
               importing
                 i_ui5_client type ref to z2ui5_if_client
-                i_state type ref to zcl_2ui5_native_sql_console_st.
+                i_state type ref to z2ui5_cl_sql_native_console_st.
 
     methods set_for_display
               returning
@@ -259,7 +259,7 @@ class sql_statement definition
 
     types t_processor type ref to cl_sql_statement.
 
-    types t_association_processor type ref to zif_association_processor.
+    types t_association_processor type ref to z2ui5_if_sql_assoc_processor.
 
     types: begin of t_result,
              updated_statement type string,
@@ -366,7 +366,7 @@ class history implementation.
       into @data(data).
 
     r_val = value #( base corresponding #( data )
-                     data = z2ui5_sql_cl_context=>xml_srtti_parse( z2ui5_sql_cl_context=>conv_get_string_by_xstring( data-serialized_results ) ) ).
+                     data = z2ui5_cl_sql_context=>xml_srtti_parse( z2ui5_cl_sql_context=>conv_get_string_by_xstring( data-serialized_results ) ) ).
 
   endmethod.
   method insert_new.
@@ -384,7 +384,7 @@ class history implementation.
                                               created_at = utclong_current( )
                                               created_by = cl_abap_syst=>get_user_name( )
                                               rows_no = lines( <results> )
-                                              serialized_results = z2ui5_sql_cl_context=>conv_get_xstring_by_string( z2ui5_sql_cl_context=>xml_srtti_stringify( <results> ) ) ).
+                                              serialized_results = z2ui5_cl_sql_context=>conv_get_xstring_by_string( z2ui5_cl_sql_context=>xml_srtti_stringify( <results> ) ) ).
 
     insert into z2ui5_nsql_c_hst
       values @new_entry.
@@ -611,13 +611,13 @@ class data_result_view implementation.
                        )->a( n = `displayBlock` v = `true`
                        )->a( n = `height` v = `100%` ).
 
-    data(app) = cast zcl_2ui5_native_sql_console( i_ui5_client->get_app( i_ui5_client->get( )-s_draft-id ) ).
+    data(app) = cast z2ui5_cl_sql_native_console( i_ui5_client->get_app( i_ui5_client->get( )-s_draft-id ) ).
     app->mr_output_data = i_state->results_pane-output_data.
     assign app->mr_output_data->* to <data>.
 
     if <data> is assigned.
 
-      data(fields) = z2ui5_sql_cl_context=>rtti_get_t_attri_by_any( <data> ).
+      data(fields) = z2ui5_cl_sql_context=>rtti_get_t_attri_by_any( <data> ).
 
       data(table) = me->a_parser->ele( n = `Table` ns = `table`
                         )->a( n = `id` v = `previewTab`
@@ -712,7 +712,7 @@ class on_start implementation.
 
   method event~handle.
 
-    new main_view( i_state = zcl_2ui5_native_sql_console_st=>instance( )
+    new main_view( i_state = z2ui5_cl_sql_native_console_st=>instance( )
                    i_ui5_client = i_ui5_client )->set_for_display( ).
 
   endmethod.
@@ -738,10 +738,10 @@ class on_run implementation.
 
     field-symbols <table> type standard table.
 
-    data(state) = zcl_2ui5_native_sql_console_st=>instance( ).
+    data(state) = z2ui5_cl_sql_native_console_st=>instance( ).
 
     data(statement) = new sql_statement( i_processor = new cl_sql_statement( )
-                                         i_association_processor = new zcl_association_processor( )
+                                         i_association_processor = new z2ui5_cl_sql_assoc_processor( )
                                          i_sql_statement = state->sql_editor_pane-statement )->add_limit_if_none( state->sql_editor_pane-fallback_max_rows ).
 
     data(result) = statement->execute( ).
@@ -758,8 +758,8 @@ class on_run implementation.
                                                             ( label = <e>-name
                                                               property = <e>-name
                                                               type = `String` ) ) ##NO_TEXT
-                                   filters = z2ui5_sql_cl_context=>filter_get_multi_by_data( <table> )
-                                   title = |{ 'Number of Rows:'(010) } { z2ui5_sql_cl_context=>c_trim( lines( <table> ) ) }| ).
+                                   filters = z2ui5_cl_sql_context=>filter_get_multi_by_data( <table> )
+                                   title = |{ 'Number of Rows:'(010) } { z2ui5_cl_sql_context=>c_trim( lines( <table> ) ) }| ).
 
     new data_result_view( i_state = state
                           i_ui5_client = i_ui5_client )->redraw( ).
@@ -787,7 +787,7 @@ class on_delete_history_items implementation.
   endmethod.
   method event~handle.
 
-    data(state) = zcl_2ui5_native_sql_console_st=>instance( ).
+    data(state) = z2ui5_cl_sql_native_console_st=>instance( ).
 
     if state->event_awaiting_response eq me->event_name( ).
 
@@ -833,7 +833,7 @@ class on_load_history_item implementation.
 
     field-symbols <table> type any table.
 
-    data(state) = zcl_2ui5_native_sql_console_st=>instance( ).
+    data(state) = z2ui5_cl_sql_native_console_st=>instance( ).
 
     data(previous_result) = new history( )->get_rslt_data_for_current_user( state->history_pane-items[ key by_key
                                                                                                        id = exact #( i_ui5_client->get_event_arg( 1 ) ) ]-id ).
@@ -849,8 +849,8 @@ class on_load_history_item implementation.
                                                             ( label = <e>-name
                                                               property = <e>-name
                                                               type = `String` ) ) ##NO_TEXT
-                                   filters = z2ui5_sql_cl_context=>filter_get_multi_by_data( <table> )
-                                   title = |{ 'Number of Rows:'(010) } { z2ui5_sql_cl_context=>c_trim( lines( <table> ) ) }| ).
+                                   filters = z2ui5_cl_sql_context=>filter_get_multi_by_data( <table> )
+                                   title = |{ 'Number of Rows:'(010) } { z2ui5_cl_sql_context=>c_trim( lines( <table> ) ) }| ).
 
     new data_result_view( i_state = state
                           i_ui5_client = i_ui5_client )->redraw( ).
@@ -883,7 +883,7 @@ class on_select_all_history_items implementation.
 
   method event~handle.
 
-    data(state) = zcl_2ui5_native_sql_console_st=>instance( ).
+    data(state) = z2ui5_cl_sql_native_console_st=>instance( ).
 
     state->history_pane-items = value #( let aux = state->history_pane-items in
                                          for <e> in aux
@@ -904,7 +904,7 @@ class on_deselect_all_history_items implementation.
 
   method event~handle.
 
-    data(state) = zcl_2ui5_native_sql_console_st=>instance( ).
+    data(state) = z2ui5_cl_sql_native_console_st=>instance( ).
 
     state->history_pane-items = value #( let aux = state->history_pane-items in
                                          for <e> in aux
@@ -944,7 +944,7 @@ class on_wide_filtering implementation.
     field-symbols: <db_data> type any table,
                    <filtered_data> like <db_data>.
 
-    data(state) = zcl_2ui5_native_sql_console_st=>instance( ).
+    data(state) = z2ui5_cl_sql_native_console_st=>instance( ).
 
     if state->results_pane-wide_filter_string is not initial.
 
@@ -956,7 +956,7 @@ class on_wide_filtering implementation.
 
       <filtered_data> = <db_data>.
 
-      z2ui5_sql_cl_context=>itab_filter_by_val( exporting val = state->results_pane-wide_filter_string
+      z2ui5_cl_sql_context=>itab_filter_by_val( exporting val = state->results_pane-wide_filter_string
                                          changing tab = <filtered_data> ).
 
       state->results_pane-output_data = state->results_pane-filtered_db_data.

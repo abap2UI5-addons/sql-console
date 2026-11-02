@@ -1,4 +1,4 @@
-class zcl_2ui5_native_sql_console_st definition
+class z2ui5_cl_sql_native_console_st definition
                                      public
                                      create protected.
 
@@ -6,7 +6,7 @@ class zcl_2ui5_native_sql_console_st definition
 
     interfaces: if_serializable_object.
 
-    types t_self type ref to zcl_2ui5_native_sql_console_st.
+    types t_self type ref to z2ui5_cl_sql_native_console_st.
 
     types: begin of t_page,
              app_width_limited type abap_bool,
@@ -28,13 +28,13 @@ class zcl_2ui5_native_sql_console_st definition
              infostate type string,
              highlight type string,
            end of t_history_element,
-           t_history_collection type standard table of zcl_2ui5_native_sql_console_st=>t_history_element with empty key
+           t_history_collection type standard table of z2ui5_cl_sql_native_console_st=>t_history_element with empty key
                                                                                                          with non-unique sorted key by_sel components selected
                                                                                                          with unique hashed key by_key components id,
            begin of t_history_pane,
              layout_size type string,
              last_item_successfully_added type z2ui5_nsql_c_hst-id,
-             items type zcl_2ui5_native_sql_console_st=>t_history_collection,
+             items type z2ui5_cl_sql_native_console_st=>t_history_collection,
            end of t_history_pane.
 
     types: begin of t_value_map,
@@ -62,62 +62,62 @@ class zcl_2ui5_native_sql_console_st definition
              timezone_property type string,
              display_timezone type abap_bool,
              utc type abap_bool,
-             value_map type zcl_2ui5_native_sql_console_st=>t_value_map,
+             value_map type z2ui5_cl_sql_native_console_st=>t_value_map,
            end of t_column_config,
-           t_columns_config type standard table of zcl_2ui5_native_sql_console_st=>t_column_config with empty key,
+           t_columns_config type standard table of z2ui5_cl_sql_native_console_st=>t_column_config with empty key,
            begin of t_results_pane,
              db_data type ref to data,
              filtered_db_data type ref to data,
              output_data type ref to data,
              layout_size type string,
              title type string,
-             column_config type zcl_2ui5_native_sql_console_st=>t_columns_config,
+             column_config type z2ui5_cl_sql_native_console_st=>t_columns_config,
              wide_filter_string type string,
-             filters type z2ui5_sql_cl_context=>ty_t_filter_multi,
+             filters type z2ui5_cl_sql_context=>ty_t_filter_multi,
            end of t_results_pane.
 
     class-methods instance
                     importing
-                      i_serialized type zcl_2ui5_native_sql_console_st=>t_self optional
+                      i_serialized type z2ui5_cl_sql_native_console_st=>t_self optional
                     returning
-                      value(r_val) type zcl_2ui5_native_sql_console_st=>t_self.
+                      value(r_val) type z2ui5_cl_sql_native_console_st=>t_self.
 
     data is_initialized type abap_bool.
 
     data event_awaiting_response type string.
 
-    data page type zcl_2ui5_native_sql_console_st=>t_page.
+    data page type z2ui5_cl_sql_native_console_st=>t_page.
 
-    data sql_editor_pane type zcl_2ui5_native_sql_console_st=>t_sql_editor_pane.
+    data sql_editor_pane type z2ui5_cl_sql_native_console_st=>t_sql_editor_pane.
 
-    data history_pane type zcl_2ui5_native_sql_console_st=>t_history_pane.
+    data history_pane type z2ui5_cl_sql_native_console_st=>t_history_pane.
 
-    data results_pane type zcl_2ui5_native_sql_console_st=>t_results_pane.
+    data results_pane type z2ui5_cl_sql_native_console_st=>t_results_pane.
 
   protected section.
 
-    class-data an_instance type zcl_2ui5_native_sql_console_st=>t_self.
+    class-data an_instance type z2ui5_cl_sql_native_console_st=>t_self.
 
 endclass.
-class zcl_2ui5_native_sql_console_st implementation.
+class z2ui5_cl_sql_native_console_st implementation.
 
   method instance.
 
-    if not ( zcl_2ui5_native_sql_console_st=>an_instance is bound ).
+    if not ( z2ui5_cl_sql_native_console_st=>an_instance is bound ).
 
       if i_serialized is bound.
 
-        zcl_2ui5_native_sql_console_st=>an_instance = i_serialized.
+        z2ui5_cl_sql_native_console_st=>an_instance = i_serialized.
 
       else.
 
-        zcl_2ui5_native_sql_console_st=>an_instance = new #( ).
+        z2ui5_cl_sql_native_console_st=>an_instance = new #( ).
 
       endif.
 
     endif.
 
-    r_val = zcl_2ui5_native_sql_console_st=>an_instance.
+    r_val = z2ui5_cl_sql_native_console_st=>an_instance.
 
   endmethod.
 

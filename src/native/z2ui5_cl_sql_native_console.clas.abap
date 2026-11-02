@@ -1,4 +1,4 @@
-class zcl_2ui5_native_sql_console definition
+class z2ui5_cl_sql_native_console definition
                                   public
                                   create public.
 
@@ -10,9 +10,9 @@ class zcl_2ui5_native_sql_console definition
              id type string,
              ref type ref to object,
            end of t_ui_interaction,
-           t_ui_interactions type hashed table of zcl_2ui5_native_sql_console=>t_ui_interaction with unique key id,
-           t_events type zcl_2ui5_native_sql_console=>t_ui_interactions,
-           t_popup_interactions type zcl_2ui5_native_sql_console=>t_ui_interactions.
+           t_ui_interactions type hashed table of z2ui5_cl_sql_native_console=>t_ui_interaction with unique key id,
+           t_events type z2ui5_cl_sql_native_console=>t_ui_interactions,
+           t_popup_interactions type z2ui5_cl_sql_native_console=>t_ui_interactions.
 
     class-methods class_constructor.
 
@@ -24,13 +24,13 @@ class zcl_2ui5_native_sql_console definition
 
     methods events
               returning
-                value(r_val) type zcl_2ui5_native_sql_console=>t_events.
+                value(r_val) type z2ui5_cl_sql_native_console=>t_events.
 
     methods popup_dialogs
               returning
-                value(r_val) type zcl_2ui5_native_sql_console=>t_popup_interactions.
+                value(r_val) type z2ui5_cl_sql_native_console=>t_popup_interactions.
 
-    data state type ref to zcl_2ui5_native_sql_console_st.
+    data state type ref to z2ui5_cl_sql_native_console_st.
 
     data mr_output_data type ref to data.
 
@@ -39,7 +39,7 @@ class zcl_2ui5_native_sql_console definition
     data a_ui5_client type ref to z2ui5_if_client.
 
 endclass.
-class zcl_2ui5_native_sql_console implementation.
+class z2ui5_cl_sql_native_console implementation.
 
   method class_constructor.
 
@@ -52,7 +52,7 @@ class zcl_2ui5_native_sql_console implementation.
 
     me->a_ui5_client = client.
 
-    me->state = zcl_2ui5_native_sql_console_st=>instance( me->state ).
+    me->state = z2ui5_cl_sql_native_console_st=>instance( me->state ).
 
     try.
 
