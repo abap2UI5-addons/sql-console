@@ -90,5 +90,10 @@ as CI, and all of them must pass. CI:
 * `build-rename` — manual workflow that pushes a namespace-renamed branch
   `rename_<name>` for a parallel install; the branch carries `src/abap/` only
 
-There is no 702 downport (the native code uses APIs unavailable at 7.02).
+* `publish-702` / `abap-702` — `publish-702` writes the downported `702`
+  branch on every push to `main` (`npm run auto_downport` against
+  `.github/abaplint/abap_702.jsonc`), and `abap-702` lints it. The branch
+  carries `src/abap/` only: the native code uses APIs unavailable at 7.02.
+  Never commit to `702` by hand.
+
 All `.abap`/`.xml`/config files are LF-only (`.gitattributes` enforces it).

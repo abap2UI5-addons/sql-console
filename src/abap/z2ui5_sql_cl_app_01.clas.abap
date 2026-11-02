@@ -123,9 +123,14 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
   METHOD history_db_read.
 
     CLEAR ms_draft-history_tab.
+    DATA ls_out TYPE ty_history_out.
     LOOP AT z2ui5_sql_cl_history_api=>db_read_multi_by_user( ) REFERENCE INTO DATA(lr_history).
 
-      DATA(ls_out) = VALUE ty_history_out( s_db = CORRESPONDING #( lr_history->* EXCEPT result_data ) ).
+      " the list leaves the result out - assigned and cleared, not
+      " CORRESPONDING #( ... EXCEPT ), which has no 7.02 downport
+      CLEAR ls_out.
+      ls_out-s_db = lr_history->*.
+      CLEAR ls_out-s_db-result_data.
       history_set_date_time( CHANGING cs_out = ls_out ).
       INSERT ls_out INTO TABLE ms_draft-history_tab.
 

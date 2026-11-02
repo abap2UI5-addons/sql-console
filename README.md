@@ -48,6 +48,8 @@ before you use it beyond a development system.
   On-Premise with ABAP for Cloud) or Standard ABAP on SAP NetWeaver AS ABAP
   7.50 or higher. The native SQL console (`src/native`, ADBC) needs Standard
   ABAP; on ABAP Cloud, use the Open SQL console (`src/abap`).
+- NetWeaver 7.02 - 7.40: the branch `702`, downported automatically from
+  `main` on every push, with the Open SQL console only (no `src/native`) - pull abap2UI5, popups and custom-controls from their `702` branches as well
 - [abap2UI5](https://github.com/abap2UI5/abap2UI5)
 - [abap2UI5-addons/popups](https://github.com/abap2UI5-addons/popups)
 - [abap2UI5-addons/custom-controls](https://github.com/abap2UI5-addons/custom-controls) -

@@ -1,0 +1,35 @@
+name: abap-702
+
+on:
+  push:
+    branches: [702]
+  # publish-702 writes the 702 branch with the GITHUB_TOKEN, and a push made
+  # with that token starts no workflow - so the push trigger above never fires
+  # for it. This one does: it runs once publish-702 has finished.
+  workflow_run:
+    workflows: [publish-702]
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: abap-702-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  abap-702:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        ref: 702
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: '22'
+        cache: 'npm'
+    - run: npm ci
+    - run: npx abaplint .github/abaplint/abap_702.jsonc

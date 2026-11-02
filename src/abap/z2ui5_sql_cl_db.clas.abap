@@ -124,8 +124,7 @@ CLASS z2ui5_sql_cl_db IMPLEMENTATION.
       lr_handle3 = VALUE #( ( sign = `I` option = `EQ` low = handle3 ) ).
     ENDIF.
 
-    SELECT FROM z2ui5_sql_db
-      FIELDS *
+    SELECT * FROM z2ui5_sql_db
       WHERE uname   IN @lr_uname
         AND handle  IN @lr_handle
         AND handle2 IN @lr_handle2
