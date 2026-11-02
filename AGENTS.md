@@ -19,6 +19,30 @@ documentation must be in English.
 | `src/abap/` | The app (`z2ui5_sql_cl_*`), Open-SQL query path — Standard ABAP and ABAP Cloud |
 | `src/native/` | Native-SQL/ADBC path (`zcl_2ui5_native_*`, `zcl_association_processor`), derived from [ZTOAD](https://github.com/marianfoo/ztoad) — Standard ABAP only |
 
+## The Utility Copies (`src/abap/`)
+
+Utilities are vendored from the [abap-util](https://github.com/abap-util/abap-util)
+master catalog instead of being referenced — abapGit has no dependency
+management:
+
+| Object | Copy of | How |
+|---|---|---|
+| `z2ui5_sql_cl_context` | `zabaputil_cl_util_context` | renamed, trimmed to the methods this repository uses plus the helpers they need |
+| `z2ui5_sql_cl_db` | `zabaputil_cl_util_db` | renamed, as-is (the key/value store for history and draft) |
+| `z2ui5_sql_db` | `zabaputil_t_91` | renamed, as-is (the table of `z2ui5_sql_cl_db`; 12 characters, so the namespace rename stays within 16) |
+| `z2ui5_sql_cx_error` | `zabaputil_cx_util_error` | renamed, as-is |
+
+* **Nothing from the core's frozen `src/99/01`.** `z2ui5_cl_util*`,
+  `z2ui5_cx_util_error` and `z2ui5_t_91` are kept in abap2UI5 for
+  compatibility only. The ajson and S-RTTI classes the context calls
+  (`z2ui5_cl_ajson`, `z2ui5_cl_srt_*`) are the core's own and always present.
+* **New methods are added locally** to `z2ui5_sql_cl_context`; if abap-util
+  already has the method, copy it from there with its private helpers. A
+  periodic sync merges local additions back into abap-util.
+* The copies are kept as-is so the sync can diff them; where this
+  repository's stricter abaplint rules disagree with the master's code, the
+  copy is excluded from that rule in `abaplint.jsonc` instead of rewritten.
+
 ## Dependencies
 
 Installed alongside via abapGit; declared in the abaplint configs:
