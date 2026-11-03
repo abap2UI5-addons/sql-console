@@ -468,7 +468,12 @@
     "copy_of_initial_variable": true,
     "delete_index_in_loop": true,
     "final_newline": true,
-    "forbidden_kernel_write": true,
+    // an allow list matching no object: the default, empty, allows every one
+    "forbidden_kernel_write": {
+      "allow": [
+        "^$"
+      ]
+    },
     "inline_packed_computation": true,
     "is_assigned_in_loop": true,
     "no_mandt_in_database_operations": true,
@@ -530,6 +535,10 @@
         "fw_title",
         "lv_clause"
       ]
-    }
+    },
+    // added 2026-11: newer abaplint rules that report nothing here
+    "abapdoc_short_link": true,
+    "boolean_flag_via_if": true,
+    "cast_via_generic_reference": true
   }
 }
