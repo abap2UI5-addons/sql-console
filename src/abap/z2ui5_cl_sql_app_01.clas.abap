@@ -43,28 +43,6 @@ CLASS z2ui5_cl_sql_app_01 DEFINITION PUBLIC.
         appwidthlimited   TYPE abap_bool,
       END OF ms_draft.
 
-    TYPES:
-      BEGIN OF ty_row,
-        title    TYPE string,
-        value    TYPE string,
-        descr    TYPE string,
-        icon     TYPE string,
-        info     TYPE string,
-        selected TYPE abap_bool,
-      END OF ty_row.
-
-    TYPES:
-      BEGIN OF ty_sort,
-        text     TYPE string,
-        key      TYPE string,
-        selected TYPE abap_bool,
-      END OF ty_sort.
-
-    DATA t_tab TYPE STANDARD TABLE OF ty_row WITH EMPTY KEY .
-    DATA t_tab_sort TYPE STANDARD TABLE OF ty_sort WITH EMPTY KEY .
-    DATA t_tab_group TYPE STANDARD TABLE OF ty_sort WITH EMPTY KEY .
-    DATA t_tab_filter TYPE STANDARD TABLE OF ty_sort WITH EMPTY KEY .
-
   PROTECTED SECTION.
 
     DATA:
@@ -178,7 +156,7 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
         sql_command = ms_draft-sql_input
         tabname     = ms_draft-sql_s_command-name
         timestampl  = lr_hist->s_db-timestampl
-        uuid = lr_hist->s_db-uuid
+        uuid        = lr_hist->s_db-uuid
         counter     = lines( <tab> )
         result_data = z2ui5_cl_sql_context=>xml_srtti_stringify( ls_preview ) ) ).
 
@@ -266,7 +244,6 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
         )->ele( `OverflowToolbar`
         )->tag( `Title`
         )->a( n = `text` v = `Query History`
-        )->tag( `ToolbarSpacer`
         )->tag( `ToolbarSpacer`
         )->tag( `Button`
         )->a( n = `text` v = `New`
@@ -460,7 +437,6 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
           lt_comp        TYPE cl_abap_structdescr=>component_table,
           ls_comp        TYPE cl_abap_structdescr=>component.
 
-
     FIELD-SYMBOLS <lft_data> TYPE ANY TABLE.
 
     ASSIGN fo_result->* TO <lft_data>.
@@ -506,7 +482,6 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
 
     history_db_save( ).
     client->view_model_update( ).
-
 
   ENDMETHOD.
 
@@ -572,7 +547,7 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
           RETURN.
         ENDIF.
 
-        z2ui5_on_event(  ).
+        z2ui5_on_event( ).
 
       CATCH cx_root INTO DATA(x).
         client->nav_app_call( z2ui5_cl_popup_error=>factory( x ) ).
@@ -735,10 +710,6 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
                      )->end(
                      )->end( ).
 
-    page->ele( n = `Grid` ns = `layout`
-        )->a( n = `defaultSpan` v = `L7 M12 S12`
-        )->ele( n = `content` ns = `layout` ).
-
     DATA(cont_main) = page->ele( n = `ResponsiveSplitter` ns = `layout`
                           )->ele( n = `PaneContainer` ns = `layout`
                           )->a( n = `orientation` v = `Vertical` ).
@@ -776,7 +747,7 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
         )->ele( `VBox`
         )->a( n = `id` v = `preview` ).
 
-    preview_view(  ).
+    preview_view( ).
 
     client->view_display( view->stringify( ) ).
 

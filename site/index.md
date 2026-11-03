@@ -36,6 +36,7 @@ sql-console is an abap2UI5 app that runs an SQL query entered in the browser and
 - abap2UI5-addons/popups
 - abap2UI5-addons/custom-controls (spreadsheet export, z2ui5_cl_cci_spreadsheet)
 - ABAP Cloud or Standard ABAP on NetWeaver 7.50 or higher
+- NetWeaver 7.02 - 7.40: the downported branch 702, with the Open SQL console only
 - Native SQL console (ADBC) needs Standard ABAP; on ABAP Cloud use the Open SQL console
 
 ## Installation

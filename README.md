@@ -105,8 +105,8 @@ expressions in the statement are mapped to joins (`z2ui5_cl_sql_assoc_processor`
 ## Features
 
 * Execute SQL commands
+* Data preview with search, range filter and spreadsheet export
 * Save query history
-* Data preview
 
 ## Security
 
@@ -116,7 +116,6 @@ This is a developer tool. It runs the SQL the user enters, without an authorizat
 
 * Extend the input-to-SQL translation
 * Add authorization checks
-* XLSX Export
 * Fix ABAP Cloud Readiness
 
 ## Development
@@ -124,9 +123,10 @@ This is a developer tool. It runs the SQL the user enters, without an authorizat
 ```sh
 npm ci
 npm run check   # abaplint Standard + ABAP Cloud, abap2UI5-linter, rename check
+npm run unit    # ABAP Unit on abap2UI5's transpiled Node runtime
 ```
 
-`npm run check` runs the same steps as CI. The manual `build-rename` workflow
+`npm run check` and `npm run unit` run the same steps as CI. The manual `build-rename` workflow
 pushes a namespace-renamed copy to a branch `rename_<name>` for a parallel
 installation.
 
