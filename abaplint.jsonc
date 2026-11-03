@@ -500,6 +500,36 @@
     "redundant_cast": true,
     "smim_consistency": true,
     "sort_empty_key": true,
-    "subrc_after_assign": true
+    "subrc_after_assign": true,
+    // The rest of abap2UI5's rule set, added 2026-11 with their findings fixed.
+    // Exceptions, all in z2ui5_cl_sql_app_01 (PUBLIC and not FINAL, so its
+    // PUBLIC and PROTECTED members are API for callers and subclasses):
+    // unused_methods excludes the class for its unused PROTECTED method
+    // preview_filter_range. unused_variables skips the PUBLIC attributes t_tab,
+    // t_tab_sort, t_tab_group and t_tab_filter, the parameters fw_table and
+    // fw_title of the PROTECTED method result_display, and lv_clause, which
+    // is used - as the dynamic WHERE of DELETE, which abaplint does not count.
+    "unused_methods": {
+      "exclude": [
+        "z2ui5_cl_sql_app_01"
+      ]
+    },
+    "unused_variables": {
+      "severity": "Error",
+      "skipNames": [
+        "lv_dummy",
+        "lv_dummy2",
+        "lv_dummy3",
+        "lv_dummy4",
+        "<dummy>",
+        "t_tab",
+        "t_tab_sort",
+        "t_tab_group",
+        "t_tab_filter",
+        "fw_table",
+        "fw_title",
+        "lv_clause"
+      ]
+    }
   }
 }

@@ -456,8 +456,7 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
           ls_comp        TYPE cl_abap_structdescr=>component.
 
 
-    FIELD-SYMBOLS: <lft_data> TYPE ANY TABLE,
-                   <fs_comp>  TYPE any.
+    FIELD-SYMBOLS <lft_data> TYPE ANY TABLE.
 
     ASSIGN fo_result->* TO <lft_data>.
 
