@@ -1,0 +1,29 @@
+/* the blue of the abap2UI5-addons badge as the brand color */
+:root {
+  --vp-c-brand-1: #1667a6;
+  --vp-c-brand-2: #1873b4;
+  --vp-c-brand-3: #1873b4;
+  --vp-c-brand-soft: rgba(24, 115, 180, 0.14);
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(120deg, #1873b4 30%, #3fb4c8);
+}
+.dark {
+  --vp-c-brand-1: #5aa9e6;
+  --vp-c-brand-2: #3d93d6;
+  --vp-c-brand-3: #1873b4;
+  --vp-c-brand-soft: rgba(90, 169, 230, 0.16);
+}
+
+/* the badge rows of a README stay rows: VitePress shows an image as a block */
+.vp-doc p > a > img,
+.vp-doc p > img {
+  display: inline-block;
+  vertical-align: middle;
+  margin: 0 2px 2px 0;
+}
+
+/* the sections under the hero of the home page read like a guide page */
+.VPHome .vp-doc {
+  max-width: 1152px;
+  margin: 0 auto;
+}
