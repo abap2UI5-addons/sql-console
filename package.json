@@ -14,7 +14,8 @@
     "strip_trailing_ws": "find src -type f -name '*.abap' -exec sed -i 's/[[:space:]]\\+$//' {} +",
     "abaplintpathfix": "sed -i 's|\"/\\.\\./\\.\\./src/|\"/src/|g' abaplint.jsonc",
     "downport": "abaplint --fix .github/abaplint/abap_702.jsonc && npm run syfixes",
-    "auto_downport": "rm -rf src/native && (abaplint --fix .github/abaplint/abap_702.jsonc || true) && npm run syfixes && npm run strip_trailing_ws && abaplint .github/abaplint/abap_702.jsonc && cp -f .github/abaplint/abap_702.jsonc abaplint.jsonc && npm run abaplintpathfix"
+    "auto_downport": "rm -rf src/native && (abaplint --fix .github/abaplint/abap_702.jsonc || true) && npm run syfixes && npm run strip_trailing_ws && abaplint .github/abaplint/abap_702.jsonc && cp -f .github/abaplint/abap_702.jsonc abaplint.jsonc && npm run abaplintpathfix",
+    "unit": "node .github/scripts/unit.mjs"
   },
   "repository": {
     "type": "git",

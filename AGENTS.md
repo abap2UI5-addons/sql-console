@@ -81,6 +81,7 @@ as CI, and all of them must pass. CI:
   internals the package reads. `src/abap/` must stay ABAP-Cloud-clean.
 * `check-abap2ui5` — the abap2UI5-linter over the app classes and their views
   (`abap2ui5lint.jsonc`)
+* `abap-unit` — the ABAP Unit tests on abap2UI5's transpiled Node runtime, the way abap2UI5 tests itself: `npm run unit` (`.github/scripts/unit.mjs`) copies the packages into a checkout of abap2UI5's `main` (abap2UI5-ext, layout-management, popups and custom-controls beside it; `src/native` stays out - its ADT classes are on-premise only), downports, transpiles and runs the tests of this repository's classes
 * `check-rename` — namespace-rename check (`.github/abaplint/rename.json`,
   against the 9-character placeholder `zabap2ui5`). It resolves types like
   `abaplint.jsonc` and lints `src/native/` too, but leaves that package out of
