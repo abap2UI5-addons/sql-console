@@ -557,7 +557,16 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
               lv_field = `COUNT`.
             WHEN `AVG`.
               lo_type = cl_abap_elemdescr=>get_f( ).
-              lv_field = lr_item->inner.
+              " the column is named after the field - AVG( DISTINCT a~netwr )
+              " gives NETWR, as MIN, MAX and SUM do through resolve_field
+              lv_field = to_upper( condense( lr_item->inner ) ).
+              IF strlen( lv_field ) > 9 AND lv_field(9) = `DISTINCT `.
+                lv_field = condense( lv_field+9 ).
+              ENDIF.
+              IF lv_field CS `~`.
+                lv_field = substring_after( val = lv_field
+                                            sub = `~` ).
+              ENDIF.
             WHEN OTHERS.
               resolve_field( EXPORTING it_source = lt_source
                                        val       = lr_item->inner

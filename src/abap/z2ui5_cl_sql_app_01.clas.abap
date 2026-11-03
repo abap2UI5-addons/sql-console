@@ -157,7 +157,9 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
       EXIT.
     ENDLOOP.
     IF lr_hist IS NOT BOUND.
-      CREATE DATA lr_hist.
+      " no row selected - the run becomes the newest row of the list, as
+      " history_db_read would show it after a restart
+      INSERT VALUE #( selkz = abap_true ) INTO ms_draft-history_tab INDEX 1 REFERENCE INTO lr_hist.
     ENDIF.
     DATA(ls_preview) = ms_draft-s_preview.
     CLEAR ls_preview-tab.
