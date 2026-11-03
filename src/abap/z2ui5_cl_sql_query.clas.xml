@@ -3,23 +3,15 @@
  <asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">
   <asx:values>
    <VSEOCLASS>
-    <CLSNAME>ZCL_ASSOCIATION_PROCESSOR</CLSNAME>
+    <CLSNAME>Z2UI5_CL_SQL_QUERY</CLSNAME>
     <LANGU>E</LANGU>
-    <DESCRIPT>Association Processor</DESCRIPT>
+    <DESCRIPT>sql - query engine (dynamic Open SQL)</DESCRIPT>
     <STATE>1</STATE>
     <CLSCCINCL>X</CLSCCINCL>
     <FIXPT>X</FIXPT>
     <UNICODE>X</UNICODE>
     <WITH_UNIT_TESTS>X</WITH_UNIT_TESTS>
    </VSEOCLASS>
-   <TPOOL>
-    <item>
-     <ID>I</ID>
-     <KEY>001</KEY>
-     <ENTRY>Error mapping the association</ENTRY>
-     <LENGTH>58</LENGTH>
-    </item>
-   </TPOOL>
   </asx:values>
  </asx:abap>
 </abapGit>

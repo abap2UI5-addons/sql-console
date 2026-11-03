@@ -48,10 +48,26 @@ before you use it beyond a development system.
   On-Premise with ABAP for Cloud) or Standard ABAP on SAP NetWeaver AS ABAP
   7.50 or higher. The native SQL console (`src/native`, ADBC) needs Standard
   ABAP; on ABAP Cloud, use the Open SQL console (`src/abap`).
+- NetWeaver 7.02 - 7.40: the branch `702`, downported automatically from
+  `main` on every push, with the Open SQL console only (no `src/native`) - pull abap2UI5, popups and custom-controls from their `702` branches as well
 - [abap2UI5](https://github.com/abap2UI5/abap2UI5)
 - [abap2UI5-addons/popups](https://github.com/abap2UI5-addons/popups)
 - [abap2UI5-addons/custom-controls](https://github.com/abap2UI5-addons/custom-controls) -
   the spreadsheet export (`z2ui5_cl_cci_spreadsheet`)
+
+**Renamed (2026-11).** The classes follow the abap2UI5 naming now: `z2ui5_sql_cl_*` is `z2ui5_cl_sql_*`, `z2ui5_sql_cx_error` is `z2ui5_cx_sql_error`, `zcl_2ui5_native_sql_console(_st)` is `z2ui5_cl_sql_native_console(_st)` and `zcl_`/`zif_association_processor` is `z2ui5_cl_`/`z2ui5_if_sql_assoc_processor`. After the pull abapGit lists the old classes as deleted in the repository: delete them, and update `?app_start=` links.
+
+**Renumbered tables (2026-11).** The tables follow the numbering all addons share now: `Z2UI5_NSQL_C_HST` is `Z2UI5_T_32`, `Z2UI5_SQL_DB` is `Z2UI5_T_33`. The pull creates the new tables empty, and the data stays in the old ones. Copy it once per client before you delete an old table - for each pair, in a scratch report:
+
+```abap
+DATA lr_rows TYPE REF TO data.
+FIELD-SYMBOLS <rows> TYPE STANDARD TABLE.
+CREATE DATA lr_rows TYPE STANDARD TABLE OF ('Z2UI5_T_32').
+ASSIGN lr_rows->* TO <rows>.
+SELECT * FROM ('Z2UI5_NSQL_C_HST') INTO TABLE <rows>.
+MODIFY ('Z2UI5_T_32') FROM TABLE <rows>.
+COMMIT WORK.
+```
 
 **Steps** - with [abapGit](https://abapgit.org), in this order:
 
@@ -64,12 +80,12 @@ before you use it beyond a development system.
 
 | App | Class | Start |
 |---|---|---|
-| ABAP SQL Console (Open SQL) | `z2ui5_sql_cl_app_01` | `?app_start=z2ui5_sql_cl_app_01` |
-| Native SQL Console (ADBC, Standard ABAP only) | `zcl_2ui5_native_sql_console` | `?app_start=zcl_2ui5_native_sql_console` |
+| ABAP SQL Console (Open SQL) | `z2ui5_cl_sql_app_01` | `?app_start=z2ui5_cl_sql_app_01` |
+| Native SQL Console (ADBC, Standard ABAP only) | `z2ui5_cl_sql_native_console` | `?app_start=z2ui5_cl_sql_native_console` |
 
 ## Usage
 
-**ABAP SQL Console** (`z2ui5_sql_cl_app_01`, package `src/abap`)
+**ABAP SQL Console** (`z2ui5_cl_sql_app_01`, package `src/abap`)
 
 1. Type an ABAP SQL query into the editor - it starts with `Select * from T100`.
 2. Set **Max Rows** (default 500) and press **Run**.
@@ -78,13 +94,13 @@ before you use it beyond a development system.
 4. Every query goes into your history. Select an entry to load the query and
    its result again, or clear the history.
 
-**Native SQL Console** (`zcl_2ui5_native_sql_console`, package `src/native`)
+**Native SQL Console** (`z2ui5_cl_sql_native_console`, package `src/native`)
 
 The same idea for native SQL: the statement runs through ADBC, with a
 **Fallback Limit** (default 100) added when the statement has no limit of its
 own, a data preview and a query history (table
-`Z2UI5_NSQL_C_HST`) whose entries you load again or delete. Association path
-expressions in the statement are mapped to joins (`zcl_association_processor`).
+`Z2UI5_T_32`) whose entries you load again or delete. Association path
+expressions in the statement are mapped to joins (`z2ui5_cl_sql_assoc_processor`).
 
 ## Features
 

@@ -28,14 +28,14 @@ CLASS ltcl_parser IMPLEMENTATION.
                      `  FROM   t100  ` && cl_abap_char_utilities=>newline &&
                      `WHERE sprsl = 'E'`.
 
-    cl_abap_unit_assert=>assert_equals( act = z2ui5_sql_cl_query=>normalize( lv_query )
+    cl_abap_unit_assert=>assert_equals( act = z2ui5_cl_sql_query=>normalize( lv_query )
                                         exp = `SELECT * FROM t100 WHERE sprsl = 'E'` ).
 
   ENDMETHOD.
 
   METHOD parse_simple.
 
-    DATA(lt_clauses) = z2ui5_sql_cl_query=>parse( query    = `select carrid connid from spfli`
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse( query    = `select carrid connid from spfli`
                                                   max_rows = 100 ).
 
     cl_abap_unit_assert=>assert_equals( act = lines( lt_clauses )
@@ -52,7 +52,7 @@ CLASS ltcl_parser IMPLEMENTATION.
 
   METHOD parse_all_clauses.
 
-    DATA(lt_clauses) = z2ui5_sql_cl_query=>parse(
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse(
         `select carrid from spfli where carrid = 'AA' group by carrid having count( * ) > 1 order by carrid` ).
 
     cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-select_list
@@ -72,7 +72,7 @@ CLASS ltcl_parser IMPLEMENTATION.
 
   METHOD parse_single.
 
-    DATA(lt_clauses) = z2ui5_sql_cl_query=>parse( query    = `SELECT SINGLE carrid FROM spfli`
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse( query    = `SELECT SINGLE carrid FROM spfli`
                                                   max_rows = 100 ).
 
     cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-select_list
@@ -84,7 +84,7 @@ CLASS ltcl_parser IMPLEMENTATION.
 
   METHOD parse_distinct.
 
-    DATA(lt_clauses) = z2ui5_sql_cl_query=>parse( `SELECT DISTINCT carrid FROM spfli` ).
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse( `SELECT DISTINCT carrid FROM spfli` ).
 
     cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-select_list
                                         exp = `CARRID` ).
@@ -95,7 +95,7 @@ CLASS ltcl_parser IMPLEMENTATION.
 
   METHOD parse_up_to_rows.
 
-    DATA(lt_clauses) = z2ui5_sql_cl_query=>parse( query    = `SELECT * FROM t100 UP TO 42 ROWS`
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse( query    = `SELECT * FROM t100 UP TO 42 ROWS`
                                                   max_rows = 100 ).
 
     cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-rows
@@ -107,7 +107,7 @@ CLASS ltcl_parser IMPLEMENTATION.
 
   METHOD parse_removes_into.
 
-    DATA(lt_clauses) = z2ui5_sql_cl_query=>parse( `SELECT * FROM t100 INTO TABLE @lt_result WHERE sprsl = 'E'` ).
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse( `SELECT * FROM t100 INTO TABLE @lt_result WHERE sprsl = 'E'` ).
 
     cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-from
                                         exp = `T100` ).
@@ -118,7 +118,7 @@ CLASS ltcl_parser IMPLEMENTATION.
 
   METHOD parse_union.
 
-    DATA(lt_clauses) = z2ui5_sql_cl_query=>parse( `SELECT carrid FROM spfli UNION SELECT carrid FROM scarr` ).
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse( `SELECT carrid FROM spfli UNION SELECT carrid FROM scarr` ).
 
     cl_abap_unit_assert=>assert_equals( act = lines( lt_clauses )
                                         exp = 2 ).
@@ -133,7 +133,7 @@ CLASS ltcl_parser IMPLEMENTATION.
 
   METHOD parse_order_by_descending.
 
-    DATA(lt_clauses) = z2ui5_sql_cl_query=>parse( `SELECT * FROM spfli ORDER BY carrid connid DESCENDING` ).
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse( `SELECT * FROM spfli ORDER BY carrid connid DESCENDING` ).
 
     cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-order_by
                                         exp = `CARRID, CONNID DESCENDING` ).
@@ -143,9 +143,9 @@ CLASS ltcl_parser IMPLEMENTATION.
   METHOD parse_no_select_raises.
 
     TRY.
-        z2ui5_sql_cl_query=>parse( `DELETE FROM t100` ).
+        z2ui5_cl_sql_query=>parse( `DELETE FROM t100` ).
         cl_abap_unit_assert=>fail( ).
-      CATCH z2ui5_sql_cx_error ##NO_HANDLER.
+      CATCH z2ui5_cx_sql_error ##NO_HANDLER.
     ENDTRY.
 
   ENDMETHOD.
@@ -153,16 +153,16 @@ CLASS ltcl_parser IMPLEMENTATION.
   METHOD parse_no_from_raises.
 
     TRY.
-        z2ui5_sql_cl_query=>parse( `SELECT carrid` ).
+        z2ui5_cl_sql_query=>parse( `SELECT carrid` ).
         cl_abap_unit_assert=>fail( ).
-      CATCH z2ui5_sql_cx_error ##NO_HANDLER.
+      CATCH z2ui5_cx_sql_error ##NO_HANDLER.
     ENDTRY.
 
   ENDMETHOD.
 
   METHOD sources_single_table.
 
-    DATA(lt_source) = z2ui5_sql_cl_query=>get_sources( `t100` ).
+    DATA(lt_source) = z2ui5_cl_sql_query=>get_sources( `t100` ).
 
     cl_abap_unit_assert=>assert_equals( act = lines( lt_source )
                                         exp = 1 ).
@@ -175,7 +175,7 @@ CLASS ltcl_parser IMPLEMENTATION.
 
   METHOD sources_join_with_alias.
 
-    DATA(lt_source) = z2ui5_sql_cl_query=>get_sources(
+    DATA(lt_source) = z2ui5_cl_sql_query=>get_sources(
         `spfli AS a INNER JOIN scarr AS b ON a~carrid = b~carrid` ).
 
     cl_abap_unit_assert=>assert_equals( act = lines( lt_source )
@@ -193,7 +193,7 @@ CLASS ltcl_parser IMPLEMENTATION.
 
   METHOD sources_join_without_alias.
 
-    DATA(lt_source) = z2ui5_sql_cl_query=>get_sources(
+    DATA(lt_source) = z2ui5_cl_sql_query=>get_sources(
         `spfli LEFT OUTER JOIN scarr ON spfli~carrid = scarr~carrid` ).
 
     cl_abap_unit_assert=>assert_equals( act = lines( lt_source )

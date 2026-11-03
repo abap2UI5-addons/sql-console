@@ -1,4 +1,4 @@
-CLASS z2ui5_sql_cl_history_api DEFINITION
+CLASS z2ui5_cl_sql_history_api DEFINITION
   PUBLIC
   FINAL
   CREATE PUBLIC.
@@ -54,12 +54,12 @@ ENDCLASS.
 
 
 
-CLASS z2ui5_sql_cl_history_api IMPLEMENTATION.
+CLASS z2ui5_cl_sql_history_api IMPLEMENTATION.
 
   METHOD db_create.
 
     val-uname = sy-uname.
-    z2ui5_sql_cl_db=>save( uname   = val-uname
+    z2ui5_cl_sql_db=>save( uname   = val-uname
                             handle  = c_handle_history
                             handle2 = val-uuid
                             data    = val ).
@@ -70,10 +70,10 @@ CLASS z2ui5_sql_cl_history_api IMPLEMENTATION.
 
     DATA ls_entry TYPE ty_s_entry.
 
-    LOOP AT z2ui5_sql_cl_db=>load_multi_by_handle( uname  = val
+    LOOP AT z2ui5_cl_sql_db=>load_multi_by_handle( uname  = val
                                                     handle = c_handle_history ) REFERENCE INTO DATA(lr_db).
 
-      z2ui5_sql_cl_context=>xml_parse( EXPORTING xml = lr_db->data
+      z2ui5_cl_sql_context=>xml_parse( EXPORTING xml = lr_db->data
                                 IMPORTING any = ls_entry ).
       INSERT ls_entry INTO TABLE result.
 
@@ -83,10 +83,10 @@ CLASS z2ui5_sql_cl_history_api IMPLEMENTATION.
 
   METHOD db_delete.
 
-    LOOP AT z2ui5_sql_cl_db=>load_multi_by_handle( uname  = user
+    LOOP AT z2ui5_cl_sql_db=>load_multi_by_handle( uname  = user
                                                     handle = c_handle_history ) REFERENCE INTO DATA(lr_db).
 
-      z2ui5_sql_cl_db=>delete_by_handle( uname        = lr_db->uname
+      z2ui5_cl_sql_db=>delete_by_handle( uname        = lr_db->uname
                                           handle       = lr_db->handle
                                           handle2      = lr_db->handle2
                                           check_commit = abap_false ).
@@ -98,7 +98,7 @@ CLASS z2ui5_sql_cl_history_api IMPLEMENTATION.
 
   METHOD db_create_draft.
 
-    z2ui5_sql_cl_db=>save( uname  = sy-uname
+    z2ui5_cl_sql_db=>save( uname  = sy-uname
                             handle = c_handle_draft
                             data   = CONV string( val ) ).
 
@@ -107,10 +107,10 @@ CLASS z2ui5_sql_cl_history_api IMPLEMENTATION.
   METHOD db_read_draft.
 
     TRY.
-        z2ui5_sql_cl_db=>load_by_handle( EXPORTING uname  = sy-uname
+        z2ui5_cl_sql_db=>load_by_handle( EXPORTING uname  = sy-uname
                                                     handle = c_handle_draft
                                           IMPORTING result = result ).
-      CATCH z2ui5_sql_cx_error.
+      CATCH z2ui5_cx_sql_error.
         CLEAR result.
     ENDTRY.
 
@@ -120,14 +120,14 @@ CLASS z2ui5_sql_cl_history_api IMPLEMENTATION.
 
     " the id comes from the history list, which is bound to the view - only
     " an entry of the user's own history is read, as db_read_multi_by_user
-    DATA(lt_db) = z2ui5_sql_cl_db=>load_multi_by_handle( uname   = sy-uname
+    DATA(lt_db) = z2ui5_cl_sql_db=>load_multi_by_handle( uname   = sy-uname
                                                           handle  = c_handle_history
                                                           handle2 = val ).
     IF lt_db IS INITIAL.
       RETURN.
     ENDIF.
 
-    z2ui5_sql_cl_context=>xml_parse( EXPORTING xml = lt_db[ 1 ]-data
+    z2ui5_cl_sql_context=>xml_parse( EXPORTING xml = lt_db[ 1 ]-data
                               IMPORTING any = result ).
 
   ENDMETHOD.

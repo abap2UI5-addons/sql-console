@@ -1,4 +1,4 @@
-CLASS z2ui5_sql_cl_app_01 DEFINITION PUBLIC.
+CLASS z2ui5_cl_sql_app_01 DEFINITION PUBLIC.
 
   PUBLIC SECTION.
 
@@ -13,7 +13,7 @@ CLASS z2ui5_sql_cl_app_01 DEFINITION PUBLIC.
 
     TYPES:
       BEGIN OF ty_history_out,
-        s_db  TYPE z2ui5_sql_cl_history_api=>ty_s_entry,
+        s_db  TYPE z2ui5_cl_sql_history_api=>ty_s_entry,
         time  TYPE string,
         date  TYPE string,
         selkz TYPE abap_bool,
@@ -26,7 +26,7 @@ CLASS z2ui5_sql_cl_app_01 DEFINITION PUBLIC.
         cont_size      TYPE string,
         title          TYPE string,
         search_field   TYPE string,
-        t_filter       TYPE z2ui5_sql_cl_context=>ty_t_filter_multi,
+        t_filter       TYPE z2ui5_cl_sql_context=>ty_t_filter_multi,
         rtti_data      TYPE string,
         rtti_data_back TYPE string,
       END OF ty_s_preview.
@@ -35,7 +35,7 @@ CLASS z2ui5_sql_cl_app_01 DEFINITION PUBLIC.
       BEGIN OF ms_draft,
         s_preview         TYPE ty_s_preview,
         sql_input         TYPE string,
-        sql_s_command     TYPE z2ui5_sql_cl_context=>ty_s_filter_multi,
+        sql_s_command     TYPE z2ui5_cl_sql_context=>ty_s_filter_multi,
         sql_max_rows      TYPE i,
         sql_cont_size     TYPE string,
         history_cont_size TYPE string,
@@ -108,7 +108,7 @@ CLASS z2ui5_sql_cl_app_01 DEFINITION PUBLIC.
       IMPORTING
         fw_table     TYPE string
         fo_result    TYPE REF TO data
-        ft_fieldlist TYPE z2ui5_sql_cl_query=>ty_t_fieldlist
+        ft_fieldlist TYPE z2ui5_cl_sql_query=>ty_t_fieldlist
         fw_title     TYPE string.
 
   PRIVATE SECTION.
@@ -117,15 +117,20 @@ ENDCLASS.
 
 
 
-CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
+CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
 
 
   METHOD history_db_read.
 
     CLEAR ms_draft-history_tab.
-    LOOP AT z2ui5_sql_cl_history_api=>db_read_multi_by_user( ) REFERENCE INTO DATA(lr_history).
+    DATA ls_out TYPE ty_history_out.
+    LOOP AT z2ui5_cl_sql_history_api=>db_read_multi_by_user( ) REFERENCE INTO DATA(lr_history).
 
-      DATA(ls_out) = VALUE ty_history_out( s_db = CORRESPONDING #( lr_history->* EXCEPT result_data ) ).
+      " the list leaves the result out - assigned and cleared, not
+      " CORRESPONDING #( ... EXCEPT ), which has no 7.02 downport
+      CLEAR ls_out.
+      ls_out-s_db = lr_history->*.
+      CLEAR ls_out-s_db-result_data.
       history_set_date_time( CHANGING cs_out = ls_out ).
       INSERT ls_out INTO TABLE ms_draft-history_tab.
 
@@ -158,22 +163,22 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
     CLEAR ls_preview-tab.
     CLEAR ls_preview-tab_backup.
 
-    ls_preview-rtti_data = z2ui5_sql_cl_context=>xml_srtti_stringify( <tab> ).
+    ls_preview-rtti_data = z2ui5_cl_sql_context=>xml_srtti_stringify( <tab> ).
     IF <tab_back> IS ASSIGNED.
-      ls_preview-rtti_data_back = z2ui5_sql_cl_context=>xml_srtti_stringify( <tab_back> ).
+      ls_preview-rtti_data_back = z2ui5_cl_sql_context=>xml_srtti_stringify( <tab_back> ).
     ENDIF.
 
-    lr_hist->s_db-timestampl = z2ui5_sql_cl_context=>time_get_timestampl( ).
+    lr_hist->s_db-timestampl = z2ui5_cl_sql_context=>time_get_timestampl( ).
     IF lr_hist->s_db-uuid IS INITIAL.
-      lr_hist->s_db-uuid = z2ui5_sql_cl_context=>uuid_get_c32( ).
+      lr_hist->s_db-uuid = z2ui5_cl_sql_context=>uuid_get_c32( ).
     ENDIF.
-    z2ui5_sql_cl_history_api=>db_create( VALUE #(
+    z2ui5_cl_sql_history_api=>db_create( VALUE #(
         sql_command = ms_draft-sql_input
         tabname     = ms_draft-sql_s_command-name
         timestampl  = lr_hist->s_db-timestampl
         uuid = lr_hist->s_db-uuid
         counter     = lines( <tab> )
-        result_data = z2ui5_sql_cl_context=>xml_srtti_stringify( ls_preview ) ) ).
+        result_data = z2ui5_cl_sql_context=>xml_srtti_stringify( ls_preview ) ) ).
 
     lr_hist->s_db-sql_command = ms_draft-sql_input.
     lr_hist->s_db-tabname = ms_draft-sql_s_command-name.
@@ -212,14 +217,14 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
   METHOD history_on_load.
 
     DATA(ls_arg) = ms_draft-history_tab[ selkz = abap_true ].
-    DATA(ls_entry) = z2ui5_sql_cl_history_api=>db_read_by_id( ls_arg-s_db-uuid ).
+    DATA(ls_entry) = z2ui5_cl_sql_history_api=>db_read_by_id( ls_arg-s_db-uuid ).
     ms_draft-sql_input = ls_entry-sql_command.
 
     DATA lr_preview TYPE REF TO data.
     CLEAR ms_draft-s_preview-tab.
 
     IF ls_entry-result_data IS NOT INITIAL.
-      lr_preview = z2ui5_sql_cl_context=>xml_srtti_parse( ls_entry-result_data ).
+      lr_preview = z2ui5_cl_sql_context=>xml_srtti_parse( ls_entry-result_data ).
 
       FIELD-SYMBOLS <any> TYPE any.
       ASSIGN lr_preview->('title') TO <any>.
@@ -232,12 +237,12 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
       DATA lr_data TYPE REF TO data.
 
       ASSIGN lr_preview->('rtti_data') TO <any>.
-      lr_data = z2ui5_sql_cl_context=>xml_srtti_parse( <any> ).
-      ms_draft-s_preview-tab = z2ui5_sql_cl_context=>conv_copy_ref_data( lr_data ).
+      lr_data = z2ui5_cl_sql_context=>xml_srtti_parse( <any> ).
+      ms_draft-s_preview-tab = z2ui5_cl_sql_context=>conv_copy_ref_data( lr_data ).
 
       ASSIGN lr_preview->('rtti_data_back') TO <any>.
-      lr_data = z2ui5_sql_cl_context=>xml_srtti_parse( <any> ).
-      ms_draft-s_preview-tab_backup = z2ui5_sql_cl_context=>conv_copy_ref_data( lr_data ).
+      lr_data = z2ui5_cl_sql_context=>xml_srtti_parse( <any> ).
+      ms_draft-s_preview-tab_backup = z2ui5_cl_sql_context=>conv_copy_ref_data( lr_data ).
 
     ENDIF.
 
@@ -302,7 +307,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
 
     IF ms_draft-s_preview-search_field IS NOT INITIAL.
 
-      z2ui5_sql_cl_context=>itab_filter_by_val(
+      z2ui5_cl_sql_context=>itab_filter_by_val(
         EXPORTING
           val = ms_draft-s_preview-search_field
         CHANGING
@@ -321,7 +326,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
     ASSIGN ms_draft-s_preview-tab_backup->* TO <tab2>.
     <tab> = <tab2>.
     preview_filter_search( ).
-    ms_draft-s_preview-title = `Number of Rows: ` && ` (` && z2ui5_sql_cl_context=>c_trim( lines( <tab> ) ) && `)`.
+    ms_draft-s_preview-title = `Number of Rows: ` && ` (` && z2ui5_cl_sql_context=>c_trim( lines( <tab> ) ) && `)`.
 
     preview_view( ).
     history_db_save( ).
@@ -340,7 +345,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
     ASSIGN ms_draft-s_preview-tab_backup->* TO <tab2>.
     <tab> = <tab2>.
 
-    ms_draft-s_preview-title = `Number of Rows: ` && ` ` && z2ui5_sql_cl_context=>c_trim( lines( <tab> ) ).
+    ms_draft-s_preview-title = `Number of Rows: ` && ` ` && z2ui5_cl_sql_context=>c_trim( lines( <tab> ) ).
 
     preview_view( ).
     client->message_toast_display( `All filters deleted` ).
@@ -414,7 +419,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
           columns = client->_bind( val  = mv_column_config
                                    json = abap_true ) ).
 
-      DATA(lt_fields) = z2ui5_sql_cl_context=>rtti_get_t_attri_by_any( <tab> ).
+      DATA(lt_fields) = z2ui5_cl_sql_context=>rtti_get_t_attri_by_any( <tab> ).
 
       DATA(lo_columns) = tab->ele( n = `columns` ns = `table` ).
       LOOP AT lt_fields INTO DATA(lv_field).
@@ -451,8 +456,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
           ls_comp        TYPE cl_abap_structdescr=>component.
 
 
-    FIELD-SYMBOLS: <lft_data> TYPE ANY TABLE,
-                   <fs_comp>  TYPE any.
+    FIELD-SYMBOLS <lft_data> TYPE ANY TABLE.
 
     ASSIGN fo_result->* TO <lft_data>.
 
@@ -492,8 +496,8 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
 
     preview_view( ).
 
-    ms_draft-s_preview-t_filter = z2ui5_sql_cl_context=>filter_get_multi_by_data( <tab> ).
-    ms_draft-s_preview-title = `Number of Rows: ` && ` ` && z2ui5_sql_cl_context=>c_trim( lines( <tab2> ) ).
+    ms_draft-s_preview-t_filter = z2ui5_cl_sql_context=>filter_get_multi_by_data( <tab> ).
+    ms_draft-s_preview-title = `Number of Rows: ` && ` ` && z2ui5_cl_sql_context=>c_trim( lines( <tab2> ) ).
 
     history_db_save( ).
     client->view_model_update( ).
@@ -505,9 +509,9 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
   METHOD sql_on_run.
 
     TRY.
-        DATA(ls_result) = z2ui5_sql_cl_query=>run( query    = ms_draft-sql_input
+        DATA(ls_result) = z2ui5_cl_sql_query=>run( query    = ms_draft-sql_input
                                                    max_rows = ms_draft-sql_max_rows ).
-      CATCH z2ui5_sql_cx_error INTO DATA(lx_error).
+      CATCH z2ui5_cx_sql_error INTO DATA(lx_error).
         client->message_box_display( text = lx_error->get_text( )
                                      type = `error` ).
         RETURN.
@@ -581,7 +585,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
     ENDTRY.
 
     TRY.
-        DATA(lo_popup_range) = CAST z2ui5_cl_popup_get_range_m( client->get_app( client->get( )-s_draft-id_prev_app ) ).
+        DATA(lo_popup_range) = CAST z2ui5_cl_popup_get_ranges( client->get_app( client->get( )-s_draft-id_prev_app ) ).
         IF lo_popup_range->result( )-check_confirmed = abap_true.
           ms_draft-s_preview-t_filter = lo_popup_range->result( )-t_filter.
           preview_on_filter( ).
@@ -606,7 +610,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
       WHEN ms_control-callback_pop_session_load.
 
         IF io_popup->result( ).
-          DATA(lv_id) = z2ui5_sql_cl_history_api=>db_read_draft( ).
+          DATA(lv_id) = z2ui5_cl_sql_history_api=>db_read_draft( ).
           client->nav_app_leave( client->get_app( lv_id ) ).
         ELSE.
           z2ui5_on_init_set_app( ).
@@ -621,7 +625,7 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
 
         CLEAR ms_draft-history_tab.
         client->view_model_update( ).
-        z2ui5_sql_cl_history_api=>db_delete( ).
+        z2ui5_cl_sql_history_api=>db_delete( ).
         client->message_toast_display( `All entries successfully deleted from database` ).
 
     ENDCASE.
@@ -631,14 +635,14 @@ CLASS z2ui5_sql_cl_app_01 IMPLEMENTATION.
 
   METHOD z2ui5_on_event.
 
-    z2ui5_sql_cl_history_api=>db_create_draft( client->get( )-s_draft-id ).
+    z2ui5_cl_sql_history_api=>db_create_draft( client->get( )-s_draft-id ).
 
     CASE client->get( )-event.
       WHEN `START`.
         z2ui5_on_init_set_app( ).
 
       WHEN `PREVIEW_FILTER`.
-        client->nav_app_call( z2ui5_cl_popup_get_range_m=>factory( ms_draft-s_preview-t_filter ) ).
+        client->nav_app_call( z2ui5_cl_popup_get_ranges=>factory( ms_draft-s_preview-t_filter ) ).
 
       WHEN `PREVIEW_CLEAR_FILTER`.
         preview_on_filter_clear( ).

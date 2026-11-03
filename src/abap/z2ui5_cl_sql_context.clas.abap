@@ -1,4 +1,4 @@
-CLASS z2ui5_sql_cl_context DEFINITION
+CLASS z2ui5_cl_sql_context DEFINITION
   PUBLIC
   CREATE PUBLIC.
 
@@ -258,13 +258,13 @@ CLASS z2ui5_sql_cl_context DEFINITION
 
     CLASS-DATA gt_class_exists TYPE HASHED TABLE OF ty_s_class_exists WITH UNIQUE KEY name.
 
-    " Guards the cycle z2ui5_sql_cx_error=>constructor -> uuid_get_c32 ->
-    " RAISE z2ui5_sql_cx_error -> ... see uuid_get_c32.
+    " Guards the cycle z2ui5_cx_sql_error=>constructor -> uuid_get_c32 ->
+    " RAISE z2ui5_cx_sql_error -> ... see uuid_get_c32.
     CLASS-DATA gv_uuid_failed TYPE abap_bool.
 ENDCLASS.
 
 
-CLASS z2ui5_sql_cl_context IMPLEMENTATION.
+CLASS z2ui5_cl_sql_context IMPLEMENTATION.
 
   METHOD class_constructor.
 
@@ -482,7 +482,7 @@ CLASS z2ui5_sql_cl_context IMPLEMENTATION.
     TRY.
         sdescr ?= type.
       CATCH cx_sy_move_cast_error INTO DATA(lx_cast).
-        RAISE EXCEPTION TYPE z2ui5_sql_cx_error
+        RAISE EXCEPTION TYPE z2ui5_cx_sql_error
           EXPORTING
             val      = |Include type '{ type->absolute_name }' is not a structure|
             previous = lx_cast.
@@ -498,7 +498,7 @@ CLASS z2ui5_sql_cl_context IMPLEMENTATION.
     " readable error instead of a stack-overflow dump. 16 nested include
     " levels is far beyond any real DDIC structure
     IF depth > 16.
-      RAISE EXCEPTION TYPE z2ui5_sql_cx_error
+      RAISE EXCEPTION TYPE z2ui5_cx_sql_error
         EXPORTING
           val = `RTTI_INCLUDE_RECURSION - include expansion exceeded 16 levels (cyclic include?)`.
     ENDIF.
@@ -630,7 +630,7 @@ CLASS z2ui5_sql_cl_context IMPLEMENTATION.
           " keep the root cause - a transformation error on the caller's own
           " data must not be masked behind a bare UNSUPPORTED_FEATURE
           DATA(lv_text) = `UNSUPPORTED_FEATURE`.
-          RAISE EXCEPTION TYPE z2ui5_sql_cx_error
+          RAISE EXCEPTION TYPE z2ui5_cx_sql_error
             EXPORTING
               val      = lv_text
               previous = lx_srtti.
@@ -742,7 +742,7 @@ CLASS z2ui5_sql_cl_context IMPLEMENTATION.
             data  = result.
 
       CATCH cx_root.
-        RAISE EXCEPTION TYPE z2ui5_sql_cx_error
+        RAISE EXCEPTION TYPE z2ui5_cx_sql_error
           EXPORTING
             val      = |UNSUPPORTED_CODEPAGE_API - neither CL_ABAP_CONV_CODEPAGE | &&
                        |nor CL_ABAP_CONV_IN_CE could convert here|
@@ -795,7 +795,7 @@ CLASS z2ui5_sql_cl_context IMPLEMENTATION.
             buffer = result.
 
       CATCH cx_root.
-        RAISE EXCEPTION TYPE z2ui5_sql_cx_error
+        RAISE EXCEPTION TYPE z2ui5_cx_sql_error
           EXPORTING
             val      = |UNSUPPORTED_CODEPAGE_API - neither CL_ABAP_CONV_CODEPAGE | &&
                        |nor CL_ABAP_CONV_OUT_CE could convert here|
@@ -834,7 +834,7 @@ CLASS z2ui5_sql_cl_context IMPLEMENTATION.
         " consumer's single top-level catch can turn it into a handled error.
         " ASSERT would raise the uncatchable ASSERTION_FAILED and bypass that
         " catch (short dump instead of a handled error response).
-        " z2ui5_sql_cx_error=>constructor itself calls uuid_get_c32, so the
+        " z2ui5_cx_sql_error=>constructor itself calls uuid_get_c32, so the
         " raise below re-enters this method. gv_uuid_failed makes that nested
         " call return an empty UUID instead of raising again (endless recursion
         " until the stack overflows, which would defeat the handled error above).
@@ -843,7 +843,7 @@ CLASS z2ui5_sql_cl_context IMPLEMENTATION.
         ENDIF.
         gv_uuid_failed = abap_true.
         TRY.
-            RAISE EXCEPTION TYPE z2ui5_sql_cx_error
+            RAISE EXCEPTION TYPE z2ui5_cx_sql_error
               EXPORTING
                 val = lx_uuid.
           CLEANUP.

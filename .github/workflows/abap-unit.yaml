@@ -1,0 +1,72 @@
+name: abap-unit
+
+# The ABAP Unit tests of this repository on abap2UI5's transpiled Node
+# runtime (SQLite behind the database statements) - `npm run unit`, the
+# same .github/scripts/unit.mjs a developer runs. The checkouts the script
+# would clone into .unit/ are made here, so the npm cache can key on
+# abap2UI5's lockfile; UNIT_NO_FETCH tells the script to take them as they
+# are.
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: abap-unit-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  abap-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        repository: abap2UI5/abap2UI5
+        ref: main
+        path: .unit/abap2UI5
+        persist-credentials: false
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        repository: abap2UI5/abap2UI5-ext
+        ref: main
+        path: .unit/abap2UI5-ext
+        persist-credentials: false
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        repository: abap2UI5-addons/layout-management
+        ref: main
+        path: .unit/layout-management
+        persist-credentials: false
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        repository: abap2UI5-addons/popups
+        ref: main
+        path: .unit/popups
+        persist-credentials: false
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        repository: abap2UI5-addons/custom-controls
+        ref: main
+        path: .unit/custom-controls
+        persist-credentials: false
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: '22'
+        cache: 'npm'
+        cache-dependency-path: .unit/abap2UI5/package-lock.json
+    # the three git dependencies abap2UI5 pins in fetch-deps.mjs (the
+    # downport fetches them) - that file is the key, as in abap2UI5's own CI
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: .unit/abap2UI5/node/deps
+        key: abap-deps-${{ runner.os }}-${{ hashFiles('.unit/abap2UI5/node/setup/fetch-deps.mjs') }}
+    - run: npm run unit
+      env:
+        UNIT_NO_FETCH: '1'

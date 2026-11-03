@@ -9,7 +9,13 @@
     "check:cloud": "abaplint .github/abaplint/abap_cloud.jsonc",
     "check:abap2ui5": "abap2ui5lint",
     "check": "npm run lint && npm run check:cloud && npm run check:abap2ui5 && npm run rename",
-    "test": "npm run check"
+    "test": "npm run check",
+    "syfixes": "find src -type f -name '*.abap' -exec sed -i -e 's/ RAISE EXCEPTION TYPE cx_sy_itab_line_not_found/ ASSERT 1 = 0/g' {} +",
+    "strip_trailing_ws": "find src -type f -name '*.abap' -exec sed -i 's/[[:space:]]\\+$//' {} +",
+    "abaplintpathfix": "sed -i 's|\"/\\.\\./\\.\\./src/|\"/src/|g' abaplint.jsonc",
+    "downport": "abaplint --fix .github/abaplint/abap_702.jsonc && npm run syfixes",
+    "auto_downport": "rm -rf src/native && (abaplint --fix .github/abaplint/abap_702.jsonc || true) && npm run syfixes && npm run strip_trailing_ws && abaplint .github/abaplint/abap_702.jsonc && cp -f .github/abaplint/abap_702.jsonc abaplint.jsonc && npm run abaplintpathfix",
+    "unit": "node .github/scripts/unit.mjs"
   },
   "repository": {
     "type": "git",
@@ -23,7 +29,7 @@
   "devDependencies": {
     "@abap2ui5/linter": "^0.9.0",
     "@abap2ui5/linter-render": "^0.9.0",
-    "@abaplint/cli": "^2.120.86"
+    "@abaplint/cli": "^2.120.92"
   },
   "engines": {
     "node": ">=22"

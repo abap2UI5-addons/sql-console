@@ -1,0 +1,56 @@
+{
+  "global": {
+    "files": "/../../src/**/*.*",
+    // the native console reads CDS associations through DDIC APIs that 7.02
+    // does not have - auto_downport removes src/native from the 702 branch
+    "exclude": ["/src/native/"]
+  },
+  "dependencies": [
+    {
+      "url": "https://github.com/abapedia/steampunk-2305-api-intersect-702",
+      "folder": "/deps",
+      "files": "/src/**/*.*"
+    },
+    {
+      // the downported abap2UI5 (branch 702 is generated from main)
+      "url": "https://github.com/abap2UI5/abap2UI5",
+      "branch": "702",
+      "folder": "/abap2UI5",
+      "files": "/src/**/*.*"
+    },
+    {
+      // the downported popups (its 702 branch)
+      "url": "https://github.com/abap2UI5-addons/popups",
+      "branch": "702",
+      "folder": "/popups",
+      "files": "/src/**/*.*"
+    },
+    {
+      // the downported custom-controls (its 702 branch)
+      "url": "https://github.com/abap2UI5-addons/custom-controls",
+      "branch": "702",
+      "folder": "/custom-controls",
+      "files": "/src/**/*.*"
+    }
+  ],
+  "syntax": {
+    "version": "v702",
+    "errorNamespace": "^(Z|Y|LCL_|TY_|LIF_)"
+  },
+  "rules": {
+    "downport": true,
+    "begin_end_names": true,
+    "check_ddic": true,
+    "check_include": true,
+    "check_syntax": true,
+    "global_class": true,
+    "definitions_top": true,
+    "implement_methods": true,
+    "method_implemented_twice": true,
+    "parser_error": true,
+    "superclass_final": true,
+    "uncaught_exception": true,
+    "unknown_types": true,
+    "xml_consistency": true
+  }
+}

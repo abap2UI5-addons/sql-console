@@ -1,0 +1,43 @@
+name: publish-702
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-702-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish-702:
+    if: github.repository == 'abap2UI5-addons/sql-console'
+    permissions:
+      contents: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+    - name: Set up Node.js
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: '22'
+        cache: 'npm'
+
+    - run: npm ci
+    - run: npm run auto_downport
+
+    - name: Commit and Push Changes
+      run: |
+        git config --global user.name 'github-actions[bot]'
+        git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+        git add .
+        git diff --staged --quiet || git commit -m "Downport changes"
+        git checkout -b 702
+        git push --force origin HEAD:702
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,4 +1,4 @@
-CLASS z2ui5_sql_cl_db DEFINITION
+CLASS z2ui5_cl_sql_db DEFINITION
   PUBLIC
   FINAL
   CREATE PUBLIC .
@@ -39,7 +39,7 @@ CLASS z2ui5_sql_cl_db DEFINITION
       EXPORTING
         VALUE(result) TYPE any.
 
-    TYPES ty_s_db TYPE z2ui5_sql_db.
+    TYPES ty_s_db TYPE z2ui5_t_33.
     TYPES ty_t_db TYPE STANDARD TABLE OF ty_s_db WITH EMPTY KEY.
 
     " only supplied parameters filter the selection, initial values of
@@ -59,13 +59,13 @@ ENDCLASS.
 
 
 
-CLASS z2ui5_sql_cl_db IMPLEMENTATION.
+CLASS z2ui5_cl_sql_db IMPLEMENTATION.
 
 
 
   METHOD delete_by_handle.
 
-    DELETE FROM z2ui5_sql_db
+    DELETE FROM z2ui5_t_33
         WHERE
            uname = @uname
             AND handle = @handle
@@ -82,7 +82,7 @@ CLASS z2ui5_sql_cl_db IMPLEMENTATION.
   METHOD load_by_handle.
 
     SELECT SINGLE data
-      FROM z2ui5_sql_db
+      FROM z2ui5_t_33
        WHERE
         uname = @uname
         AND handle = @handle
@@ -90,12 +90,12 @@ CLASS z2ui5_sql_cl_db IMPLEMENTATION.
         AND handle3 = @handle3 "#EC WARNOK
       INTO @DATA(lv_data).
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE z2ui5_sql_cx_error
+      RAISE EXCEPTION TYPE z2ui5_cx_sql_error
         EXPORTING
           val = `NO_ENTRY_FOR_HANDLE_EXISTS`.
     ENDIF.
 
-    z2ui5_sql_cl_context=>xml_parse(
+    z2ui5_cl_sql_context=>xml_parse(
       EXPORTING
         xml = lv_data
       IMPORTING
@@ -106,10 +106,10 @@ CLASS z2ui5_sql_cl_db IMPLEMENTATION.
 
   METHOD load_multi_by_handle.
 
-    DATA lr_uname   TYPE RANGE OF z2ui5_sql_db-uname.
-    DATA lr_handle  TYPE RANGE OF z2ui5_sql_db-handle.
-    DATA lr_handle2 TYPE RANGE OF z2ui5_sql_db-handle2.
-    DATA lr_handle3 TYPE RANGE OF z2ui5_sql_db-handle3.
+    DATA lr_uname   TYPE RANGE OF z2ui5_t_33-uname.
+    DATA lr_handle  TYPE RANGE OF z2ui5_t_33-handle.
+    DATA lr_handle2 TYPE RANGE OF z2ui5_t_33-handle2.
+    DATA lr_handle3 TYPE RANGE OF z2ui5_t_33-handle3.
 
     IF uname IS SUPPLIED.
       lr_uname = VALUE #( ( sign = `I` option = `EQ` low = uname ) ).
@@ -124,8 +124,7 @@ CLASS z2ui5_sql_cl_db IMPLEMENTATION.
       lr_handle3 = VALUE #( ( sign = `I` option = `EQ` low = handle3 ) ).
     ENDIF.
 
-    SELECT FROM z2ui5_sql_db
-      FIELDS *
+    SELECT * FROM z2ui5_t_33
       WHERE uname   IN @lr_uname
         AND handle  IN @lr_handle
         AND handle2 IN @lr_handle2
@@ -138,16 +137,16 @@ CLASS z2ui5_sql_cl_db IMPLEMENTATION.
   METHOD load_by_id.
 
     SELECT SINGLE data
-      FROM z2ui5_sql_db
+      FROM z2ui5_t_33
       WHERE id = @id  "#EC WARNOK
       INTO @DATA(lv_data).
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE z2ui5_sql_cx_error
+      RAISE EXCEPTION TYPE z2ui5_cx_sql_error
         EXPORTING
           val = |NO_ENTRY_FOR_ID_EXISTS: { id }|.
     ENDIF.
 
-    z2ui5_sql_cl_context=>xml_parse(
+    z2ui5_cl_sql_context=>xml_parse(
       EXPORTING
         xml = lv_data
       IMPORTING
@@ -159,7 +158,7 @@ CLASS z2ui5_sql_cl_db IMPLEMENTATION.
   METHOD save.
 
     SELECT SINGLE id
-      FROM z2ui5_sql_db
+      FROM z2ui5_t_33
        WHERE
         uname = @uname
         AND handle = @handle
@@ -167,22 +166,22 @@ CLASS z2ui5_sql_cl_db IMPLEMENTATION.
         AND handle3 = @handle3
       INTO @DATA(lv_id) ##SUBRC_OK.
 
-    DATA(ls_db) = VALUE z2ui5_sql_db(
+    DATA(ls_db) = VALUE z2ui5_t_33(
         uname   = uname
         handle  = handle
         handle2 = handle2
         handle3 = handle3
-        data    = z2ui5_sql_cl_context=>xml_stringify( data ) ).
+        data    = z2ui5_cl_sql_context=>xml_stringify( data ) ).
 
     IF lv_id IS NOT INITIAL.
       ls_db-id = lv_id.
     ELSE.
-      ls_db-id = z2ui5_sql_cl_context=>uuid_get_c32( ).
+      ls_db-id = z2ui5_cl_sql_context=>uuid_get_c32( ).
     ENDIF.
 
-    MODIFY z2ui5_sql_db FROM @ls_db.
+    MODIFY z2ui5_t_33 FROM @ls_db.
     IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE z2ui5_sql_cx_error
+      RAISE EXCEPTION TYPE z2ui5_cx_sql_error
         EXPORTING
           val = `DB_SAVE_FAILED`.
     ENDIF.
