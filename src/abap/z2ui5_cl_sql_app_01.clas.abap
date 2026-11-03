@@ -290,7 +290,9 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
     FIELD-SYMBOLS <tab> TYPE STANDARD TABLE.
     ASSIGN ms_draft-s_preview-tab->* TO <tab>.
 
-    LOOP AT ms_draft-s_preview-t_filter INTO DATA(ls_tab).
+    " a column without a range is no filter - NOT IN an empty range is false
+    " for every row and would delete them all
+    LOOP AT ms_draft-s_preview-t_filter INTO DATA(ls_tab) WHERE t_range IS NOT INITIAL.
 
       DATA(lv_clause) = ls_tab-name && ` not in ls_tab-t_range`.
       DELETE <tab> WHERE (lv_clause).
@@ -326,7 +328,8 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
     ASSIGN ms_draft-s_preview-tab_backup->* TO <tab2>.
     <tab> = <tab2>.
     preview_filter_search( ).
-    ms_draft-s_preview-title = `Number of Rows: ` && ` (` && z2ui5_cl_sql_context=>c_trim( lines( <tab> ) ) && `)`.
+    preview_filter_range( ).
+    ms_draft-s_preview-title = |Number of Rows: { lines( <tab> ) }|.
 
     preview_view( ).
     history_db_save( ).
@@ -345,7 +348,7 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
     ASSIGN ms_draft-s_preview-tab_backup->* TO <tab2>.
     <tab> = <tab2>.
 
-    ms_draft-s_preview-title = `Number of Rows: ` && ` ` && z2ui5_cl_sql_context=>c_trim( lines( <tab> ) ).
+    ms_draft-s_preview-title = |Number of Rows: { lines( <tab> ) }|.
 
     preview_view( ).
     client->message_toast_display( `All filters deleted` ).
@@ -497,7 +500,7 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
     preview_view( ).
 
     ms_draft-s_preview-t_filter = z2ui5_cl_sql_context=>filter_get_multi_by_data( <tab> ).
-    ms_draft-s_preview-title = `Number of Rows: ` && ` ` && z2ui5_cl_sql_context=>c_trim( lines( <tab2> ) ).
+    ms_draft-s_preview-title = |Number of Rows: { lines( <tab2> ) }|.
 
     history_db_save( ).
     client->view_model_update( ).

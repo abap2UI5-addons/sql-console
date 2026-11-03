@@ -1,8 +1,7 @@
 # AGENTS.md — AI Assistant Guide for abap2UI5 sql-console
 
 > This file follows the cross-tool AGENTS.md convention and is the single
-> agent instruction file of this repository — Claude Code reads `AGENTS.md`
-> natively, there is no separate `CLAUDE.md`.
+> agent instruction file of this repository — `CLAUDE.md` only points here.
 
 ## Project Overview
 
@@ -16,7 +15,7 @@ documentation must be in English.
 
 | Package | Content |
 |---|---|
-| `src/abap/` | The app (`z2ui5_sql_cl_*`), Open-SQL query path — Standard ABAP and ABAP Cloud |
+| `src/abap/` | The app (`z2ui5_cl_sql_*`), Open-SQL query path — Standard ABAP and ABAP Cloud |
 | `src/native/` | Native-SQL/ADBC path (`z2ui5_cl_sql_native_*`, `z2ui5_cl_sql_assoc_processor`), derived from [ZTOAD](https://github.com/marianfoo/ztoad) — Standard ABAP only |
 
 ## The Utility Copies (`src/abap/`)
