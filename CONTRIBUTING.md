@@ -12,9 +12,9 @@ npm run check
 ```
 
 `npm run check` is the same set of steps the workflows run on a pull request,
-so a green run locally is a green run there. `npm test` is an alias for it —
-this repository has no separate unit-test suite; its ABAP is checked, not
-executed.
+so a green run locally is a green run there. `npm test` is an alias for it.
+The ABAP Unit tests run separately with `npm run unit` (CI: `abap-unit`), on
+abap2UI5's transpiled Node runtime.
 
 ## What the gates are
 
@@ -23,6 +23,7 @@ executed.
 | `npm run lint` | abaplint: syntax and style, resolved against the abap2UI5 core and the sibling addons |
 | `npm run check:cloud` | the same source compiles under ABAP Cloud restrictions — all but `src/native`, the ADBC console, which is Standard ABAP only |
 | `npm run check:abap2ui5` | [abap2UI5-linter](https://github.com/abap2UI5/linter): the app class and the view it builds, judged together — controls, members, bindings, the UI5 version floor, and a headless render of every view |
+| `npm run unit` | the ABAP Unit tests, transpiled and run on Node (`.github/scripts/unit.mjs`) |
 | `npm run rename` | the namespace rename still applies cleanly; `src/native` is linted but left out of the renamed output (see `.github/abaplint/rename.json`) |
 
 The abap2UI5-linter keeps a baseline in `abap2ui5lint-baseline.json`. Findings

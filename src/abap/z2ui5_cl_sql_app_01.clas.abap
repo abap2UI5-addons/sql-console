@@ -43,28 +43,6 @@ CLASS z2ui5_cl_sql_app_01 DEFINITION PUBLIC.
         appwidthlimited   TYPE abap_bool,
       END OF ms_draft.
 
-    TYPES:
-      BEGIN OF ty_row,
-        title    TYPE string,
-        value    TYPE string,
-        descr    TYPE string,
-        icon     TYPE string,
-        info     TYPE string,
-        selected TYPE abap_bool,
-      END OF ty_row.
-
-    TYPES:
-      BEGIN OF ty_sort,
-        text     TYPE string,
-        key      TYPE string,
-        selected TYPE abap_bool,
-      END OF ty_sort.
-
-    DATA t_tab TYPE STANDARD TABLE OF ty_row WITH EMPTY KEY .
-    DATA t_tab_sort TYPE STANDARD TABLE OF ty_sort WITH EMPTY KEY .
-    DATA t_tab_group TYPE STANDARD TABLE OF ty_sort WITH EMPTY KEY .
-    DATA t_tab_filter TYPE STANDARD TABLE OF ty_sort WITH EMPTY KEY .
-
   PROTECTED SECTION.
 
     DATA:
@@ -157,7 +135,9 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
       EXIT.
     ENDLOOP.
     IF lr_hist IS NOT BOUND.
-      CREATE DATA lr_hist.
+      " no row selected - the run becomes the newest row of the list, as
+      " history_db_read would show it after a restart
+      INSERT VALUE #( selkz = abap_true ) INTO ms_draft-history_tab INDEX 1 REFERENCE INTO lr_hist.
     ENDIF.
     DATA(ls_preview) = ms_draft-s_preview.
     CLEAR ls_preview-tab.
@@ -176,7 +156,7 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
         sql_command = ms_draft-sql_input
         tabname     = ms_draft-sql_s_command-name
         timestampl  = lr_hist->s_db-timestampl
-        uuid = lr_hist->s_db-uuid
+        uuid        = lr_hist->s_db-uuid
         counter     = lines( <tab> )
         result_data = z2ui5_cl_sql_context=>xml_srtti_stringify( ls_preview ) ) ).
 
@@ -265,7 +245,6 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
         )->tag( `Title`
         )->a( n = `text` v = `Query History`
         )->tag( `ToolbarSpacer`
-        )->tag( `ToolbarSpacer`
         )->tag( `Button`
         )->a( n = `text` v = `New`
         )->a( n = `press` v = client->_event( `HISTORY_CREATE` )
@@ -290,7 +269,9 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
     FIELD-SYMBOLS <tab> TYPE STANDARD TABLE.
     ASSIGN ms_draft-s_preview-tab->* TO <tab>.
 
-    LOOP AT ms_draft-s_preview-t_filter INTO DATA(ls_tab).
+    " a column without a range is no filter - NOT IN an empty range is false
+    " for every row and would delete them all
+    LOOP AT ms_draft-s_preview-t_filter INTO DATA(ls_tab) WHERE t_range IS NOT INITIAL.
 
       DATA(lv_clause) = ls_tab-name && ` not in ls_tab-t_range`.
       DELETE <tab> WHERE (lv_clause).
@@ -326,7 +307,8 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
     ASSIGN ms_draft-s_preview-tab_backup->* TO <tab2>.
     <tab> = <tab2>.
     preview_filter_search( ).
-    ms_draft-s_preview-title = `Number of Rows: ` && ` (` && z2ui5_cl_sql_context=>c_trim( lines( <tab> ) ) && `)`.
+    preview_filter_range( ).
+    ms_draft-s_preview-title = |Number of Rows: { lines( <tab> ) }|.
 
     preview_view( ).
     history_db_save( ).
@@ -345,7 +327,7 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
     ASSIGN ms_draft-s_preview-tab_backup->* TO <tab2>.
     <tab> = <tab2>.
 
-    ms_draft-s_preview-title = `Number of Rows: ` && ` ` && z2ui5_cl_sql_context=>c_trim( lines( <tab> ) ).
+    ms_draft-s_preview-title = |Number of Rows: { lines( <tab> ) }|.
 
     preview_view( ).
     client->message_toast_display( `All filters deleted` ).
@@ -455,7 +437,6 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
           lt_comp        TYPE cl_abap_structdescr=>component_table,
           ls_comp        TYPE cl_abap_structdescr=>component.
 
-
     FIELD-SYMBOLS <lft_data> TYPE ANY TABLE.
 
     ASSIGN fo_result->* TO <lft_data>.
@@ -497,11 +478,10 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
     preview_view( ).
 
     ms_draft-s_preview-t_filter = z2ui5_cl_sql_context=>filter_get_multi_by_data( <tab> ).
-    ms_draft-s_preview-title = `Number of Rows: ` && ` ` && z2ui5_cl_sql_context=>c_trim( lines( <tab2> ) ).
+    ms_draft-s_preview-title = |Number of Rows: { lines( <tab2> ) }|.
 
     history_db_save( ).
     client->view_model_update( ).
-
 
   ENDMETHOD.
 
@@ -567,7 +547,7 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
           RETURN.
         ENDIF.
 
-        z2ui5_on_event(  ).
+        z2ui5_on_event( ).
 
       CATCH cx_root INTO DATA(x).
         client->nav_app_call( z2ui5_cl_popup_error=>factory( x ) ).
@@ -730,10 +710,6 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
                      )->end(
                      )->end( ).
 
-    page->ele( n = `Grid` ns = `layout`
-        )->a( n = `defaultSpan` v = `L7 M12 S12`
-        )->ele( n = `content` ns = `layout` ).
-
     DATA(cont_main) = page->ele( n = `ResponsiveSplitter` ns = `layout`
                           )->ele( n = `PaneContainer` ns = `layout`
                           )->a( n = `orientation` v = `Vertical` ).
@@ -771,7 +747,7 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
         )->ele( `VBox`
         )->a( n = `id` v = `preview` ).
 
-    preview_view(  ).
+    preview_view( ).
 
     client->view_display( view->stringify( ) ).
 
