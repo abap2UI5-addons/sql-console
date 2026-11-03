@@ -381,10 +381,12 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
     LOOP AT lt_token REFERENCE INTO DATA(lr_token).
 
       DATA(lv_last) = lines( lt_item ).
+      " OPTIONAL, not a plain table expression: the 7.02 downport reads a
+      " table expression before the IF, the guard lv_last > 0 or not
       IF lv_last > 0
          AND (    lr_token->* = `ASCENDING`
                OR lr_token->* = `DESCENDING`
-               OR ( lr_token->* = `KEY` AND lt_item[ lv_last ] = `PRIMARY` ) ).
+               OR ( lr_token->* = `KEY` AND VALUE string( lt_item[ lv_last ] OPTIONAL ) = `PRIMARY` ) ).
         lt_item[ lv_last ] = |{ lt_item[ lv_last ] } { lr_token->* }|.
         CONTINUE.
       ENDIF.
