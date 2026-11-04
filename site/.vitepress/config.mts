@@ -46,7 +46,11 @@ export default defineConfig({
   outDir: join(ROOT, "build", "site"),
   cleanUrls: true,
   lastUpdated: true,
-  head: [["link", { rel: "icon", type: "image/png", href: `/${site.repo}/favicon.png` }]],
+  // the addons logo: SVG where the browser takes it, PNG otherwise
+  head: [
+    ["link", { rel: "icon", type: "image/svg+xml", href: `/${site.repo}/logo.svg` }],
+    ["link", { rel: "icon", type: "image/png", href: `/${site.repo}/favicon.png` }],
+  ],
   markdown: {
     config(md) {
       // only the pages that include a file of the repository (frontmatter
@@ -69,7 +73,8 @@ export default defineConfig({
     },
   },
   themeConfig: {
-    logo: "/favicon.png",
+    // the navbar carries abap2UI5's logo, the hero and the favicon the addons logo
+    logo: { src: "/abap2ui5.svg", alt: "abap2UI5" },
     nav: [
       { text: "Guide", link: "/guide" },
       ...(site.nav ?? []),

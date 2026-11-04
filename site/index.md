@@ -5,8 +5,8 @@ hero:
   name: "SQL Console"
   text: "Type a query, see the result as a table, keep the history."
   image:
-    src: /favicon.png
-    alt: abap2UI5
+    src: /logo.svg
+    alt: abap2UI5 addons
   actions:
     - theme: brand
       text: Get started
