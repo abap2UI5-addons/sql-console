@@ -11,14 +11,14 @@ CLASS z2ui5_cl_sql_query DEFINITION
         ref_table TYPE string,
         ref_field TYPE string,
       END OF ty_s_field.
-    TYPES ty_t_fieldlist TYPE STANDARD TABLE OF ty_s_field WITH EMPTY KEY.
+    TYPES ty_t_fieldlist TYPE STANDARD TABLE OF ty_s_field WITH DEFAULT KEY.
 
     TYPES:
       BEGIN OF ty_s_source,
         name  TYPE string,
         alias TYPE string,
       END OF ty_s_source.
-    TYPES ty_t_source TYPE STANDARD TABLE OF ty_s_source WITH EMPTY KEY.
+    TYPES ty_t_source TYPE STANDARD TABLE OF ty_s_source WITH DEFAULT KEY.
 
     TYPES:
       BEGIN OF ty_s_clauses,
@@ -31,7 +31,7 @@ CLASS z2ui5_cl_sql_query DEFINITION
         rows        TYPE i,
         distinct    TYPE abap_bool,
       END OF ty_s_clauses.
-    TYPES ty_t_clauses TYPE STANDARD TABLE OF ty_s_clauses WITH EMPTY KEY.
+    TYPES ty_t_clauses TYPE STANDARD TABLE OF ty_s_clauses WITH DEFAULT KEY.
 
     TYPES:
       BEGIN OF ty_s_result,
@@ -84,7 +84,7 @@ CLASS z2ui5_cl_sql_query DEFINITION
         inner TYPE string,
         alias TYPE string,
       END OF ty_s_item.
-    TYPES ty_t_item TYPE STANDARD TABLE OF ty_s_item WITH EMPTY KEY.
+    TYPES ty_t_item TYPE STANDARD TABLE OF ty_s_item WITH DEFAULT KEY.
 
     TYPES:
       BEGIN OF ty_s_target,
@@ -176,11 +176,32 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
     FIELD-SYMBOLS <lt_part>   TYPE STANDARD TABLE.
     DATA lr_part TYPE REF TO data.
 
-    DATA(lt_clauses) = parse( query    = query
+    DATA lt_clauses TYPE z2ui5_cl_sql_query=>ty_t_clauses.
+    DATA ls_first LIKE LINE OF lt_clauses.
+    FIELD-SYMBOLS <temp1> LIKE LINE OF lt_clauses.
+    DATA temp2 LIKE sy-tabix.
+    DATA ls_target TYPE z2ui5_cl_sql_query=>ty_s_target.
+    DATA temp61 LIKE LINE OF lt_clauses.
+    DATA lr_clauses LIKE REF TO temp61.
+      DATA ls_target2 TYPE z2ui5_cl_sql_query=>ty_s_target.
+    DATA lt_source TYPE z2ui5_cl_sql_query=>ty_t_source.
+    DATA temp62 TYPE z2ui5_cl_sql_query=>ty_s_result-tabname.
+    DATA temp63 TYPE z2ui5_cl_sql_query=>ty_s_source.
+    lt_clauses = parse( query    = query
                               max_rows = max_rows ).
 
-    DATA(ls_first) = lt_clauses[ 1 ].
-    DATA(ls_target) = build_target( ls_first ).
+
+
+
+    temp2 = sy-tabix.
+    READ TABLE lt_clauses INDEX 1 ASSIGNING <temp1>.
+    sy-tabix = temp2.
+    IF sy-subrc <> 0.
+      ASSERT 1 = 0.
+    ENDIF.
+    ls_first = <temp1>.
+
+    ls_target = build_target( ls_first ).
 
     CREATE DATA result-data TYPE HANDLE ls_target-o_table.
     ASSIGN result-data->* TO <lt_result>.
@@ -191,9 +212,12 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
 
     " union segments are executed separately and appended to the
     " result of the first segment, converted to its line type
-    LOOP AT lt_clauses REFERENCE INTO DATA(lr_clauses) FROM 2.
 
-      DATA(ls_target2) = build_target( lr_clauses->* ).
+
+    LOOP AT lt_clauses REFERENCE INTO lr_clauses FROM 2.
+
+
+      ls_target2 = build_target( lr_clauses->* ).
       CREATE DATA lr_part TYPE HANDLE ls_target-o_table.
       ASSIGN lr_part->* TO <lt_part>.
 
@@ -205,9 +229,17 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
 
     ENDLOOP.
 
-    DATA(lt_source) = get_sources( ls_first-from ).
+
+    lt_source = get_sources( ls_first-from ).
     result-fieldlist = ls_target-fieldlist.
-    result-tabname   = VALUE #( lt_source[ 1 ]-name OPTIONAL ).
+
+    CLEAR temp62.
+
+    READ TABLE lt_source INTO temp63 INDEX 1.
+    IF sy-subrc = 0.
+      temp62 = temp63-name.
+    ENDIF.
+    result-tabname   = temp62.
     result-from      = ls_first-from.
     result-query     = normalize( query ).
     result-count     = lines( <lt_result> ).
@@ -216,13 +248,25 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
 
   METHOD normalize.
 
-    DATA(lv_query) = replace( val  = CONV string( query )
+    DATA temp64 TYPE string.
+    DATA lv_query TYPE string.
+    TYPES temp1 TYPE STANDARD TABLE OF string WITH DEFAULT KEY.
+DATA lt_line TYPE temp1.
+    DATA temp65 LIKE LINE OF lt_line.
+    DATA lr_line LIKE REF TO temp65.
+    temp64 = query.
+
+    lv_query = replace( val  = temp64
                               sub  = cl_abap_char_utilities=>cr_lf
                               with = cl_abap_char_utilities=>newline
                               occ  = 0 ).
 
-    SPLIT lv_query AT cl_abap_char_utilities=>newline INTO TABLE DATA(lt_line).
-    LOOP AT lt_line REFERENCE INTO DATA(lr_line).
+
+
+    SPLIT lv_query AT cl_abap_char_utilities=>newline INTO TABLE lt_line.
+
+
+    LOOP AT lt_line REFERENCE INTO lr_line.
       lr_line->* = condense( lr_line->* ).
     ENDLOOP.
     DELETE lt_line WHERE table_line IS INITIAL.
@@ -235,10 +279,15 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
   METHOD parse.
 
     DATA lt_segment TYPE string_table.
-    DATA(lv_query) = normalize( query ).
+    DATA lv_query TYPE string.
+      DATA lv_offset TYPE i.
+    DATA temp66 LIKE LINE OF lt_segment.
+    DATA lr_segment LIKE REF TO temp66.
+    lv_query = normalize( query ).
 
     DO.
-      FIND FIRST OCCURRENCE OF ` UNION SELECT ` IN lv_query IGNORING CASE MATCH OFFSET DATA(lv_offset).
+
+      FIND FIRST OCCURRENCE OF ` UNION SELECT ` IN lv_query IGNORING CASE MATCH OFFSET lv_offset.
       IF sy-subrc <> 0.
         INSERT lv_query INTO TABLE lt_segment.
         EXIT.
@@ -248,7 +297,9 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
       lv_query = lv_query+lv_offset.
     ENDDO.
 
-    LOOP AT lt_segment REFERENCE INTO DATA(lr_segment).
+
+
+    LOOP AT lt_segment REFERENCE INTO lr_segment.
       INSERT parse_segment( val      = lr_segment->*
                             max_rows = max_rows ) INTO TABLE result.
     ENDLOOP.
@@ -263,10 +314,38 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
         offset  TYPE i,
         length  TYPE i,
       END OF ty_s_pos.
-    DATA lt_pos TYPE STANDARD TABLE OF ty_s_pos WITH EMPTY KEY.
+    TYPES temp2 TYPE STANDARD TABLE OF ty_s_pos WITH DEFAULT KEY.
+DATA lt_pos TYPE temp2.
     DATA lv_rows TYPE string.
 
-    DATA(lv_segment) = val.
+    DATA lv_segment LIKE val.
+    DATA lv_select_offset TYPE i.
+    DATA lv_from_offset TYPE i.
+    DATA lv_select_start TYPE i.
+    DATA lv_length TYPE i.
+    DATA lv_select TYPE string.
+    DATA lv_rest_offset TYPE i.
+    DATA lv_rest TYPE string.
+    DATA temp3 TYPE string_table.
+    DATA temp67 LIKE temp3.
+    DATA temp5 LIKE LINE OF temp67.
+    DATA lr_keyword LIKE REF TO temp5.
+      DATA lv_offset TYPE i.
+        DATA temp68 TYPE ty_s_pos.
+    DATA lv_from_length TYPE ty_s_pos-offset.
+    FIELD-SYMBOLS <temp6> LIKE LINE OF lt_pos.
+    DATA temp7 LIKE sy-tabix.
+    DATA temp69 LIKE LINE OF lt_pos.
+    DATA lr_pos LIKE REF TO temp69.
+      DATA lv_content_offset TYPE ty_s_pos-offset.
+      DATA lv_index TYPE i.
+      DATA temp70 LIKE sy-subrc.
+      DATA temp71 LIKE sy-tabix.
+        DATA lv_content_length TYPE ty_s_pos-offset.
+        FIELD-SYMBOLS <temp8> LIKE LINE OF lt_pos.
+        DATA temp9 LIKE sy-tabix.
+        DATA lv_content TYPE string.
+    lv_segment = val.
 
     FIND FIRST OCCURRENCE OF REGEX `UP TO ([0-9]+) ROWS` IN lv_segment IGNORING CASE SUBMATCHES lv_rows.
     IF sy-subrc = 0.
@@ -279,30 +358,35 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
     REPLACE FIRST OCCURRENCE OF REGEX `(INTO|APPENDING)( TABLE| CORRESPONDING FIELDS OF TABLE| CORRESPONDING FIELDS OF)? @?\S+`
             IN lv_segment WITH `` IGNORING CASE.
 
-    FIND FIRST OCCURRENCE OF `SELECT ` IN lv_segment IGNORING CASE MATCH OFFSET DATA(lv_select_offset).
+
+    FIND FIRST OCCURRENCE OF `SELECT ` IN lv_segment IGNORING CASE MATCH OFFSET lv_select_offset.
     IF sy-subrc <> 0.
       RAISE EXCEPTION TYPE z2ui5_cx_sql_error
         EXPORTING
           val = `SQL_PARSER_ERROR - no SELECT found in query`.
     ENDIF.
 
+
     FIND FIRST OCCURRENCE OF ` FROM ` IN SECTION OFFSET lv_select_offset OF lv_segment
-         IGNORING CASE MATCH OFFSET DATA(lv_from_offset).
+         IGNORING CASE MATCH OFFSET lv_from_offset.
     IF sy-subrc <> 0.
       RAISE EXCEPTION TYPE z2ui5_cx_sql_error
         EXPORTING
           val = `SQL_PARSER_ERROR - no FROM found in query`.
     ENDIF.
 
-    DATA(lv_select_start) = lv_select_offset + 7.
-    DATA(lv_length) = lv_from_offset - lv_select_start.
+
+    lv_select_start = lv_select_offset + 7.
+
+    lv_length = lv_from_offset - lv_select_start.
     IF lv_length <= 0.
       RAISE EXCEPTION TYPE z2ui5_cx_sql_error
         EXPORTING
           val = `SQL_PARSER_ERROR - empty select list`.
     ENDIF.
 
-    DATA(lv_select) = condense( to_upper( lv_segment+lv_select_start(lv_length) ) ).
+
+    lv_select = condense( to_upper( lv_segment+lv_select_start(lv_length) ) ).
     IF strlen( lv_select ) > 7 AND lv_select(7) = `SINGLE `.
       result-rows = 1.
       lv_select = condense( lv_select+7 ).
@@ -313,16 +397,32 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
     ENDIF.
     result-select_list = lv_select.
 
-    DATA(lv_rest_offset) = lv_from_offset + 6.
-    DATA(lv_rest) = lv_segment+lv_rest_offset.
 
-    LOOP AT VALUE string_table( ( ` WHERE ` ) ( ` GROUP BY ` ) ( ` HAVING ` ) ( ` ORDER BY ` ) )
-         REFERENCE INTO DATA(lr_keyword).
-      FIND FIRST OCCURRENCE OF lr_keyword->* IN lv_rest IGNORING CASE MATCH OFFSET DATA(lv_offset).
+    lv_rest_offset = lv_from_offset + 6.
+
+    lv_rest = lv_segment+lv_rest_offset.
+
+
+    CLEAR temp3.
+    INSERT ` WHERE ` INTO TABLE temp3.
+    INSERT ` GROUP BY ` INTO TABLE temp3.
+    INSERT ` HAVING ` INTO TABLE temp3.
+    INSERT ` ORDER BY ` INTO TABLE temp3.
+
+    temp67 = temp3.
+
+
+    LOOP AT temp67
+         REFERENCE INTO lr_keyword.
+
+      FIND FIRST OCCURRENCE OF lr_keyword->* IN lv_rest IGNORING CASE MATCH OFFSET lv_offset.
       IF sy-subrc = 0.
-        INSERT VALUE #( keyword = condense( lr_keyword->* )
-                        offset  = lv_offset
-                        length  = strlen( lr_keyword->* ) ) INTO TABLE lt_pos.
+
+        CLEAR temp68.
+        temp68-keyword = condense( lr_keyword->* ).
+        temp68-offset = lv_offset.
+        temp68-length = strlen( lr_keyword->* ).
+        INSERT temp68 INTO TABLE lt_pos.
       ENDIF.
     ENDLOOP.
     SORT lt_pos BY offset.
@@ -332,15 +432,44 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    DATA(lv_from_length) = lt_pos[ 1 ]-offset.
+
+
+
+    temp7 = sy-tabix.
+    READ TABLE lt_pos INDEX 1 ASSIGNING <temp6>.
+    sy-tabix = temp7.
+    IF sy-subrc <> 0.
+      ASSERT 1 = 0.
+    ENDIF.
+    lv_from_length = <temp6>-offset.
     result-from = condense( to_upper( lv_rest(lv_from_length) ) ).
 
-    LOOP AT lt_pos REFERENCE INTO DATA(lr_pos).
-      DATA(lv_content_offset) = lr_pos->offset + lr_pos->length.
-      DATA(lv_index) = sy-tabix + 1.
-      IF line_exists( lt_pos[ lv_index ] ).
-        DATA(lv_content_length) = lt_pos[ lv_index ]-offset - lv_content_offset.
-        DATA(lv_content) = lv_rest+lv_content_offset(lv_content_length).
+
+
+    LOOP AT lt_pos REFERENCE INTO lr_pos.
+
+      lv_content_offset = lr_pos->offset + lr_pos->length.
+
+      lv_index = sy-tabix + 1.
+
+
+      temp71 = sy-tabix.
+      READ TABLE lt_pos INDEX lv_index TRANSPORTING NO FIELDS.
+      temp70 = sy-subrc.
+      sy-tabix = temp71.
+      IF temp70 = 0.
+
+
+
+        temp9 = sy-tabix.
+        READ TABLE lt_pos INDEX lv_index ASSIGNING <temp8>.
+        sy-tabix = temp9.
+        IF sy-subrc <> 0.
+          ASSERT 1 = 0.
+        ENDIF.
+        lv_content_length = <temp8>-offset - lv_content_offset.
+
+        lv_content = lv_rest+lv_content_offset(lv_content_length).
       ELSE.
         lv_content = lv_rest+lv_content_offset.
       ENDIF.
@@ -362,9 +491,17 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
 
   METHOD join_by_comma.
 
-    DATA(lv_val) = CONV string( val ).
+    DATA temp72 TYPE string.
+    DATA lv_val LIKE temp72.
+    TYPES temp3 TYPE STANDARD TABLE OF string WITH DEFAULT KEY.
+DATA lt_token TYPE temp3.
+    temp72 = val.
+
+    lv_val = temp72.
     REPLACE ALL OCCURRENCES OF `,` IN lv_val WITH ` `.
-    SPLIT condense( lv_val ) AT ` ` INTO TABLE DATA(lt_token).
+
+
+    SPLIT condense( lv_val ) AT ` ` INTO TABLE lt_token.
     result = concat_lines_of( table = lt_token
                               sep   = `, ` ).
 
@@ -374,24 +511,70 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
 
     DATA lt_item TYPE string_table.
 
-    DATA(lv_val) = CONV string( val ).
+    DATA temp73 TYPE string.
+    DATA lv_val LIKE temp73.
+    TYPES temp4 TYPE STANDARD TABLE OF string WITH DEFAULT KEY.
+DATA lt_token TYPE temp4.
+    DATA temp74 LIKE LINE OF lt_token.
+    DATA lr_token LIKE REF TO temp74.
+      DATA lv_last TYPE i.
+      DATA temp75 TYPE string.
+      DATA temp76 TYPE string.
+        FIELD-SYMBOLS <temp77> LIKE LINE OF lt_item.
+        DATA temp78 LIKE sy-tabix.
+        FIELD-SYMBOLS <temp10> LIKE LINE OF lt_item.
+        DATA temp11 LIKE sy-tabix.
+      DATA temp79 LIKE LINE OF lt_item.
+    temp73 = val.
+
+    lv_val = temp73.
     REPLACE ALL OCCURRENCES OF `,` IN lv_val WITH ` `.
-    SPLIT condense( lv_val ) AT ` ` INTO TABLE DATA(lt_token).
 
-    LOOP AT lt_token REFERENCE INTO DATA(lr_token).
 
-      DATA(lv_last) = lines( lt_item ).
+    SPLIT condense( lv_val ) AT ` ` INTO TABLE lt_token.
+
+
+
+    LOOP AT lt_token REFERENCE INTO lr_token.
+
+
+      lv_last = lines( lt_item ).
       " OPTIONAL, not a plain table expression: the 7.02 downport reads a
       " table expression before the IF, the guard lv_last > 0 or not
+
+      CLEAR temp75.
+
+      READ TABLE lt_item INTO temp76 INDEX lv_last.
+      IF sy-subrc = 0.
+        temp75 = temp76.
+      ENDIF.
       IF lv_last > 0
          AND (    lr_token->* = `ASCENDING`
                OR lr_token->* = `DESCENDING`
-               OR ( lr_token->* = `KEY` AND VALUE string( lt_item[ lv_last ] OPTIONAL ) = `PRIMARY` ) ).
-        lt_item[ lv_last ] = |{ lt_item[ lv_last ] } { lr_token->* }|.
+               OR ( lr_token->* = `KEY` AND temp75 = `PRIMARY` ) ).
+
+
+        temp78 = sy-tabix.
+        READ TABLE lt_item INDEX lv_last ASSIGNING <temp77>.
+        sy-tabix = temp78.
+        IF sy-subrc <> 0.
+          ASSERT 1 = 0.
+        ENDIF.
+
+
+        temp11 = sy-tabix.
+        READ TABLE lt_item INDEX lv_last ASSIGNING <temp10>.
+        sy-tabix = temp11.
+        IF sy-subrc <> 0.
+          ASSERT 1 = 0.
+        ENDIF.
+        <temp77> = |{ <temp10> } { lr_token->* }|.
         CONTINUE.
       ENDIF.
 
-      INSERT CONV string( lr_token->* ) INTO TABLE lt_item.
+
+      temp79 = lr_token->*.
+      INSERT temp79 INTO TABLE lt_item.
 
     ENDLOOP.
 
@@ -403,17 +586,39 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
   METHOD get_sources.
 
     DATA ls_source TYPE ty_s_source.
-    DATA(lv_state) = `SOURCE`.
+    DATA lv_state TYPE string.
+    DATA lv_from TYPE string.
+    TYPES temp5 TYPE STANDARD TABLE OF string WITH DEFAULT KEY.
+DATA lt_token TYPE temp5.
+    DATA temp80 LIKE LINE OF lt_token.
+    DATA lr_token LIKE REF TO temp80.
+      DATA lv_token TYPE string.
+      DATA lv_check_join TYPE abap_bool.
+      DATA temp1 TYPE xsdboolean.
+            DATA lv_last TYPE i.
+            FIELD-SYMBOLS <temp81> LIKE LINE OF result.
+            DATA temp82 LIKE sy-tabix.
+          FIELD-SYMBOLS <temp83> LIKE LINE OF result.
+          DATA temp84 LIKE sy-tabix.
+    lv_state = `SOURCE`.
 
-    DATA(lv_from) = condense( to_upper( val ) ).
+
+    lv_from = condense( to_upper( val ) ).
     REPLACE ALL OCCURRENCES OF `,` IN lv_from WITH ` `.
-    SPLIT condense( lv_from ) AT ` ` INTO TABLE DATA(lt_token).
 
-    LOOP AT lt_token REFERENCE INTO DATA(lr_token).
 
-      DATA(lv_token) = lr_token->*.
-      DATA(lv_check_join) = xsdbool( lv_token = `JOIN` OR lv_token = `INNER` OR lv_token = `LEFT`
-                                     OR lv_token = `RIGHT` OR lv_token = `OUTER` OR lv_token = `CROSS` ).
+    SPLIT condense( lv_from ) AT ` ` INTO TABLE lt_token.
+
+
+
+    LOOP AT lt_token REFERENCE INTO lr_token.
+
+
+      lv_token = lr_token->*.
+
+
+      temp1 = boolc( lv_token = `JOIN` OR lv_token = `INNER` OR lv_token = `LEFT` OR lv_token = `RIGHT` OR lv_token = `OUTER` OR lv_token = `CROSS` ).
+      lv_check_join = temp1.
 
       CASE lv_state.
 
@@ -434,13 +639,30 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
           ELSEIF lv_check_join = abap_true.
             lv_state = `SOURCE`.
           ELSE.
-            DATA(lv_last) = lines( result ).
-            result[ lv_last ]-alias = lv_token.
+
+            lv_last = lines( result ).
+
+
+            temp82 = sy-tabix.
+            READ TABLE result INDEX lv_last ASSIGNING <temp81>.
+            sy-tabix = temp82.
+            IF sy-subrc <> 0.
+              ASSERT 1 = 0.
+            ENDIF.
+            <temp81>-alias = lv_token.
           ENDIF.
 
         WHEN `ALIAS`.
           lv_last = lines( result ).
-          result[ lv_last ]-alias = lv_token.
+
+
+          temp84 = sy-tabix.
+          READ TABLE result INDEX lv_last ASSIGNING <temp83>.
+          sy-tabix = temp84.
+          IF sy-subrc <> 0.
+            ASSERT 1 = 0.
+          ENDIF.
+          <temp83>-alias = lv_token.
           lv_state = `AFTER_SOURCE`.
 
         WHEN `ON`.
@@ -458,22 +680,106 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
 
     DATA ls_item TYPE ty_s_item.
 
-    DATA(lv_list) = CONV string( val ).
-    REPLACE ALL OCCURRENCES OF `,` IN lv_list WITH ` `.
-    SPLIT condense( lv_list ) AT ` ` INTO TABLE DATA(lt_token).
+    DATA temp85 TYPE string.
+    DATA lv_list LIKE temp85.
+    TYPES temp6 TYPE STANDARD TABLE OF string WITH DEFAULT KEY.
+DATA lt_token TYPE temp6.
+    DATA lv_index TYPE i.
+      DATA lv_token LIKE LINE OF lt_token.
+      FIELD-SYMBOLS <temp12> LIKE LINE OF lt_token.
+      DATA temp13 LIKE sy-tabix.
+        DATA lv_last TYPE i.
+          FIELD-SYMBOLS <temp86> LIKE LINE OF result.
+          DATA temp87 LIKE sy-tabix.
+          FIELD-SYMBOLS <temp14> LIKE LINE OF lt_token.
+          DATA temp15 LIKE sy-tabix.
+          FIELD-SYMBOLS <temp88> LIKE LINE OF result.
+          DATA temp89 LIKE sy-tabix.
+          FIELD-SYMBOLS <temp16> LIKE LINE OF result.
+          DATA temp17 LIKE sy-tabix.
+          FIELD-SYMBOLS <temp1> LIKE LINE OF lt_token.
+          DATA temp2 LIKE sy-tabix.
+          DATA lv_part LIKE LINE OF lt_token.
+          FIELD-SYMBOLS <temp18> LIKE LINE OF lt_token.
+          DATA temp19 LIKE sy-tabix.
+        DATA lv_head TYPE string.
+        DATA lv_inner TYPE string.
+            FIELD-SYMBOLS <temp90> LIKE LINE OF lt_token.
+            DATA temp91 LIKE sy-tabix.
+            FIELD-SYMBOLS <temp92> LIKE LINE OF lt_token.
+            DATA temp93 LIKE sy-tabix.
+          DATA lv_dummy TYPE string.
+    temp85 = val.
 
-    DATA(lv_index) = 0.
+    lv_list = temp85.
+    REPLACE ALL OCCURRENCES OF `,` IN lv_list WITH ` `.
+
+
+    SPLIT condense( lv_list ) AT ` ` INTO TABLE lt_token.
+
+
+    lv_index = 0.
     WHILE lv_index < lines( lt_token ).
 
       lv_index = lv_index + 1.
-      DATA(lv_token) = lt_token[ lv_index ].
+
+
+
+      temp13 = sy-tabix.
+      READ TABLE lt_token INDEX lv_index ASSIGNING <temp12>.
+      sy-tabix = temp13.
+      IF sy-subrc <> 0.
+        ASSERT 1 = 0.
+      ENDIF.
+      lv_token = <temp12>.
 
       IF lv_token = `AS`.
         lv_index = lv_index + 1.
-        DATA(lv_last) = lines( result ).
+
+        lv_last = lines( result ).
         IF lv_index <= lines( lt_token ) AND lv_last > 0.
-          result[ lv_last ]-alias = lt_token[ lv_index ].
-          result[ lv_last ]-text = |{ result[ lv_last ]-text } AS { lt_token[ lv_index ] }|.
+
+
+          temp87 = sy-tabix.
+          READ TABLE result INDEX lv_last ASSIGNING <temp86>.
+          sy-tabix = temp87.
+          IF sy-subrc <> 0.
+            ASSERT 1 = 0.
+          ENDIF.
+
+
+          temp15 = sy-tabix.
+          READ TABLE lt_token INDEX lv_index ASSIGNING <temp14>.
+          sy-tabix = temp15.
+          IF sy-subrc <> 0.
+            ASSERT 1 = 0.
+          ENDIF.
+          <temp86>-alias = <temp14>.
+
+
+          temp89 = sy-tabix.
+          READ TABLE result INDEX lv_last ASSIGNING <temp88>.
+          sy-tabix = temp89.
+          IF sy-subrc <> 0.
+            ASSERT 1 = 0.
+          ENDIF.
+
+
+          temp17 = sy-tabix.
+          READ TABLE result INDEX lv_last ASSIGNING <temp16>.
+          sy-tabix = temp17.
+          IF sy-subrc <> 0.
+            ASSERT 1 = 0.
+          ENDIF.
+
+
+          temp2 = sy-tabix.
+          READ TABLE lt_token INDEX lv_index ASSIGNING <temp1>.
+          sy-tabix = temp2.
+          IF sy-subrc <> 0.
+            ASSERT 1 = 0.
+          ENDIF.
+          <temp88>-text = |{ <temp16>-text } AS { <temp1> }|.
         ENDIF.
         CONTINUE.
       ENDIF.
@@ -485,7 +791,16 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
         ls_item-text = lv_token.
         WHILE lv_index < lines( lt_token ).
           lv_index = lv_index + 1.
-          DATA(lv_part) = lt_token[ lv_index ].
+
+
+
+          temp19 = sy-tabix.
+          READ TABLE lt_token INDEX lv_index ASSIGNING <temp18>.
+          sy-tabix = temp19.
+          IF sy-subrc <> 0.
+            ASSERT 1 = 0.
+          ENDIF.
+          lv_part = <temp18>.
           ls_item-text = |{ ls_item-text } { lv_part }|.
           IF lv_part = `END`.
             EXIT.
@@ -496,17 +811,36 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
       ENDIF.
 
       IF lv_token CS `(`.
-        SPLIT lv_token AT `(` INTO DATA(lv_head) DATA(lv_inner).
+
+
+        SPLIT lv_token AT `(` INTO lv_head lv_inner.
         IF lv_head = `COUNT` OR lv_head = `AVG` OR lv_head = `SUM` OR lv_head = `MIN` OR lv_head = `MAX`.
           ls_item-kind = `AGG`.
           ls_item-agg = lv_head.
           ls_item-text = lv_token.
           WHILE ls_item-text NS `)` AND lv_index < lines( lt_token ).
             lv_index = lv_index + 1.
-            ls_item-text = |{ ls_item-text } { lt_token[ lv_index ] }|.
-            lv_inner = |{ lv_inner } { lt_token[ lv_index ] }|.
+
+
+            temp91 = sy-tabix.
+            READ TABLE lt_token INDEX lv_index ASSIGNING <temp90>.
+            sy-tabix = temp91.
+            IF sy-subrc <> 0.
+              ASSERT 1 = 0.
+            ENDIF.
+            ls_item-text = |{ ls_item-text } { <temp90> }|.
+
+
+            temp93 = sy-tabix.
+            READ TABLE lt_token INDEX lv_index ASSIGNING <temp92>.
+            sy-tabix = temp93.
+            IF sy-subrc <> 0.
+              ASSERT 1 = 0.
+            ENDIF.
+            lv_inner = |{ lv_inner } { <temp92> }|.
           ENDWHILE.
-          SPLIT lv_inner AT `)` INTO lv_inner DATA(lv_dummy).
+
+          SPLIT lv_inner AT `)` INTO lv_inner lv_dummy.
           ls_item-inner = condense( lv_inner ).
           INSERT ls_item INTO TABLE result.
           CONTINUE.
@@ -529,23 +863,51 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
     DATA lv_table TYPE string.
     DATA lv_field TYPE string.
 
-    DATA(lt_source) = get_sources( is_clauses-from ).
+    DATA lt_source TYPE z2ui5_cl_sql_query=>ty_t_source.
+    DATA temp94 TYPE z2ui5_cl_sql_query=>ty_t_item.
+    DATA temp20 LIKE LINE OF temp94.
+    DATA lr_item LIKE REF TO temp20.
+          DATA temp95 TYPE string.
+          DATA temp96 TYPE string.
+          DATA lv_prefix TYPE string.
+          DATA lv_name TYPE string.
+            DATA lv_dummy TYPE string.
+            DATA temp97 LIKE LINE OF lt_source.
+            DATA lr_source LIKE REF TO temp97.
+              DATA lo_struct TYPE REF TO cl_abap_structdescr.
+              DATA temp98 LIKE LINE OF lo_struct->components.
+              DATA lr_comp LIKE REF TO temp98.
+                DATA temp99 TYPE string.
+                DATA temp100 LIKE LINE OF lt_part.
+            DATA temp101 TYPE string.
+            DATA temp102 TYPE string.
+        DATA lo_line TYPE REF TO cl_abap_structdescr.
+        DATA lx_error TYPE REF TO cx_root.
+    lt_source = get_sources( is_clauses-from ).
     IF lt_source IS INITIAL.
       RAISE EXCEPTION TYPE z2ui5_cx_sql_error
         EXPORTING
           val = `SQL_PARSER_ERROR - no data source found in FROM clause`.
     ENDIF.
 
-    LOOP AT get_items( is_clauses-select_list ) REFERENCE INTO DATA(lr_item).
+
+    temp94 = get_items( is_clauses-select_list ).
+
+
+    LOOP AT temp94 REFERENCE INTO lr_item.
 
       CASE lr_item->kind.
 
         WHEN `CASE`.
+
+          IF lr_item->alias IS NOT INITIAL.
+            temp95 = lr_item->alias.
+          ELSE.
+            temp95 = `CASE`.
+          ENDIF.
           append_field( EXPORTING io_type      = cl_abap_elemdescr=>get_string( )
                                   ref_table    = ``
-                                  ref_field    = COND #( WHEN lr_item->alias IS NOT INITIAL
-                                                         THEN lr_item->alias
-                                                         ELSE `CASE` )
+                                  ref_field    = temp95
                         CHANGING  ct_comp      = lt_comp
                                   ct_fieldlist = result-fieldlist ).
           INSERT lr_item->text INTO TABLE lt_part.
@@ -573,57 +935,81 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
                              IMPORTING eo_type   = lo_type
                                        ev_field  = lv_field ).
           ENDCASE.
+
+          IF lr_item->alias IS NOT INITIAL.
+            temp96 = lr_item->alias.
+          ELSE.
+            temp96 = lv_field.
+          ENDIF.
           append_field( EXPORTING io_type      = lo_type
                                   ref_table    = ``
-                                  ref_field    = COND #( WHEN lr_item->alias IS NOT INITIAL
-                                                         THEN lr_item->alias
-                                                         ELSE lv_field )
+                                  ref_field    = temp96
                         CHANGING  ct_comp      = lt_comp
                                   ct_fieldlist = result-fieldlist ).
           INSERT lr_item->text INTO TABLE lt_part.
 
         WHEN `FIELD`.
 
-          SPLIT lr_item->text AT `~` INTO DATA(lv_prefix) DATA(lv_name).
+
+
+          SPLIT lr_item->text AT `~` INTO lv_prefix lv_name.
           IF lv_name IS INITIAL.
             lv_name = lv_prefix.
             CLEAR lv_prefix.
           ELSE.
             " strip a trailing ` AS alias` from the field part
-            SPLIT lv_name AT ` ` INTO lv_name DATA(lv_dummy).
+
+            SPLIT lv_name AT ` ` INTO lv_name lv_dummy.
           ENDIF.
 
           IF lv_name = `*`.
 
-            LOOP AT lt_source REFERENCE INTO DATA(lr_source).
+
+
+            LOOP AT lt_source REFERENCE INTO lr_source.
               IF lv_prefix IS NOT INITIAL AND lr_source->alias <> lv_prefix AND lr_source->name <> lv_prefix.
                 CONTINUE.
               ENDIF.
-              DATA(lo_struct) = get_struct_by_name( lr_source->name ).
-              LOOP AT lo_struct->components REFERENCE INTO DATA(lr_comp).
+
+              lo_struct = get_struct_by_name( lr_source->name ).
+
+
+              LOOP AT lo_struct->components REFERENCE INTO lr_comp.
+
+                temp99 = lr_comp->name.
                 append_field( EXPORTING io_type      = lo_struct->get_component_type( lr_comp->name )
                                         ref_table    = lr_source->name
-                                        ref_field    = CONV #( lr_comp->name )
+                                        ref_field    = temp99
                               CHANGING  ct_comp      = lt_comp
                                         ct_fieldlist = result-fieldlist ).
-                INSERT |{ lr_source->alias }~{ lr_comp->name }| INTO TABLE lt_part.
+
+                temp100 = |{ lr_source->alias }~{ lr_comp->name }|.
+                INSERT temp100 INTO TABLE lt_part.
               ENDLOOP.
             ENDLOOP.
 
           ELSE.
 
+
+            IF lv_prefix IS NOT INITIAL.
+              temp101 = |{ lv_prefix }~{ lv_name }|.
+            ELSE.
+              temp101 = lv_name.
+            ENDIF.
             resolve_field( EXPORTING it_source = lt_source
-                                     val       = COND #( WHEN lv_prefix IS NOT INITIAL
-                                                         THEN |{ lv_prefix }~{ lv_name }|
-                                                         ELSE lv_name )
+                                     val       = temp101
                            IMPORTING eo_type   = lo_type
                                      ev_table  = lv_table
                                      ev_field  = lv_field ).
+
+            IF lr_item->alias IS NOT INITIAL.
+              temp102 = lr_item->alias.
+            ELSE.
+              temp102 = lv_field.
+            ENDIF.
             append_field( EXPORTING io_type      = lo_type
                                     ref_table    = lv_table
-                                    ref_field    = COND #( WHEN lr_item->alias IS NOT INITIAL
-                                                           THEN lr_item->alias
-                                                           ELSE lv_field )
+                                    ref_field    = temp102
                           CHANGING  ct_comp      = lt_comp
                                     ct_fieldlist = result-fieldlist ).
             INSERT lr_item->text INTO TABLE lt_part.
@@ -641,11 +1027,13 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
     ENDIF.
 
     TRY.
-        DATA(lo_line) = cl_abap_structdescr=>create( lt_comp ).
+
+        lo_line = cl_abap_structdescr=>create( lt_comp ).
         result-o_table = cl_abap_tabledescr=>create( p_line_type  = lo_line
                                                      p_table_kind = cl_abap_tabledescr=>tablekind_std
                                                      p_unique     = abap_false ).
-      CATCH cx_root INTO DATA(lx_error).
+
+      CATCH cx_root INTO lx_error.
         RAISE EXCEPTION TYPE z2ui5_cx_sql_error
           EXPORTING
             val = lx_error.
@@ -660,24 +1048,38 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD resolve_field.
+    DATA lv_prefix TYPE string.
+    DATA lv_field TYPE string.
+    DATA temp103 LIKE LINE OF it_source.
+    DATA lr_source LIKE REF TO temp103.
+      DATA lo_struct TYPE REF TO cl_abap_structdescr.
+      DATA temp104 LIKE sy-subrc.
 
     CLEAR eo_type.
     CLEAR ev_table.
     CLEAR ev_field.
 
-    SPLIT to_upper( val ) AT `~` INTO DATA(lv_prefix) DATA(lv_field).
+
+
+    SPLIT to_upper( val ) AT `~` INTO lv_prefix lv_field.
     IF lv_field IS INITIAL.
       lv_field = lv_prefix.
       CLEAR lv_prefix.
     ENDIF.
     ev_field = lv_field.
 
-    LOOP AT it_source REFERENCE INTO DATA(lr_source).
+
+
+    LOOP AT it_source REFERENCE INTO lr_source.
       IF lv_prefix IS NOT INITIAL AND lr_source->alias <> lv_prefix AND lr_source->name <> lv_prefix.
         CONTINUE.
       ENDIF.
-      DATA(lo_struct) = get_struct_by_name( lr_source->name ).
-      IF line_exists( lo_struct->components[ name = lv_field ] ).
+
+      lo_struct = get_struct_by_name( lr_source->name ).
+
+      READ TABLE lo_struct->components WITH KEY name = lv_field TRANSPORTING NO FIELDS.
+      temp104 = sy-subrc.
+      IF temp104 = 0.
         eo_type = lo_struct->get_component_type( lv_field ).
         ev_table = lr_source->name.
         RETURN.
@@ -693,6 +1095,7 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
   METHOD get_struct_by_name.
 
     DATA lo_descr TYPE REF TO cl_abap_typedescr.
+        DATA temp105 TYPE REF TO cl_abap_structdescr.
 
     cl_abap_typedescr=>describe_by_name( EXPORTING  p_name         = to_upper( val )
                                          RECEIVING  p_descr_ref    = lo_descr
@@ -705,7 +1108,9 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
     ENDIF.
 
     TRY.
-        result = CAST cl_abap_structdescr( lo_descr ).
+
+        temp105 ?= lo_descr.
+        result = temp105.
       CATCH cx_sy_move_cast_error.
         RAISE EXCEPTION TYPE z2ui5_cx_sql_error
           EXPORTING
@@ -717,37 +1122,55 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
   METHOD append_field.
 
     DATA lv_number TYPE n LENGTH 6.
+    DATA lv_ref_field LIKE ref_field.
+    DATA lv_suffix TYPE i.
+    DATA temp106 LIKE sy-subrc.
+    DATA temp107 TYPE abap_componentdescr.
+    DATA temp108 TYPE z2ui5_cl_sql_query=>ty_s_field.
 
     lv_number = lines( ct_comp ) + 1.
 
-    DATA(lv_ref_field) = ref_field.
-    DATA(lv_suffix) = 1.
-    WHILE line_exists( ct_fieldlist[ ref_field = lv_ref_field ] ).
+
+    lv_ref_field = ref_field.
+
+    lv_suffix = 1.
+
+    READ TABLE ct_fieldlist WITH KEY ref_field = lv_ref_field TRANSPORTING NO FIELDS.
+    temp106 = sy-subrc.
+    WHILE temp106 = 0.
       lv_suffix = lv_suffix + 1.
       lv_ref_field = |{ ref_field }_{ lv_suffix }|.
     ENDWHILE.
 
-    INSERT VALUE #( name = |F{ lv_number }|
-                    type = io_type ) INTO TABLE ct_comp.
 
-    INSERT VALUE #( field     = |F{ lv_number }|
-                    ref_table = ref_table
-                    ref_field = lv_ref_field ) INTO TABLE ct_fieldlist.
+    CLEAR temp107.
+    temp107-name = |F{ lv_number }|.
+    temp107-type = io_type.
+    INSERT temp107 INTO TABLE ct_comp.
+
+
+    CLEAR temp108.
+    temp108-field = |F{ lv_number }|.
+    temp108-ref_table = ref_table.
+    temp108-ref_field = lv_ref_field.
+    INSERT temp108 INTO TABLE ct_fieldlist.
 
   ENDMETHOD.
 
   METHOD select_into.
+        DATA lx_error TYPE REF TO cx_root.
 
     TRY.
         SELECT (select_list)
-          FROM (is_clauses-from)
+          FROM (is_clauses-from) INTO TABLE ct_data
           WHERE (is_clauses-where)
           GROUP BY (is_clauses-group_by)
           HAVING (is_clauses-having)
           ORDER BY (is_clauses-order_by)
-          INTO TABLE @ct_data
-          UP TO @is_clauses-rows ROWS.
-      CATCH cx_root INTO DATA(lx_error).
+
+          UP TO is_clauses-rows ROWS.
+
+      CATCH cx_root INTO lx_error.
         RAISE EXCEPTION TYPE z2ui5_cx_sql_error
           EXPORTING
             val = lx_error.

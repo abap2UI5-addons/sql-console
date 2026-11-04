@@ -39,7 +39,7 @@ CLASS z2ui5_cl_sql_app_01 DEFINITION PUBLIC.
         sql_max_rows      TYPE i,
         sql_cont_size     TYPE string,
         history_cont_size TYPE string,
-        history_tab       TYPE STANDARD TABLE OF ty_history_out WITH EMPTY KEY,
+        history_tab       TYPE STANDARD TABLE OF ty_history_out WITH DEFAULT KEY,
         appwidthlimited   TYPE abap_bool,
       END OF ms_draft.
 
@@ -99,10 +99,19 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
 
 
   METHOD history_db_read.
+    DATA ls_out TYPE ty_history_out.
+    DATA temp1 TYPE z2ui5_cl_sql_history_api=>ty_t_entry.
+    DATA temp3 LIKE LINE OF temp1.
+    DATA lr_history LIKE REF TO temp3.
+      DATA temp2 TYPE z2ui5_cl_sql_app_01=>ty_history_out.
 
     CLEAR ms_draft-history_tab.
-    DATA ls_out TYPE ty_history_out.
-    LOOP AT z2ui5_cl_sql_history_api=>db_read_multi_by_user( ) REFERENCE INTO DATA(lr_history).
+
+
+    temp1 = z2ui5_cl_sql_history_api=>db_read_multi_by_user( ).
+
+
+    LOOP AT temp1 REFERENCE INTO lr_history.
 
       " the list leaves the result out - assigned and cleared, not
       " CORRESPONDING #( ... EXCEPT ), which has no 7.02 downport
@@ -117,7 +126,10 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
     SORT ms_draft-history_tab BY s_db-timestampl DESCENDING.
 
     IF ms_draft-history_tab IS INITIAL.
-      INSERT VALUE #( selkz = abap_true ) INTO TABLE ms_draft-history_tab.
+
+      CLEAR temp2.
+      temp2-selkz = abap_true.
+      INSERT temp2 INTO TABLE ms_draft-history_tab.
     ENDIF.
 
   ENDMETHOD.
@@ -126,20 +138,32 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
   METHOD history_db_save.
 
     FIELD-SYMBOLS <tab> TYPE STANDARD TABLE.
+    FIELD-SYMBOLS <tab_back> TYPE STANDARD TABLE.
+    DATA temp3 LIKE LINE OF ms_draft-history_tab.
+    DATA lr_hist LIKE REF TO temp3.
+      DATA temp4 TYPE z2ui5_cl_sql_app_01=>ty_history_out.
+    DATA ls_preview LIKE ms_draft-s_preview.
+    DATA temp5 TYPE z2ui5_cl_sql_history_api=>ty_s_entry.
     ASSIGN ms_draft-s_preview-tab->* TO <tab>.
 
-    FIELD-SYMBOLS <tab_back> TYPE STANDARD TABLE.
+
     ASSIGN ms_draft-s_preview-tab_backup->* TO <tab_back>.
 
-    LOOP AT ms_draft-history_tab REFERENCE INTO DATA(lr_hist) WHERE selkz = abap_true.
+
+
+    LOOP AT ms_draft-history_tab REFERENCE INTO lr_hist WHERE selkz = abap_true.
       EXIT.
     ENDLOOP.
     IF lr_hist IS NOT BOUND.
       " no row selected - the run becomes the newest row of the list, as
       " history_db_read would show it after a restart
-      INSERT VALUE #( selkz = abap_true ) INTO ms_draft-history_tab INDEX 1 REFERENCE INTO lr_hist.
+
+      CLEAR temp4.
+      temp4-selkz = abap_true.
+      INSERT temp4 INTO ms_draft-history_tab INDEX 1 REFERENCE INTO lr_hist.
     ENDIF.
-    DATA(ls_preview) = ms_draft-s_preview.
+
+    ls_preview = ms_draft-s_preview.
     CLEAR ls_preview-tab.
     CLEAR ls_preview-tab_backup.
 
@@ -152,13 +176,15 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
     IF lr_hist->s_db-uuid IS INITIAL.
       lr_hist->s_db-uuid = z2ui5_cl_sql_context=>uuid_get_c32( ).
     ENDIF.
-    z2ui5_cl_sql_history_api=>db_create( VALUE #(
-        sql_command = ms_draft-sql_input
-        tabname     = ms_draft-sql_s_command-name
-        timestampl  = lr_hist->s_db-timestampl
-        uuid        = lr_hist->s_db-uuid
-        counter     = lines( <tab> )
-        result_data = z2ui5_cl_sql_context=>xml_srtti_stringify( ls_preview ) ) ).
+
+    CLEAR temp5.
+    temp5-sql_command = ms_draft-sql_input.
+    temp5-tabname = ms_draft-sql_s_command-name.
+    temp5-timestampl = lr_hist->s_db-timestampl.
+    temp5-uuid = lr_hist->s_db-uuid.
+    temp5-counter = lines( <tab> ).
+    temp5-result_data = z2ui5_cl_sql_context=>xml_srtti_stringify( ls_preview ).
+    z2ui5_cl_sql_history_api=>db_create( temp5 ).
 
     lr_hist->s_db-sql_command = ms_draft-sql_input.
     lr_hist->s_db-tabname = ms_draft-sql_s_command-name.
@@ -169,6 +195,8 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
 
 
   METHOD history_set_date_time.
+    DATA lv_iso TYPE string.
+    DATA lv_fraction TYPE string.
 
     " the list shows {DATE} {TIME}; DATE stayed empty and TIME carried the
     " whole ISO timestamp - split it at the T, without the fraction
@@ -176,9 +204,11 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
     IF cs_out-s_db-timestampl IS INITIAL.
       RETURN.
     ENDIF.
-    DATA(lv_iso) = |{ cs_out-s_db-timestampl TIMESTAMP = ISO }|.
+
+    lv_iso = |{ cs_out-s_db-timestampl TIMESTAMP = ISO }|.
     SPLIT lv_iso AT `T` INTO cs_out-date cs_out-time.
-    SPLIT cs_out-time AT `,` INTO cs_out-time DATA(lv_fraction) ##NEEDED.
+
+    SPLIT cs_out-time AT `,` INTO cs_out-time lv_fraction ##NEEDED.
 
   ENDMETHOD.
 
@@ -196,17 +226,31 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
 
   METHOD history_on_load.
 
-    DATA(ls_arg) = ms_draft-history_tab[ selkz = abap_true ].
-    DATA(ls_entry) = z2ui5_cl_sql_history_api=>db_read_by_id( ls_arg-s_db-uuid ).
+    DATA ls_arg TYPE z2ui5_cl_sql_app_01=>ty_history_out.
+    FIELD-SYMBOLS <temp4> LIKE LINE OF ms_draft-history_tab.
+    DATA temp5 LIKE sy-tabix.
+    DATA ls_entry TYPE z2ui5_cl_sql_history_api=>ty_s_entry.
+    DATA lr_preview TYPE REF TO data.
+      FIELD-SYMBOLS <any> TYPE any.
+      DATA lr_data TYPE REF TO data.
+    temp5 = sy-tabix.
+    READ TABLE ms_draft-history_tab WITH KEY selkz = abap_true ASSIGNING <temp4>.
+    sy-tabix = temp5.
+    IF sy-subrc <> 0.
+      ASSERT 1 = 0.
+    ENDIF.
+    ls_arg = <temp4>.
+
+    ls_entry = z2ui5_cl_sql_history_api=>db_read_by_id( ls_arg-s_db-uuid ).
     ms_draft-sql_input = ls_entry-sql_command.
 
-    DATA lr_preview TYPE REF TO data.
+
     CLEAR ms_draft-s_preview-tab.
 
     IF ls_entry-result_data IS NOT INITIAL.
       lr_preview = z2ui5_cl_sql_context=>xml_srtti_parse( ls_entry-result_data ).
 
-      FIELD-SYMBOLS <any> TYPE any.
+
       ASSIGN lr_preview->('title') TO <any>.
       ms_draft-s_preview-title = <any>.
       ASSIGN lr_preview->('search_field') TO <any>.
@@ -214,7 +258,7 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
       ASSIGN lr_preview->('t_filter') TO <any>.
       ms_draft-s_preview-t_filter = <any>.
 
-      DATA lr_data TYPE REF TO data.
+
 
       ASSIGN lr_preview->('rtti_data') TO <any>.
       lr_data = z2ui5_cl_sql_context=>xml_srtti_parse( <any> ).
@@ -267,13 +311,17 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
   METHOD preview_filter_range.
 
     FIELD-SYMBOLS <tab> TYPE STANDARD TABLE.
+    DATA ls_tab LIKE LINE OF ms_draft-s_preview-t_filter.
+      DATA lv_clause TYPE string.
     ASSIGN ms_draft-s_preview-tab->* TO <tab>.
 
     " a column without a range is no filter - NOT IN an empty range is false
     " for every row and would delete them all
-    LOOP AT ms_draft-s_preview-t_filter INTO DATA(ls_tab) WHERE t_range IS NOT INITIAL.
 
-      DATA(lv_clause) = ls_tab-name && ` not in ls_tab-t_range`.
+    LOOP AT ms_draft-s_preview-t_filter INTO ls_tab WHERE t_range IS NOT INITIAL.
+
+
+      lv_clause = ls_tab-name && ` not in ls_tab-t_range`.
       DELETE <tab> WHERE (lv_clause).
 
     ENDLOOP.
@@ -302,8 +350,9 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
   METHOD preview_on_filter.
 
     FIELD-SYMBOLS <tab> TYPE STANDARD TABLE.
-    ASSIGN ms_draft-s_preview-tab->* TO <tab>.
     FIELD-SYMBOLS <tab2> TYPE STANDARD TABLE.
+    ASSIGN ms_draft-s_preview-tab->* TO <tab>.
+
     ASSIGN ms_draft-s_preview-tab_backup->* TO <tab2>.
     <tab> = <tab2>.
     preview_filter_search( ).
@@ -317,13 +366,15 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
 
 
   METHOD preview_on_filter_clear.
+    FIELD-SYMBOLS <tab> TYPE STANDARD TABLE.
+    FIELD-SYMBOLS <tab2> TYPE STANDARD TABLE.
 
     CLEAR ms_draft-s_preview-search_field.
 
-    FIELD-SYMBOLS <tab> TYPE STANDARD TABLE.
+
     ASSIGN ms_draft-s_preview-tab->* TO <tab>.
 
-    FIELD-SYMBOLS <tab2> TYPE STANDARD TABLE.
+
     ASSIGN ms_draft-s_preview-tab_backup->* TO <tab2>.
     <tab> = <tab2>.
 
@@ -337,7 +388,14 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
 
   METHOD preview_view.
 
-    DATA(lo_view_nested) = z2ui5_cl_ui5_view_builder=>factory(
+    DATA lo_view_nested TYPE REF TO z2ui5_cl_ui5_view_builder.
+      FIELD-SYMBOLS <tab> TYPE table.
+      DATA tab TYPE REF TO z2ui5_cl_ui5_view_builder.
+      DATA toolbar TYPE REF TO z2ui5_cl_ui5_view_builder.
+      DATA lt_fields TYPE abap_component_tab.
+      DATA lo_columns TYPE REF TO z2ui5_cl_ui5_view_builder.
+      DATA lv_field LIKE LINE OF lt_fields.
+    lo_view_nested = z2ui5_cl_ui5_view_builder=>factory(
                                )->ele( n = `View` ns = `mvc`
                                )->a( n = `xmlns` v = `sap.m`
                                )->a( n = `xmlns:mvc` v = `sap.ui.core.mvc`
@@ -348,11 +406,12 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
                                )->a( n = `height` v = `100%` ).
 
     IF ms_draft-s_preview-tab IS BOUND.
-      FIELD-SYMBOLS <tab> TYPE table.
+
       mr_preview_tab = ms_draft-s_preview-tab.
       ASSIGN mr_preview_tab->* TO <tab>.
 
-      DATA(tab) = lo_view_nested->ele( n = `Table` ns = `table`
+
+      tab = lo_view_nested->ele( n = `Table` ns = `table`
                       )->a( n = `id` v = `previewTab`
                       )->a( n = `rows` v = client->_bind( <tab> )
                       )->a( n = `editable` b = abap_false
@@ -363,7 +422,8 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
                       )->a( n = `visibleRowCountMode` v = `Interactive`
                       )->a( n = `visibleRowCount` v = `7`
                       )->a( n = `selectionMode` v = `None` ).
-      DATA(toolbar) = tab->ele( n = `extension` ns = `table`
+
+      toolbar = tab->ele( n = `extension` ns = `table`
                           )->ele( `OverflowToolbar`
                           )->a( n = `width` v = `100%`
                           )->tag( `Title`
@@ -401,10 +461,13 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
           columns = client->_bind( val  = mv_column_config
                                    json = abap_true ) ).
 
-      DATA(lt_fields) = z2ui5_cl_sql_context=>rtti_get_t_attri_by_any( <tab> ).
 
-      DATA(lo_columns) = tab->ele( n = `columns` ns = `table` ).
-      LOOP AT lt_fields INTO DATA(lv_field).
+      lt_fields = z2ui5_cl_sql_context=>rtti_get_t_attri_by_any( <tab> ).
+
+
+      lo_columns = tab->ele( n = `columns` ns = `table` ).
+
+      LOOP AT lt_fields INTO lv_field.
         lo_columns->ele( n = `Column` ns = `table`
             )->a( n = `width` v = `auto`
             )->a( n = `sortProperty` t = lv_field-name
@@ -438,6 +501,15 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
           ls_comp        TYPE cl_abap_structdescr=>component.
 
     FIELD-SYMBOLS <lft_data> TYPE ANY TABLE.
+    DATA temp6 TYPE string_table.
+    DATA lt_column_json LIKE temp6.
+      FIELD-SYMBOLS <temp7> LIKE LINE OF ft_fieldlist.
+      DATA temp8 LIKE sy-tabix.
+      DATA temp9 LIKE LINE OF lt_column_json.
+    DATA lo_new_type TYPE REF TO cl_abap_structdescr.
+    DATA lo_new_tab TYPE REF TO cl_abap_tabledescr.
+    FIELD-SYMBOLS <tab> TYPE STANDARD TABLE.
+    FIELD-SYMBOLS <tab2> TYPE STANDARD TABLE.
 
     ASSIGN fo_result->* TO <lft_data>.
 
@@ -447,30 +519,45 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
 
     lt_comp = lo_descr_line->get_components( ).
 
-    DATA(lt_column_json) = VALUE string_table( ).
+
+    CLEAR temp6.
+
+    lt_column_json = temp6.
     LOOP AT lt_comp INTO ls_comp.
 
-      ls_comp-name = ft_fieldlist[ sy-tabix ]-ref_field.
+
+
+      temp8 = sy-tabix.
+      READ TABLE ft_fieldlist INDEX sy-tabix ASSIGNING <temp7>.
+      sy-tabix = temp8.
+      IF sy-subrc <> 0.
+        ASSERT 1 = 0.
+      ENDIF.
+      ls_comp-name = <temp7>-ref_field.
 
       MODIFY lt_comp FROM ls_comp USING KEY loop_key.
 
-      APPEND |\{"label":"{ ls_comp-name }","property":"{ ls_comp-name }","type":"String"\}| TO lt_column_json.
+
+      temp9 = |\{"label":"{ ls_comp-name }","property":"{ ls_comp-name }","type":"String"\}|.
+      APPEND temp9 TO lt_column_json.
 
     ENDLOOP.
     mv_column_config = |[{ concat_lines_of( table = lt_column_json sep = `,` ) }]|.
 
-    DATA(lo_new_type) = cl_abap_structdescr=>create( lt_comp ).
-    DATA(lo_new_tab) = cl_abap_tabledescr=>create(
+
+    lo_new_type = cl_abap_structdescr=>create( lt_comp ).
+
+    lo_new_tab = cl_abap_tabledescr=>create(
                         p_line_type  = lo_new_type
                         p_table_kind = cl_abap_tabledescr=>tablekind_std
                         p_unique     = abap_false ).
 
-    FIELD-SYMBOLS <tab> TYPE STANDARD TABLE.
+
     CREATE DATA ms_draft-s_preview-tab TYPE HANDLE lo_new_tab.
     ASSIGN ms_draft-s_preview-tab->* TO <tab>.
     <tab> = <lft_data>.
 
-    FIELD-SYMBOLS <tab2> TYPE STANDARD TABLE.
+
     CREATE DATA ms_draft-s_preview-tab_backup TYPE HANDLE lo_new_tab.
     ASSIGN ms_draft-s_preview-tab_backup->* TO <tab2>.
     <tab2> = <tab>.
@@ -487,11 +574,15 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
 
 
   METHOD sql_on_run.
+        DATA ls_result TYPE z2ui5_cl_sql_query=>ty_s_result.
+        DATA lx_error TYPE REF TO z2ui5_cx_sql_error.
 
     TRY.
-        DATA(ls_result) = z2ui5_cl_sql_query=>run( query    = ms_draft-sql_input
+
+        ls_result = z2ui5_cl_sql_query=>run( query    = ms_draft-sql_input
                                                    max_rows = ms_draft-sql_max_rows ).
-      CATCH z2ui5_cx_sql_error INTO DATA(lx_error).
+
+      CATCH z2ui5_cx_sql_error INTO lx_error.
         client->message_box_display( text = lx_error->get_text( )
                                      type = `error` ).
         RETURN.
@@ -519,11 +610,13 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
 
 
   METHOD z2ui5_if_app~main.
+          DATA temp10 TYPE string_table.
+        DATA x TYPE REF TO cx_root.
     TRY.
 
         me->client = client.
 
-        IF client->check_on_init( ).
+        IF client->check_on_init( ) IS NOT INITIAL.
 
           client->view_display( z2ui5_cl_ui5_view_builder=>factory(
             )->ele( n = `View` ns = `mvc`
@@ -535,9 +628,13 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
             )->stringify( ) ).
           " the empty view is on screen first; START builds the console in
           " the roundtrip the client timer fires right after it rendered
+
+          CLEAR temp10.
+          INSERT `START` INTO TABLE temp10.
+          INSERT `0` INTO TABLE temp10.
           client->follow_up_action(
               val   = z2ui5_if_client=>cs_event-start_timer
-              t_arg = VALUE #( ( `START` ) ( `0` ) ) ).
+              t_arg = temp10 ).
 
           RETURN.
         ENDIF.
@@ -549,23 +646,34 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
 
         z2ui5_on_event( ).
 
-      CATCH cx_root INTO DATA(x).
+
+      CATCH cx_root INTO x.
         client->nav_app_call( z2ui5_cl_popup_error=>factory( x ) ).
     ENDTRY.
   ENDMETHOD.
 
 
   METHOD z2ui5_on_callback.
+        DATA temp12 TYPE REF TO z2ui5_cl_popup_to_confirm.
+        DATA lo_popup_confirm LIKE temp12.
+        DATA temp13 TYPE REF TO z2ui5_cl_popup_get_ranges.
+        DATA lo_popup_range LIKE temp13.
 
     TRY.
-        DATA(lo_popup_confirm) = CAST z2ui5_cl_popup_to_confirm( client->get_app( client->get( )-s_draft-id_prev_app ) ).
+
+        temp12 ?= client->get_app( client->get( )-s_draft-id_prev_app ).
+
+        lo_popup_confirm = temp12.
         z2ui5_on_callback_pop_confirm( lo_popup_confirm ).
         RETURN.
       CATCH cx_root ##NO_HANDLER.
     ENDTRY.
 
     TRY.
-        DATA(lo_popup_range) = CAST z2ui5_cl_popup_get_ranges( client->get_app( client->get( )-s_draft-id_prev_app ) ).
+
+        temp13 ?= client->get_app( client->get( )-s_draft-id_prev_app ).
+
+        lo_popup_range = temp13.
         IF lo_popup_range->result( )-check_confirmed = abap_true.
           ms_draft-s_preview-t_filter = lo_popup_range->result( )-t_filter.
           preview_on_filter( ).
@@ -584,13 +692,15 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
 
 
   METHOD z2ui5_on_callback_pop_confirm.
+          DATA lv_id TYPE string.
 
     CASE io_popup->z2ui5_if_app~id_app.
 
       WHEN ms_control-callback_pop_session_load.
 
-        IF io_popup->result( ).
-          DATA(lv_id) = z2ui5_cl_sql_history_api=>db_read_draft( ).
+        IF io_popup->result( ) IS NOT INITIAL.
+
+          lv_id = z2ui5_cl_sql_history_api=>db_read_draft( ).
           client->nav_app_leave( client->get_app( lv_id ) ).
         ELSE.
           z2ui5_on_init_set_app( ).
@@ -614,6 +724,9 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
 
 
   METHOD z2ui5_on_event.
+        DATA temp14 LIKE LINE OF ms_draft-history_tab.
+        DATA lr_hist LIKE REF TO temp14.
+        DATA temp15 TYPE z2ui5_cl_sql_app_01=>ty_history_out.
 
     z2ui5_cl_sql_history_api=>db_create_draft( client->get( )-s_draft-id ).
 
@@ -639,10 +752,15 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
       WHEN `HISTORY_CREATE`.
         " the new entry is the selected one - history_db_save writes into the
         " first selected row, which would still be the old entry otherwise
-        LOOP AT ms_draft-history_tab REFERENCE INTO DATA(lr_hist) WHERE selkz = abap_true.
+
+
+        LOOP AT ms_draft-history_tab REFERENCE INTO lr_hist WHERE selkz = abap_true.
           lr_hist->selkz = abap_false.
         ENDLOOP.
-        INSERT VALUE #( selkz = abap_true ) INTO TABLE ms_draft-history_tab.
+
+        CLEAR temp15.
+        temp15-selkz = abap_true.
+        INSERT temp15 INTO TABLE ms_draft-history_tab.
         client->view_model_update( ).
 
       WHEN `HISTORY_LOAD`.
@@ -673,7 +791,13 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
 
   METHOD z2ui5_view_display.
 
-    DATA(view) = z2ui5_cl_ui5_view_builder=>factory(
+    DATA view TYPE REF TO z2ui5_cl_ui5_view_builder.
+    DATA page TYPE REF TO z2ui5_cl_ui5_view_builder.
+    DATA cont_main TYPE REF TO z2ui5_cl_ui5_view_builder.
+    DATA cont_sub TYPE REF TO z2ui5_cl_ui5_view_builder.
+    DATA view_sql TYPE REF TO z2ui5_cl_ui5_view_builder.
+    DATA view_history TYPE REF TO z2ui5_cl_ui5_view_builder.
+    view = z2ui5_cl_ui5_view_builder=>factory(
                      )->ele( n = `View` ns = `mvc`
                      )->a( n = `xmlns` v = `sap.m`
                      )->a( n = `xmlns:mvc` v = `sap.ui.core.mvc`
@@ -681,7 +805,8 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
                      )->a( n = `xmlns:layout` v = `sap.ui.layout`
                      )->a( n = `displayBlock` v = `true`
                      )->a( n = `height` v = `100%` ).
-    DATA(page) = view->ele( `Shell`
+
+    page = view->ele( `Shell`
                      )->a( n = `appWidthLimited` v = client->_bind_edit( ms_draft-appwidthlimited )
                      )->ele( `Page`
                      )->a( n = `title` v = `ABAP SQL Console`
@@ -710,14 +835,17 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
                      )->end(
                      )->end( ).
 
-    DATA(cont_main) = page->ele( n = `ResponsiveSplitter` ns = `layout`
+
+    cont_main = page->ele( n = `ResponsiveSplitter` ns = `layout`
                           )->ele( n = `PaneContainer` ns = `layout`
                           )->a( n = `orientation` v = `Vertical` ).
 
-    DATA(cont_sub) = cont_main->ele( n = `PaneContainer` ns = `layout`
+
+    cont_sub = cont_main->ele( n = `PaneContainer` ns = `layout`
                          )->a( n = `orientation` v = `Horizontal` ).
 
-    DATA(view_sql) = cont_sub->ele( n = `SplitPane` ns = `layout`
+
+    view_sql = cont_sub->ele( n = `SplitPane` ns = `layout`
                          )->a( n = `requiredParentWidth` v = `600`
                          )->ele( n = `layoutData` ns = `layout`
                          )->ele( n = `SplitterLayoutData` ns = `layout`
@@ -727,7 +855,8 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
 
     sql_view_display( view_sql ).
 
-    DATA(view_history) = cont_sub->ele( n = `SplitPane` ns = `layout`
+
+    view_history = cont_sub->ele( n = `SplitPane` ns = `layout`
                              )->a( n = `requiredParentWidth` v = `400`
                              )->ele( n = `layoutData` ns = `layout`
                              )->ele( n = `SplitterLayoutData` ns = `layout`
