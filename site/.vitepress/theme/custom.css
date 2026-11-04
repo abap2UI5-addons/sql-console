@@ -4,8 +4,8 @@
   --vp-c-brand-2: #d03c4a;
   --vp-c-brand-3: #d03c4a;
   --vp-c-brand-soft: rgba(208, 60, 74, 0.14);
-  --vp-home-hero-name-color: transparent;
-  --vp-home-hero-name-background: linear-gradient(120deg, #d03c4a 30%, #f08a4b);
+  /* the name in plain red, no gradient */
+  --vp-home-hero-name-color: var(--vp-c-brand-1);
   --vp-button-brand-text: #ffffff;
 }
 .dark {
@@ -27,4 +27,15 @@
 .VPHome .vp-doc {
   max-width: 1152px;
   margin: 0 auto;
+}
+
+/* the sentence under the name reads as a subtitle, one step below it */
+.VPHero .text {
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 600;
+  max-width: 560px;
+}
+@media (min-width: 640px) {
+  .VPHero .text { font-size: 32px; line-height: 40px; }
 }
