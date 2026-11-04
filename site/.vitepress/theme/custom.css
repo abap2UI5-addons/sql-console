@@ -1,17 +1,18 @@
-/* the blue of the abap2UI5-addons badge as the brand color */
+/* the red of the abap2UI5 addons (the overview and every addon site) */
 :root {
-  --vp-c-brand-1: #1667a6;
-  --vp-c-brand-2: #1873b4;
-  --vp-c-brand-3: #1873b4;
-  --vp-c-brand-soft: rgba(24, 115, 180, 0.14);
+  --vp-c-brand-1: #c0303e;
+  --vp-c-brand-2: #d03c4a;
+  --vp-c-brand-3: #d03c4a;
+  --vp-c-brand-soft: rgba(208, 60, 74, 0.14);
   --vp-home-hero-name-color: transparent;
-  --vp-home-hero-name-background: linear-gradient(120deg, #1873b4 30%, #3fb4c8);
+  --vp-home-hero-name-background: linear-gradient(120deg, #d03c4a 30%, #f08a4b);
+  --vp-button-brand-text: #ffffff;
 }
 .dark {
-  --vp-c-brand-1: #5aa9e6;
-  --vp-c-brand-2: #3d93d6;
-  --vp-c-brand-3: #1873b4;
-  --vp-c-brand-soft: rgba(90, 169, 230, 0.16);
+  --vp-c-brand-1: #f0606d;
+  --vp-c-brand-2: #e14d5a;
+  --vp-c-brand-3: #d03c4a;
+  --vp-c-brand-soft: rgba(240, 96, 109, 0.16);
 }
 
 /* the badge rows of a README stay rows: VitePress shows an image as a block */
