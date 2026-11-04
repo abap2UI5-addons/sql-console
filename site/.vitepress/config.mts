@@ -73,7 +73,8 @@ export default defineConfig({
     },
   },
   themeConfig: {
-    logo: "/logo.svg",
+    // the navbar carries abap2UI5's logo, the hero and the favicon the addons logo
+    logo: { src: "/abap2ui5.svg", alt: "abap2UI5" },
     nav: [
       { text: "Guide", link: "/guide" },
       ...(site.nav ?? []),
