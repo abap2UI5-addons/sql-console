@@ -171,6 +171,14 @@ CLASS z2ui5_cl_sql_query DEFINITION
       RETURNING
         VALUE(result) TYPE string.
 
+    "! The same text with every literal blanked out by underscores, delimiters
+    "! included - same length, so an offset found in it is valid in the original
+    CLASS-METHODS mask_literals
+      IMPORTING
+        val           TYPE clike
+      RETURNING
+        VALUE(result) TYPE string.
+
     "! condense( ), but blanks inside a literal are kept as they are
     CLASS-METHODS condense_outside_literals
       IMPORTING
@@ -265,9 +273,11 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
 
     DATA lt_segment TYPE string_table.
     DATA(lv_query) = normalize( query ).
+    " keywords are searched in the masked copy, so a literal never splits the query
+    DATA(lv_mask) = mask_literals( lv_query ).
 
     DO.
-      FIND FIRST OCCURRENCE OF ` UNION SELECT ` IN lv_query IGNORING CASE MATCH OFFSET DATA(lv_offset).
+      FIND FIRST OCCURRENCE OF ` UNION SELECT ` IN lv_mask IGNORING CASE MATCH OFFSET DATA(lv_offset).
       IF sy-subrc <> 0.
         INSERT lv_query INTO TABLE lt_segment.
         EXIT.
@@ -275,6 +285,7 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
       INSERT lv_query(lv_offset) INTO TABLE lt_segment.
       lv_offset = lv_offset + 7.
       lv_query = lv_query+lv_offset.
+      lv_mask = lv_mask+lv_offset.
     ENDDO.
 
     LOOP AT lt_segment REFERENCE INTO DATA(lr_segment).
@@ -294,28 +305,51 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
       END OF ty_s_pos.
     DATA lt_pos TYPE STANDARD TABLE OF ty_s_pos WITH EMPTY KEY.
     DATA lv_rows TYPE string.
+    DATA lv_match_offset TYPE i.
+    DATA lv_match_length TYPE i.
 
     DATA(lv_segment) = val.
+    " every keyword is searched in the masked copy and cut out of both, so
+    " the offsets stay aligned and a keyword inside a literal is never found
+    DATA(lv_mask) = mask_literals( lv_segment ).
 
-    FIND FIRST OCCURRENCE OF REGEX `UP TO ([0-9]+) ROWS` IN lv_segment IGNORING CASE SUBMATCHES lv_rows.
+    FIND FIRST OCCURRENCE OF REGEX `UP TO ([0-9]+) ROWS` IN lv_mask IGNORING CASE
+         MATCH OFFSET lv_match_offset MATCH LENGTH lv_match_length SUBMATCHES lv_rows.
     IF sy-subrc = 0.
       result-rows = lv_rows.
-      REPLACE FIRST OCCURRENCE OF REGEX `UP TO ([0-9]+) ROWS` IN lv_segment WITH `` IGNORING CASE.
+      lv_segment = replace( val = lv_segment
+                            off = lv_match_offset
+                            len = lv_match_length
+                            with = `` ).
+      lv_mask = replace( val = lv_mask
+                         off = lv_match_offset
+                         len = lv_match_length
+                         with = `` ).
     ELSE.
       result-rows = max_rows.
     ENDIF.
 
-    REPLACE FIRST OCCURRENCE OF REGEX `(INTO|APPENDING)( TABLE| CORRESPONDING FIELDS OF TABLE| CORRESPONDING FIELDS OF)? @?\S+`
-            IN lv_segment WITH `` IGNORING CASE.
+    FIND FIRST OCCURRENCE OF REGEX `(INTO|APPENDING)( TABLE| CORRESPONDING FIELDS OF TABLE| CORRESPONDING FIELDS OF)? @?\S+`
+         IN lv_mask IGNORING CASE MATCH OFFSET lv_match_offset MATCH LENGTH lv_match_length.
+    IF sy-subrc = 0.
+      lv_segment = replace( val = lv_segment
+                            off = lv_match_offset
+                            len = lv_match_length
+                            with = `` ).
+      lv_mask = replace( val = lv_mask
+                         off = lv_match_offset
+                         len = lv_match_length
+                         with = `` ).
+    ENDIF.
 
-    FIND FIRST OCCURRENCE OF `SELECT ` IN lv_segment IGNORING CASE MATCH OFFSET DATA(lv_select_offset).
+    FIND FIRST OCCURRENCE OF `SELECT ` IN lv_mask IGNORING CASE MATCH OFFSET DATA(lv_select_offset).
     IF sy-subrc <> 0.
       RAISE EXCEPTION TYPE z2ui5_cx_sql_error
         EXPORTING
           val = `SQL_PARSER_ERROR - no SELECT found in query`.
     ENDIF.
 
-    FIND FIRST OCCURRENCE OF ` FROM ` IN SECTION OFFSET lv_select_offset OF lv_segment
+    FIND FIRST OCCURRENCE OF ` FROM ` IN SECTION OFFSET lv_select_offset OF lv_mask
          IGNORING CASE MATCH OFFSET DATA(lv_from_offset).
     IF sy-subrc <> 0.
       RAISE EXCEPTION TYPE z2ui5_cx_sql_error
@@ -349,10 +383,11 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
 
     DATA(lv_rest_offset) = lv_from_offset + 6.
     DATA(lv_rest) = lv_segment+lv_rest_offset.
+    DATA(lv_rest_mask) = lv_mask+lv_rest_offset.
 
     LOOP AT VALUE string_table( ( ` WHERE ` ) ( ` GROUP BY ` ) ( ` HAVING ` ) ( ` ORDER BY ` ) )
          REFERENCE INTO DATA(lr_keyword).
-      FIND FIRST OCCURRENCE OF lr_keyword->* IN lv_rest IGNORING CASE MATCH OFFSET DATA(lv_offset).
+      FIND FIRST OCCURRENCE OF lr_keyword->* IN lv_rest_mask IGNORING CASE MATCH OFFSET DATA(lv_offset).
       IF sy-subrc = 0.
         INSERT VALUE #( keyword = condense( lr_keyword->* )
                         offset  = lv_offset
@@ -818,6 +853,18 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
     LOOP AT split_literals( val ) INTO DATA(lv_part).
       IF sy-tabix MOD 2 = 1.
         lv_part = to_upper( lv_part ).
+      ENDIF.
+      result = result && lv_part.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD mask_literals.
+
+    LOOP AT split_literals( val ) INTO DATA(lv_part).
+      IF sy-tabix MOD 2 = 0.
+        lv_part = repeat( val = `_`
+                          occ = strlen( lv_part ) ).
       ENDIF.
       result = result && lv_part.
     ENDLOOP.
