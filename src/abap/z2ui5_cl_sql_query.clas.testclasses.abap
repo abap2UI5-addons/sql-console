@@ -26,6 +26,11 @@ CLASS ltcl_parser DEFINITION FINAL FOR TESTING
     METHODS parse_escaped_quote FOR TESTING RAISING cx_static_check.
     METHODS parse_mixed_case_identifiers FOR TESTING RAISING cx_static_check.
     METHODS target_case_literal_comma FOR TESTING RAISING cx_static_check.
+    METHODS keyword_in_where_literal FOR TESTING RAISING cx_static_check.
+    METHODS keyword_in_select_literal FOR TESTING RAISING cx_static_check.
+    METHODS keyword_in_having_literal FOR TESTING RAISING cx_static_check.
+    METHODS union_in_literal FOR TESTING RAISING cx_static_check.
+    METHODS up_to_into_in_literal FOR TESTING RAISING cx_static_check.
 ENDCLASS.
 
 
@@ -297,6 +302,84 @@ CLASS ltcl_parser IMPLEMENTATION.
                                         exp = 1 ).
     cl_abap_unit_assert=>assert_equals( act = ls_target-fieldlist[ 1 ]-ref_field
                                         exp = `N` ).
+
+  ENDMETHOD.
+
+  METHOD keyword_in_where_literal.
+
+    " a clause keyword inside a literal does not end the clause
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse(
+        `SELECT * FROM scarr WHERE carrname = ' from ' OR carrname = 'x ORDER BY y' ORDER BY carrid` ).
+
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-from
+                                        exp = `SCARR` ).
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-where
+                                        exp = `carrname = ' from ' OR carrname = 'x ORDER BY y'` ).
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-order_by
+                                        exp = `CARRID` ).
+
+  ENDMETHOD.
+
+  METHOD keyword_in_select_literal.
+
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse(
+        `SELECT CASE WHEN carrid = 'lh' THEN 'from x' ELSE ' FROM y WHERE ' END AS n FROM scarr WHERE carrid = 'LH'` ).
+
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-select_list
+                                        exp = `CASE WHEN CARRID = 'lh' THEN 'from x' ELSE ' FROM y WHERE ' END AS N` ).
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-from
+                                        exp = `SCARR` ).
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-where
+                                        exp = `carrid = 'LH'` ).
+
+  ENDMETHOD.
+
+  METHOD keyword_in_having_literal.
+
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse(
+        `SELECT carrid FROM spfli GROUP BY carrid HAVING max( cityfrom ) <> ' where ' ORDER BY carrid` ).
+
+    cl_abap_unit_assert=>assert_initial( lt_clauses[ 1 ]-where ).
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-group_by
+                                        exp = `CARRID` ).
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-having
+                                        exp = `max( cityfrom ) <> ' where '` ).
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-order_by
+                                        exp = `CARRID` ).
+
+    lt_clauses = z2ui5_cl_sql_query=>parse(
+        `SELECT carrid FROM spfli GROUP BY carrid HAVING max( cityto ) <> ' order by x ' ORDER BY carrid DESCENDING` ).
+
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-having
+                                        exp = `max( cityto ) <> ' order by x '` ).
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-order_by
+                                        exp = `CARRID DESCENDING` ).
+
+  ENDMETHOD.
+
+  METHOD union_in_literal.
+
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse(
+        `SELECT carrid FROM scarr WHERE carrname = 'a UNION SELECT b' UNION SELECT carrid FROM spfli` ).
+
+    cl_abap_unit_assert=>assert_equals( act = lines( lt_clauses )
+                                        exp = 2 ).
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-where
+                                        exp = `carrname = 'a UNION SELECT b'` ).
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 2 ]-from
+                                        exp = `SPFLI` ).
+
+  ENDMETHOD.
+
+  METHOD up_to_into_in_literal.
+
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse( query    = `SELECT * FROM scarr WHERE carrname = 'up to 5 rows into x'`
+                                                  max_rows = 100 ).
+
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-rows
+                                        exp = 100 ).
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-where
+                                        exp = `carrname = 'up to 5 rows into x'` ).
 
   ENDMETHOD.
 
