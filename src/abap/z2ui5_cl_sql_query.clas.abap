@@ -156,6 +156,35 @@ CLASS z2ui5_cl_sql_query DEFINITION
       RETURNING
         VALUE(result) TYPE string.
 
+    "! Splits SQL text into its literals and the text between them: the
+    "! odd lines are text outside literals, the even lines are literals
+    "! ('...' or `...`, a doubled delimiter is an escaped one) with their delimiters
+    CLASS-METHODS split_literals
+      IMPORTING
+        val           TYPE clike
+      RETURNING
+        VALUE(result) TYPE string_table.
+
+    CLASS-METHODS upper_outside_literals
+      IMPORTING
+        val           TYPE clike
+      RETURNING
+        VALUE(result) TYPE string.
+
+    "! condense( ), but blanks inside a literal are kept as they are
+    CLASS-METHODS condense_outside_literals
+      IMPORTING
+        val           TYPE clike
+      RETURNING
+        VALUE(result) TYPE string.
+
+    "! The tokens of SQL text, separated by blanks and commas outside literals
+    CLASS-METHODS tokenize
+      IMPORTING
+        val           TYPE clike
+      RETURNING
+        VALUE(result) TYPE string_table.
+
     CLASS-METHODS select_into
       IMPORTING
         is_clauses  TYPE ty_s_clauses
@@ -223,7 +252,7 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
 
     SPLIT lv_query AT cl_abap_char_utilities=>newline INTO TABLE DATA(lt_line).
     LOOP AT lt_line REFERENCE INTO DATA(lr_line).
-      lr_line->* = condense( lr_line->* ).
+      lr_line->* = condense_outside_literals( lr_line->* ).
     ENDLOOP.
     DELETE lt_line WHERE table_line IS INITIAL.
 
@@ -302,14 +331,19 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
           val = `SQL_PARSER_ERROR - empty select list`.
     ENDIF.
 
-    DATA(lv_select) = condense( to_upper( lv_segment+lv_select_start(lv_length) ) ).
+    DATA(lv_select) = substring( val = lv_segment
+                                 off = lv_select_start
+                                 len = lv_length ).
+    lv_select = condense_outside_literals( upper_outside_literals( lv_select ) ).
     IF strlen( lv_select ) > 7 AND lv_select(7) = `SINGLE `.
       result-rows = 1.
-      lv_select = condense( lv_select+7 ).
+      lv_select = condense_outside_literals( substring( val = lv_select
+                                                     off = 7 ) ).
     ENDIF.
     IF strlen( lv_select ) > 9 AND lv_select(9) = `DISTINCT `.
       result-distinct = abap_true.
-      lv_select = condense( lv_select+9 ).
+      lv_select = condense_outside_literals( substring( val = lv_select
+                                                     off = 9 ) ).
     ENDIF.
     result-select_list = lv_select.
 
@@ -328,12 +362,14 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
     SORT lt_pos BY offset.
 
     IF lt_pos IS INITIAL.
-      result-from = condense( to_upper( lv_rest ) ).
+      result-from = condense_outside_literals( upper_outside_literals( lv_rest ) ).
       RETURN.
     ENDIF.
 
     DATA(lv_from_length) = lt_pos[ 1 ]-offset.
-    result-from = condense( to_upper( lv_rest(lv_from_length) ) ).
+    DATA(lv_from) = substring( val = lv_rest
+                               len = lv_from_length ).
+    result-from = condense_outside_literals( upper_outside_literals( lv_from ) ).
 
     LOOP AT lt_pos REFERENCE INTO DATA(lr_pos).
       DATA(lv_content_offset) = lr_pos->offset + lr_pos->length.
@@ -344,17 +380,17 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
       ELSE.
         lv_content = lv_rest+lv_content_offset.
       ENDIF.
-      lv_content = condense( lv_content ).
+      lv_content = condense_outside_literals( lv_content ).
 
       CASE lr_pos->keyword.
         WHEN `WHERE`.
           result-where = lv_content.
         WHEN `GROUP BY`.
-          result-group_by = join_by_comma( to_upper( lv_content ) ).
+          result-group_by = join_by_comma( upper_outside_literals( lv_content ) ).
         WHEN `HAVING`.
           result-having = lv_content.
         WHEN `ORDER BY`.
-          result-order_by = join_order_by( to_upper( lv_content ) ).
+          result-order_by = join_order_by( upper_outside_literals( lv_content ) ).
       ENDCASE.
     ENDLOOP.
 
@@ -362,9 +398,7 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
 
   METHOD join_by_comma.
 
-    DATA(lv_val) = CONV string( val ).
-    REPLACE ALL OCCURRENCES OF `,` IN lv_val WITH ` `.
-    SPLIT condense( lv_val ) AT ` ` INTO TABLE DATA(lt_token).
+    DATA(lt_token) = tokenize( val ).
     result = concat_lines_of( table = lt_token
                               sep   = `, ` ).
 
@@ -374,9 +408,7 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
 
     DATA lt_item TYPE string_table.
 
-    DATA(lv_val) = CONV string( val ).
-    REPLACE ALL OCCURRENCES OF `,` IN lv_val WITH ` `.
-    SPLIT condense( lv_val ) AT ` ` INTO TABLE DATA(lt_token).
+    DATA(lt_token) = tokenize( val ).
 
     LOOP AT lt_token REFERENCE INTO DATA(lr_token).
 
@@ -405,9 +437,7 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
     DATA ls_source TYPE ty_s_source.
     DATA(lv_state) = `SOURCE`.
 
-    DATA(lv_from) = condense( to_upper( val ) ).
-    REPLACE ALL OCCURRENCES OF `,` IN lv_from WITH ` `.
-    SPLIT condense( lv_from ) AT ` ` INTO TABLE DATA(lt_token).
+    DATA(lt_token) = tokenize( upper_outside_literals( val ) ).
 
     LOOP AT lt_token REFERENCE INTO DATA(lr_token).
 
@@ -458,9 +488,7 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
 
     DATA ls_item TYPE ty_s_item.
 
-    DATA(lv_list) = CONV string( val ).
-    REPLACE ALL OCCURRENCES OF `,` IN lv_list WITH ` `.
-    SPLIT condense( lv_list ) AT ` ` INTO TABLE DATA(lt_token).
+    DATA(lt_token) = tokenize( val ).
 
     DATA(lv_index) = 0.
     WHILE lv_index < lines( lt_token ).
@@ -733,6 +761,119 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
     INSERT VALUE #( field     = |F{ lv_number }|
                     ref_table = ref_table
                     ref_field = lv_ref_field ) INTO TABLE ct_fieldlist.
+
+  ENDMETHOD.
+
+  METHOD split_literals.
+
+    DATA lv_part TYPE string.
+    DATA lv_quote TYPE string.
+
+    DATA(lv_val) = CONV string( val ).
+    DATA(lv_length) = strlen( lv_val ).
+    DATA(lv_pos) = 0.
+
+    WHILE lv_pos < lv_length.
+
+      DATA(lv_char) = substring( val = lv_val
+                                 off = lv_pos
+                                 len = 1 ).
+      lv_pos = lv_pos + 1.
+
+      IF lv_quote IS INITIAL.
+        IF lv_char = `'` OR lv_char = ````.
+          INSERT lv_part INTO TABLE result.
+          lv_part = lv_char.
+          lv_quote = lv_char.
+        ELSE.
+          lv_part = lv_part && lv_char.
+        ENDIF.
+        CONTINUE.
+      ENDIF.
+
+      lv_part = lv_part && lv_char.
+      IF lv_char <> lv_quote.
+        CONTINUE.
+      ENDIF.
+      " a doubled delimiter is an escaped one and stays in the literal
+      IF lv_pos < lv_length AND substring( val = lv_val
+                                           off = lv_pos
+                                           len = 1 ) = lv_quote.
+        lv_part = lv_part && lv_char.
+        lv_pos = lv_pos + 1.
+        CONTINUE.
+      ENDIF.
+      INSERT lv_part INTO TABLE result.
+      CLEAR lv_part.
+      CLEAR lv_quote.
+
+    ENDWHILE.
+
+    INSERT lv_part INTO TABLE result.
+
+  ENDMETHOD.
+
+  METHOD upper_outside_literals.
+
+    LOOP AT split_literals( val ) INTO DATA(lv_part).
+      IF sy-tabix MOD 2 = 1.
+        lv_part = to_upper( lv_part ).
+      ENDIF.
+      result = result && lv_part.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD condense_outside_literals.
+
+    LOOP AT split_literals( val ) INTO DATA(lv_part).
+      IF sy-tabix MOD 2 = 1.
+        WHILE lv_part CS `  `.
+          REPLACE ALL OCCURRENCES OF `  ` IN lv_part WITH ` `.
+        ENDWHILE.
+      ENDIF.
+      result = result && lv_part.
+    ENDLOOP.
+
+    result = shift_left( val = result
+                         sub = ` ` ).
+    result = shift_right( val = result
+                          sub = ` ` ).
+
+  ENDMETHOD.
+
+  METHOD tokenize.
+
+    DATA lv_token TYPE string.
+
+    LOOP AT split_literals( val ) INTO DATA(lv_part).
+
+      IF sy-tabix MOD 2 = 0.
+        lv_token = lv_token && lv_part.
+        CONTINUE.
+      ENDIF.
+
+      DATA(lv_pos) = 0.
+      WHILE lv_pos < strlen( lv_part ).
+        DATA(lv_char) = substring( val = lv_part
+                                   off = lv_pos
+                                   len = 1 ).
+        lv_pos = lv_pos + 1.
+        IF lv_char = ` ` OR lv_char = `,`.
+          IF lv_token IS NOT INITIAL.
+            INSERT lv_token INTO TABLE result.
+            CLEAR lv_token.
+          ENDIF.
+        ELSE.
+          lv_token = lv_token && lv_char.
+        ENDIF.
+      ENDWHILE.
+
+    ENDLOOP.
+
+    IF lv_token IS NOT INITIAL.
+      INSERT lv_token INTO TABLE result.
+    ENDIF.
 
   ENDMETHOD.
 

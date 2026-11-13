@@ -1,3 +1,6 @@
+CLASS ltcl_parser DEFINITION DEFERRED.
+CLASS z2ui5_cl_sql_query DEFINITION LOCAL FRIENDS ltcl_parser.
+
 CLASS ltcl_parser DEFINITION FINAL FOR TESTING
   DURATION SHORT
   RISK LEVEL HARMLESS.
@@ -18,6 +21,11 @@ CLASS ltcl_parser DEFINITION FINAL FOR TESTING
     METHODS sources_join_with_alias FOR TESTING RAISING cx_static_check.
     METHODS sources_join_without_alias FOR TESTING RAISING cx_static_check.
     METHODS run_alias_without_prefix FOR TESTING RAISING cx_static_check.
+    METHODS parse_case_literals FOR TESTING RAISING cx_static_check.
+    METHODS parse_where_literal FOR TESTING RAISING cx_static_check.
+    METHODS parse_escaped_quote FOR TESTING RAISING cx_static_check.
+    METHODS parse_mixed_case_identifiers FOR TESTING RAISING cx_static_check.
+    METHODS target_case_literal_comma FOR TESTING RAISING cx_static_check.
 ENDCLASS.
 
 
@@ -218,6 +226,77 @@ CLASS ltcl_parser IMPLEMENTATION.
                                         exp = `H` ).
     cl_abap_unit_assert=>assert_equals( act = ls_result-fieldlist[ 1 ]-ref_table
                                         exp = `Z2UI5_T_33` ).
+
+  ENDMETHOD.
+
+  METHOD parse_case_literals.
+
+    " literals keep their case - upper-casing the whole select list
+    " turned 'lh' into 'LH' and changed both comparison and output
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse(
+        `SELECT CASE WHEN carrid = 'lh' THEN 'Lufthansa' ELSE 'other' END AS name FROM scarr` ).
+
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-select_list
+                                        exp = `CASE WHEN CARRID = 'lh' THEN 'Lufthansa' ELSE 'other' END AS NAME` ).
+
+  ENDMETHOD.
+
+  METHOD parse_where_literal.
+
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse( `SELECT * FROM scarr WHERE carrname = 'Lufthansa'` ).
+
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-where
+                                        exp = `carrname = 'Lufthansa'` ).
+
+    " blanks inside a literal are content, not layout
+    lt_clauses = z2ui5_cl_sql_query=>parse( `SELECT * FROM scarr WHERE carrname = 'Air  Berlin '` ).
+
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-where
+                                        exp = `carrname = 'Air  Berlin '` ).
+
+  ENDMETHOD.
+
+  METHOD parse_escaped_quote.
+
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse(
+        `SELECT CASE WHEN uname = 'o''neil' THEN 'it''s me' ELSE 'no' END AS n FROM z2ui5_t_33 WHERE uname <> 'O''Neil'` ).
+
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-select_list
+                                        exp = `CASE WHEN UNAME = 'o''neil' THEN 'it''s me' ELSE 'no' END AS N` ).
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-where
+                                        exp = `uname <> 'O''Neil'` ).
+
+  ENDMETHOD.
+
+  METHOD parse_mixed_case_identifiers.
+
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse(
+        `SeLeCt CarrId, CaSe WhEn CarrId = 'lh' ThEn 'x' EnD As Nm FrOm sCaRr As s GrOuP By CarrId OrDeR By CarrId` ).
+
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-select_list
+                                        exp = `CARRID, CASE WHEN CARRID = 'lh' THEN 'x' END AS NM` ).
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-from
+                                        exp = `SCARR AS S` ).
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-group_by
+                                        exp = `CARRID` ).
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-order_by
+                                        exp = `CARRID` ).
+
+  ENDMETHOD.
+
+  METHOD target_case_literal_comma.
+
+    " a comma or a double blank inside a literal is not a separator
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse(
+        `SELECT CASE WHEN uname = 'a, b' THEN 'x  y' ELSE 'end' END AS n FROM z2ui5_t_33` ).
+    DATA(ls_target) = z2ui5_cl_sql_query=>build_target( lt_clauses[ 1 ] ).
+
+    cl_abap_unit_assert=>assert_equals( act = ls_target-select_list
+                                        exp = `CASE WHEN UNAME = 'a, b' THEN 'x  y' ELSE 'end' END AS N` ).
+    cl_abap_unit_assert=>assert_equals( act = lines( ls_target-fieldlist )
+                                        exp = 1 ).
+    cl_abap_unit_assert=>assert_equals( act = ls_target-fieldlist[ 1 ]-ref_field
+                                        exp = `N` ).
 
   ENDMETHOD.
 
