@@ -588,10 +588,10 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
           IF lv_name IS INITIAL.
             lv_name = lv_prefix.
             CLEAR lv_prefix.
-          ELSE.
-            " strip a trailing ` AS alias` from the field part
-            SPLIT lv_name AT ` ` INTO lv_name DATA(lv_dummy).
           ENDIF.
+          " strip a trailing ` AS alias` from the field part - with or
+          " without a table prefix, `carrid AS c` is the field CARRID
+          SPLIT lv_name AT ` ` INTO lv_name DATA(lv_dummy).
 
           IF lv_name = `*`.
 

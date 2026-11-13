@@ -17,6 +17,7 @@ CLASS ltcl_parser DEFINITION FINAL FOR TESTING
     METHODS sources_single_table FOR TESTING RAISING cx_static_check.
     METHODS sources_join_with_alias FOR TESTING RAISING cx_static_check.
     METHODS sources_join_without_alias FOR TESTING RAISING cx_static_check.
+    METHODS run_alias_without_prefix FOR TESTING RAISING cx_static_check.
 ENDCLASS.
 
 
@@ -202,6 +203,21 @@ CLASS ltcl_parser IMPLEMENTATION.
                                         exp = `SPFLI` ).
     cl_abap_unit_assert=>assert_equals( act = lt_source[ 2 ]-name
                                         exp = `SCARR` ).
+
+  ENDMETHOD.
+
+  METHOD run_alias_without_prefix.
+
+    " a field without a table prefix, renamed with AS - the column was
+    " looked up as `HANDLE AS H` and the query refused
+    DATA(ls_result) = z2ui5_cl_sql_query=>run( `SELECT handle AS h FROM z2ui5_t_33` ).
+
+    cl_abap_unit_assert=>assert_equals( act = lines( ls_result-fieldlist )
+                                        exp = 1 ).
+    cl_abap_unit_assert=>assert_equals( act = ls_result-fieldlist[ 1 ]-ref_field
+                                        exp = `H` ).
+    cl_abap_unit_assert=>assert_equals( act = ls_result-fieldlist[ 1 ]-ref_table
+                                        exp = `Z2UI5_T_33` ).
 
   ENDMETHOD.
 
