@@ -12,3 +12,12 @@ site/node_modules/
 site/.vitepress/cache/
 site/.vitepress/dist/
 build/
+
+# the shared CI template: the sibling checkouts of pin-deps.mjs (rap-ext
+# .github/ci/README.md) and the folders it fills
+.deps/
+.ci-template/
+/popups/
+/customcontrols/
+.github/abaplint/popups/
+.github/abaplint/customcontrols/
