@@ -74,28 +74,41 @@ loosened for them, with `check_syntax` excludes for their test doubles).
 ## Validation
 
 Run `npm run check` before considering changes complete: it runs the same steps
-as CI, and all of them must pass. CI:
+as CI, and all of them must pass. CI comes from the shared CI template of
+abap2UI5-addons (reusable workflows in
+[rap-ext](https://github.com/abap2UI5-addons/rap-ext/blob/main/.github/ci/README.md),
+pinned by commit in the `uses:` lines and moved by `bump-deps`); `ci` runs
+one job per check:
 
-* `abap-standard` — lint against Standard ABAP (`abaplint.jsonc`)
-* `abap-cloud` — lint against ABAP Cloud (`.github/abaplint/abap_cloud.jsonc`).
+* abaplint against Standard ABAP (`abaplint.jsonc`)
+* abaplint against ABAP Cloud (`.github/abaplint/abap_cloud.jsonc`).
   `src/native/` is excluded there because it is Standard ABAP only by design:
   ABAP Cloud forbids EXEC SQL and does not release ADBC or the DDIC/ADT
   internals the package reads. `src/abap/` must stay ABAP-Cloud-clean.
-* `check-abap2ui5` — the abap2UI5-linter over the app classes and their views
+* `abap2ui5lint` — the abap2UI5-linter over the app classes and their views
   (`abap2ui5lint.jsonc`)
-* `abap-unit` — the ABAP Unit tests on abap2UI5's transpiled Node runtime, the way abap2UI5 tests itself: `npm run unit` (`.github/scripts/unit.mjs`) copies the packages into a checkout of abap2UI5's `main` (abap2UI5-ext, layout-management, popups and custom-controls beside it; `src/native` stays out - its ADT classes are on-premise only), downports, transpiles and runs the tests of this repository's classes
-* `check-rename` — namespace-rename check (`.github/abaplint/rename.json`,
+* `unit` — the ABAP Unit tests on abap2UI5's transpiled Node runtime, the way abap2UI5 tests itself: `npm run unit` (`.github/scripts/unit.mjs`) copies the packages into a checkout of abap2UI5's `main` (abap2UI5-ext, layout-management, popups and custom-controls beside it; `src/native` stays out - its ADT classes are on-premise only), downports, transpiles and runs the tests of this repository's classes
+* `rename` — namespace-rename check (`.github/abaplint/rename.json`,
   against the 9-character placeholder `zabap2ui5`). It resolves types like
   `abaplint.jsonc` and lints `src/native/` too, but leaves that package out of
   the renamed output: `z2ui5_cl_sql_native_console_st` is already at the
   30-character class limit, so it cannot take a longer namespace
-* `build-rename` — manual workflow that pushes a namespace-renamed branch
-  `rename_<name>` for a parallel install; the branch carries `src/abap/` only
 
-* `publish-702` / `abap-702` — `publish-702` writes the downported `702`
-  branch on every push to `main` (`npm run auto_downport` against
-  `.github/abaplint/abap_702.jsonc`), and `abap-702` lints it. The branch
-  carries `src/abap/` only: the native code uses APIs unavailable at 7.02.
-  Never commit to `702` by hand.
+The other workflows:
+
+* `build-rename` — manual workflow that pushes a namespace-renamed branch
+  `rename_<name>` for a parallel install; the branch carries `src/abap/` only.
+  This repository's own: the template's runs `rename.mjs`, which this
+  repository does not have
+* `ci-702` — writes the downported `702` branch on every push to `main`
+  (`npm run auto_downport` against `.github/abaplint/abap_702.jsonc`) and
+  lints it. The branch carries `src/abap/` only: the native code uses APIs
+  unavailable at 7.02. Never commit to `702` by hand.
+
+The sibling addons (popups, custom-controls, and layout-management for the
+unit run) are resolved at the commit `.github/deps.json` pins, in CI and in
+`npm run unit`; `bump-deps` moves the pins monthly, and the weekly `ci` run
+checks their `main` tips. A local `npm run check` clones their `main`. The
+702 config gives popups' `702` branch a folder of its own (`/popups-702`).
 
 All `.abap`/`.xml`/config files are LF-only (`.gitattributes` enforces it).

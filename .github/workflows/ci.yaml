@@ -1,0 +1,44 @@
+name: ci
+
+# The checks of this repository, from the shared CI template of
+# abap2UI5-addons (rap-ext, .github/ci/README.md):
+#
+#   abaplint      Standard ABAP (abaplint.jsonc) and ABAP Cloud
+#                 (.github/abaplint/abap_cloud.jsonc)
+#   unit          the ABAP Unit tests on the transpiled runtime (npm run unit)
+#   rename        the namespace rename check (npm run rename: the plain abaplint
+#                 rename with .github/abaplint/rename.json)
+#   abap2ui5lint  the app classes and their views (abap2ui5lint.jsonc)
+#
+# The sibling addons are resolved at the commit .github/deps.json pins, and
+# the monthly bump-deps moves the pins. The weekly run is the canary: it
+# resolves them at the tip of their main, so an upstream rename is
+# noticed while no pull request is open.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    # write only for publish-badges, which runs on main and never for a pull
+    # request; every job that runs the code keeps a read-only token
+    permissions:
+      contents: write
+    uses: abap2UI5-addons/rap-ext/.github/workflows/addon-check.yaml@c81dfd461f69e42bb3678f51f80804066e2c9f96 # ci-v1.0.0
+    with:
+      abaplint: '["./abaplint.jsonc", ".github/abaplint/abap_cloud.jsonc"]'
+      unit: true
+      rename: true
+      canary: ${{ github.event_name == 'schedule' }}
