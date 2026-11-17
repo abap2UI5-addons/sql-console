@@ -13,7 +13,7 @@ npm run check
 
 `npm run check` is the same set of steps the workflows run on a pull request,
 so a green run locally is a green run there. `npm test` is an alias for it.
-The ABAP Unit tests run separately with `npm run unit` (CI: `abap-unit`), on
+The ABAP Unit tests run separately with `npm run unit` (CI: the `unit` job of `ci`), on
 abap2UI5's transpiled Node runtime.
 
 ## What the gates are

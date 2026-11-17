@@ -4,7 +4,7 @@
  * on the transpiled Node runtime abap2UI5 uses for its own suite (SQLite
  * behind the database statements, so RISK LEVEL DANGEROUS classes run too).
  *
- * What it does, the same in CI (abap-unit.yaml) and on a laptop:
+ * What it does, the same in CI (ci.yaml, the unit job) and on a laptop:
  *
  *   1. a checkout of every repository in CONFIG.repos under UNIT_DIR
  *      (default .unit/, git-ignored) - cloned on the first run, refreshed to
@@ -22,8 +22,9 @@
  * Environment:
  *   UNIT_DIR        the work folder (default .unit)
  *   UNIT_FILTER     run only the tests whose "OBJECT: class->method" contains it
- *   UNIT_NO_FETCH=1 use the checkouts under UNIT_DIR as they are - CI sets
- *                   it, actions/checkout has put them there already
+ *   UNIT_NO_FETCH=1 use the checkouts under UNIT_DIR as they are
+ *   DEPS_TIP=1      the sibling addons at the tip of their branch instead of
+ *                   the commit .github/deps.json pins - the scheduled canary
  *
  * Never commit the work folder. A green transpiled run is not a substitute
  * for a run on a system (abap2UI5's abap-check skill lists what the
@@ -61,6 +62,18 @@ const CONFIG = {
     { into: "zz_sql_console", from: ROOT, entries: ["package.devc.xml",  "abap"] },
   ],
 };
+
+// the sibling addons at the commit .github/deps.json pins - the same pins
+// the abaplint and rename checks of CI use (the shared CI template of
+// abap2UI5-addons, rap-ext .github/ci/README.md)
+const DEPS = path.join(ROOT, ".github", "deps.json");
+if (fs.existsSync(DEPS) && process.env.DEPS_TIP !== "1") {
+  const pins = JSON.parse(fs.readFileSync(DEPS, "utf8"));
+  for (const repo of CONFIG.repos) {
+    const key = Object.keys(pins).find((k) => repo.url.toLowerCase().endsWith(`/${k.toLowerCase()}`));
+    if (key) repo.ref = pins[key].sha;
+  }
+}
 
 const NPM = process.platform === "win32" ? "npm.cmd" : "npm";
 

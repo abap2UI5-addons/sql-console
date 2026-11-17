@@ -1,0 +1,27 @@
+name: ci-702
+
+# The downported branch 702 (shared CI template, addon-702.yaml): on every
+# push to main `npm run auto_downport` and a force-push to `702`, then
+# abaplint on that branch (.github/abaplint/abap_702.jsonc). One run
+# for both - the old pair publish-702/abap-702 needed a workflow_run hop.
+# Never commit to `702` by hand.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-702-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci-702:
+    permissions:
+      contents: write
+    uses: abap2UI5-addons/rap-ext/.github/workflows/addon-702.yaml@c81dfd461f69e42bb3678f51f80804066e2c9f96 # ci-v1.0.0
+    with:
+      repository: abap2UI5-addons/sql-console
