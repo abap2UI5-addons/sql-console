@@ -110,12 +110,19 @@ expressions in the statement are mapped to joins (`z2ui5_cl_sql_assoc_processor`
 
 ## Security
 
-This is a developer tool. It runs the SQL the user enters, without an authorization check of its own; the native path additionally uses ADBC and therefore bypasses ABAP authorizations and client separation. Before using it beyond a development system, add your own authorization checks and restrict who may run the app (see the Todo below).
+This is a developer tool. It runs the SQL the user enters, without an authorization check of its own; the native path additionally uses ADBC and therefore bypasses ABAP authorizations and client separation. Before using it beyond a development system, add your own authorization checks and restrict who may run the app.
+
+**That is a deliberate decision, not an open item.** abap2UI5 itself has no
+central authorization hook either: the framework leaves the check to the app,
+and this addon leaves it to the installation. Which check is the right one -
+`S_TABU_NAM`, `S_TABU_DIS`, an authorization object of your own, or what ABAP
+Cloud releases - depends on the system the addon runs in, so none is built in
+and none is planned. Whoever opens the app to more people than its developers
+adds the check that fits their system.
 
 ## Todo
 
 * Extend the input-to-SQL translation
-* Add authorization checks
 * Fix ABAP Cloud Readiness
 
 ## Development
