@@ -60,7 +60,7 @@ CLASS z2ui5_cl_sql_context DEFINITION
         editable TYPE abap_bool,
       END OF ty_s_token.
 
-    TYPES ty_t_token TYPE STANDARD TABLE OF ty_s_token WITH EMPTY KEY.
+    TYPES ty_t_token TYPE STANDARD TABLE OF ty_s_token WITH DEFAULT KEY.
 
     TYPES:
       BEGIN OF ty_s_range,
@@ -70,7 +70,7 @@ CLASS z2ui5_cl_sql_context DEFINITION
         high   TYPE string,
       END OF ty_s_range.
 
-    TYPES ty_t_range TYPE STANDARD TABLE OF ty_s_range WITH EMPTY KEY.
+    TYPES ty_t_range TYPE STANDARD TABLE OF ty_s_range WITH DEFAULT KEY.
 
     TYPES:
       BEGIN OF ty_s_filter_multi,
@@ -81,7 +81,7 @@ CLASS z2ui5_cl_sql_context DEFINITION
         t_token_removed TYPE ty_t_token,
       END OF ty_s_filter_multi.
 
-    TYPES ty_t_filter_multi TYPE STANDARD TABLE OF ty_s_filter_multi WITH EMPTY KEY.
+    TYPES ty_t_filter_multi TYPE STANDARD TABLE OF ty_s_filter_multi WITH DEFAULT KEY.
 
     " depth guards the mutual recursion between these two (an include whose
     " expansion reaches itself would otherwise be an unbounded stack).
@@ -294,7 +294,7 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
     FIELD-SYMBOLS <from>   TYPE data.
     FIELD-SYMBOLS <result> TYPE data.
 
-    IF rtti_check_ref_data( from ).
+    IF rtti_check_ref_data( from ) IS NOT INITIAL.
       ASSIGN from->* TO <from>.
       IF <from> IS NOT ASSIGNED.
         " unbound data reference - nothing to copy, return an initial reference
@@ -311,6 +311,7 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD c_trim.
+      DATA lv_before LIKE result.
 
     result = val.
     " spaces and tabs alternate at either end (`\t \tx`) - one pass of each
@@ -319,7 +320,8 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
     " standing. Every pass that changes something shortens the string, so
     " the loop ends
     DO.
-      DATA(lv_before) = result.
+
+      lv_before = result.
       result = shift_left( shift_right( result ) ).
       result = shift_right( val = result
                             sub = cv_char_util_horizontal_tab ).
@@ -334,8 +336,18 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
 
   METHOD filter_get_multi_by_data.
 
-    LOOP AT rtti_get_t_attri_by_any( val ) REFERENCE INTO DATA(lr_comp).
-      INSERT VALUE #( name = lr_comp->name ) INTO TABLE result.
+    DATA temp1 TYPE abap_component_tab.
+    DATA temp3 LIKE LINE OF temp1.
+    DATA lr_comp LIKE REF TO temp3.
+      DATA temp2 TYPE z2ui5_cl_sql_context=>ty_s_filter_multi.
+    temp1 = rtti_get_t_attri_by_any( val ).
+
+
+    LOOP AT temp1 REFERENCE INTO lr_comp.
+
+      CLEAR temp2.
+      temp2-name = lr_comp->name.
+      INSERT temp2 INTO TABLE result.
     ENDLOOP.
 
   ENDMETHOD.
@@ -348,9 +360,22 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
     FIELD-SYMBOLS <row>   TYPE any.
     FIELD-SYMBOLS <field> TYPE any.
 
-    DATA(lv_search) = COND string( WHEN ignore_case = abap_true
-                                   THEN to_upper( val )
-                                   ELSE val ).
+    DATA temp3 TYPE string.
+    DATA lv_search LIKE temp3.
+    DATA lv_field_count TYPE i.
+      DATA lv_tabix LIKE sy-tabix.
+      DATA lv_check_found LIKE abap_false.
+      DATA lv_index TYPE i.
+          DATA lv_name LIKE LINE OF fields.
+          FIELD-SYMBOLS <temp4> LIKE LINE OF fields.
+          DATA temp5 LIKE sy-tabix.
+    IF ignore_case = abap_true.
+      temp3 = to_upper( val ).
+    ELSE.
+      temp3 = val.
+    ENDIF.
+
+    lv_search = temp3.
     " an empty search is no filter: every row stays. Said here rather than
     " left to the match below - whether find( ) or CS reports a hit for an
     " empty substring is not something to build on, and a row with nothing
@@ -359,13 +384,17 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
     IF lv_search IS INITIAL.
       RETURN.
     ENDIF.
-    DATA(lv_field_count) = lines( fields ).
+
+    lv_field_count = lines( fields ).
 
     LOOP AT tab ASSIGNING <row>.
 
-      DATA(lv_tabix) = sy-tabix.
-      DATA(lv_check_found) = abap_false.
-      DATA(lv_index) = 1.
+
+      lv_tabix = sy-tabix.
+
+      lv_check_found = abap_false.
+
+      lv_index = 1.
       DO.
         IF fields IS INITIAL.
           ASSIGN COMPONENT lv_index OF STRUCTURE <row> TO <field>.
@@ -382,7 +411,16 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
           IF lv_index > lv_field_count.
             EXIT.
           ENDIF.
-          DATA(lv_name) = fields[ lv_index ].
+
+
+
+          temp5 = sy-tabix.
+          READ TABLE fields INDEX lv_index ASSIGNING <temp4>.
+          sy-tabix = temp5.
+          IF sy-subrc <> 0.
+            ASSERT 1 = 0.
+          ENDIF.
+          lv_name = <temp4>.
           ASSIGN COMPONENT lv_name OF STRUCTURE <row> TO <field>.
           IF sy-subrc <> 0.
             lv_index = lv_index + 1.
@@ -412,9 +450,12 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
 
     " cached per name - see gt_class_exists at the declaration
     DATA lv_name TYPE string.
+    DATA lr_hit TYPE REF TO z2ui5_cl_sql_context=>ty_s_class_exists.
+    DATA temp4 TYPE z2ui5_cl_sql_context=>ty_s_class_exists.
     lv_name = to_upper( val ).
 
-    READ TABLE gt_class_exists REFERENCE INTO DATA(lr_hit) WITH TABLE KEY name = lv_name.
+
+    READ TABLE gt_class_exists REFERENCE INTO lr_hit WITH TABLE KEY name = lv_name.
     IF sy-subrc = 0.
       result = lr_hit->exists.
       RETURN.
@@ -433,12 +474,19 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
       CATCH cx_root ##NO_HANDLER.
     ENDTRY.
 
-    INSERT VALUE #( name   = lv_name
-                    exists = result ) INTO TABLE gt_class_exists.
+
+    CLEAR temp4.
+    temp4-name = lv_name.
+    temp4-exists = result.
+    INSERT temp4 INTO TABLE gt_class_exists.
 
   ENDMETHOD.
 
   METHOD rtti_check_ref_data.
+        DATA lo_typdescr TYPE REF TO cl_abap_typedescr.
+        DATA temp5 TYPE REF TO cl_abap_refdescr.
+        DATA lo_referenced TYPE REF TO cl_abap_typedescr.
+        DATA temp1 TYPE xsdboolean.
 
     TRY.
         " a kind comparison, not a CAST probe: the cast raised
@@ -448,7 +496,8 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
         " exception is orders of magnitude more expensive than comparing.
         " cl_abap_refdescr covers data and object references alike, and so
         " does kind_ref
-        DATA(lo_typdescr) = cl_abap_typedescr=>describe_by_data( val ).
+
+        lo_typdescr = cl_abap_typedescr=>describe_by_data( val ).
         IF lo_typdescr->kind <> cl_abap_typedescr=>kind_ref.
           RETURN.
         ENDIF.
@@ -456,9 +505,13 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
         " dereferences on a true answer (conv_copy_ref_data: `from->*`)
         " cannot do that to an object reference. Only a reference to DATA
         " answers true
-        DATA(lo_referenced) = CAST cl_abap_refdescr( lo_typdescr )->get_referenced_type( ).
-        result = xsdbool( lo_referenced->kind <> cl_abap_typedescr=>kind_class
-                      AND lo_referenced->kind <> cl_abap_typedescr=>kind_intf ).
+
+        temp5 ?= lo_typdescr.
+
+        lo_referenced = temp5->get_referenced_type( ).
+
+        temp1 = boolc( lo_referenced->kind <> cl_abap_typedescr=>kind_class AND lo_referenced->kind <> cl_abap_typedescr=>kind_intf ).
+        result = temp1.
       CATCH cx_root ##NO_HANDLER.
     ENDTRY.
 
@@ -479,9 +532,11 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
     " back the object already in hand - or fail for a local include type
     " whose absolute name does not resolve, where the direct cast cannot
     DATA sdescr TYPE REF TO cl_abap_structdescr.
+        DATA lx_cast TYPE REF TO cx_sy_move_cast_error.
     TRY.
         sdescr ?= type.
-      CATCH cx_sy_move_cast_error INTO DATA(lx_cast).
+
+      CATCH cx_sy_move_cast_error INTO lx_cast.
         RAISE EXCEPTION TYPE z2ui5_cx_sql_error
           EXPORTING
             val      = |Include type '{ type->absolute_name }' is not a structure|
@@ -493,6 +548,11 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD expand_components.
+    DATA temp6 LIKE LINE OF val.
+    DATA lr_comp LIKE REF TO temp6.
+        DATA lt_include TYPE abap_component_tab.
+          DATA temp7 LIKE LINE OF lt_include.
+          DATA lr_include LIKE REF TO temp7.
 
     " see the declaration: bounded so a cyclic include chain surfaces as a
     " readable error instead of a stack-overflow dump. 16 nested include
@@ -503,16 +563,21 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
           val = `RTTI_INCLUDE_RECURSION - include expansion exceeded 16 levels (cyclic include?)`.
     ENDIF.
 
-    LOOP AT val REFERENCE INTO DATA(lr_comp).
+
+
+    LOOP AT val REFERENCE INTO lr_comp.
       IF lr_comp->as_include = abap_true.
         " INCLUDE ... RENAMING WITH SUFFIX: the structure's components are
         " named <component><suffix>, and every nested level adds its own -
         " the bare include names do not exist on the structure, so a
         " binding path or ASSIGN COMPONENT built from them fails
-        DATA(lt_include) = rtti_get_t_attri_by_include( type  = lr_comp->type
+
+        lt_include = rtti_get_t_attri_by_include( type  = lr_comp->type
                                                         depth = depth + 1 ).
         IF lr_comp->suffix IS NOT INITIAL.
-          LOOP AT lt_include REFERENCE INTO DATA(lr_include).
+
+
+          LOOP AT lt_include REFERENCE INTO lr_include.
             lr_include->name = lr_include->name && lr_comp->suffix.
           ENDLOOP.
         ENDIF.
@@ -530,6 +595,11 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
     DATA lo_type          TYPE REF TO cl_abap_typedescr.
     " declared, not CONV string( ) - see error_get_attributes
     DATA lv_absolute_name TYPE string.
+        DATA temp8 TYPE REF TO cl_abap_structdescr.
+        DATA temp9 TYPE REF TO cl_abap_structdescr.
+        DATA temp6 TYPE REF TO cl_abap_tabledescr.
+    DATA lr_cache TYPE REF TO z2ui5_cl_sql_context=>ty_s_attri_cache.
+      DATA temp10 TYPE z2ui5_cl_sql_context=>ty_s_attri_cache.
 
     " describe_by_data never fails for a data object, and the reference case
     " is the one branch. The fallback chain that used to sit here - a second
@@ -543,9 +613,15 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
 
     CASE lo_type->kind.
       WHEN cl_abap_typedescr=>kind_struct.
-        lo_struct = CAST #( lo_type ).
+
+        temp8 ?= lo_type.
+        lo_struct = temp8.
       WHEN cl_abap_typedescr=>kind_table.
-        lo_struct = CAST #( CAST cl_abap_tabledescr( lo_type )->get_table_line_type( ) ).
+
+
+        temp6 ?= lo_type.
+        temp9 ?= temp6->get_table_line_type( ).
+        lo_struct = temp9.
       WHEN OTHERS.
         lo_struct ?= lo_type.
     ENDCASE.
@@ -553,7 +629,8 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
     " descriptor instances are singletons per type, so the identity check
     " guards against absolute names reused by other (local/anonymous) types
     lv_absolute_name = lo_struct->absolute_name.
-    READ TABLE mt_attri_cache REFERENCE INTO DATA(lr_cache)
+
+    READ TABLE mt_attri_cache REFERENCE INTO lr_cache
          WITH TABLE KEY absolute_name = lv_absolute_name.
     IF sy-subrc = 0 AND lr_cache->o_struct = lo_struct.
       result = lr_cache->t_attri.
@@ -566,9 +643,12 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
       lr_cache->o_struct = lo_struct.
       lr_cache->t_attri  = result.
     ELSE.
-      INSERT VALUE #( absolute_name = lv_absolute_name
-                      o_struct      = lo_struct
-                      t_attri       = result ) INTO TABLE mt_attri_cache.
+
+      CLEAR temp10.
+      temp10-absolute_name = lv_absolute_name.
+      temp10-o_struct = lo_struct.
+      temp10-t_attri = result.
+      INSERT temp10 INTO TABLE mt_attri_cache.
     ENDIF.
 
   ENDMETHOD.
@@ -603,11 +683,16 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD xml_srtti_stringify.
+      DATA srtti TYPE REF TO object.
+      DATA lv_classname TYPE string.
+          DATA lx_srtti TYPE REF TO cx_root.
+          DATA lv_text TYPE string.
 
     IF rtti_check_class_exists( `ZCL_SRTTI_TYPEDESCR` ) = abap_true.
 
-      DATA srtti TYPE REF TO object.
-      DATA(lv_classname) = `ZCL_SRTTI_TYPEDESCR`.
+
+
+      lv_classname = `ZCL_SRTTI_TYPEDESCR`.
       CALL METHOD (lv_classname)=>(`CREATE_BY_DATA_OBJECT`)
         EXPORTING
           data_object = data
@@ -625,11 +710,13 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
               srtti       = srtti.
           CALL TRANSFORMATION id SOURCE srtti = srtti dobj = data RESULT XML result.
 
-        CATCH cx_root INTO DATA(lx_srtti).
+
+        CATCH cx_root INTO lx_srtti.
 
           " keep the root cause - a transformation error on the caller's own
           " data must not be masked behind a bare UNSUPPORTED_FEATURE
-          DATA(lv_text) = `UNSUPPORTED_FEATURE`.
+
+          lv_text = `UNSUPPORTED_FEATURE`.
           RAISE EXCEPTION TYPE z2ui5_cx_sql_error
             EXPORTING
               val      = lv_text
@@ -808,6 +895,7 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
     DATA lv_uuid      TYPE c LENGTH 32.
     DATA lv_classname TYPE string.
     DATA lv_fm        TYPE string.
+        DATA lx_uuid TYPE REF TO cx_root.
 
     TRY.
 
@@ -829,7 +917,8 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
 
         result = lv_uuid.
 
-      CATCH cx_root INTO DATA(lx_uuid).
+
+      CATCH cx_root INTO lx_uuid.
         " both UUID mechanisms failed - raise the framework exception so the
         " consumer's single top-level catch can turn it into a handled error.
         " ASSERT would raise the uncatchable ASSERTION_FAILED and bypass that
@@ -853,6 +942,7 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD itab_filter_check_field.
+    DATA lv_value TYPE string.
 
     " a table, a deep structure or a reference cannot go into a string
     " template - with no field list every component is visited, and a
@@ -862,7 +952,8 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    DATA(lv_value) = |{ field }|.
+
+    lv_value = |{ field }|.
     IF ignore_case = abap_true.
       lv_value = to_upper( lv_value ).
       IF lv_value CS search.
@@ -878,18 +969,22 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
   METHOD xml_srtti_parse_pair.
 
     DATA srtti TYPE REF TO object.
+    DATA rtti_type TYPE REF TO cl_abap_typedescr.
+    DATA lo_datadescr TYPE REF TO cl_abap_datadescr.
+    FIELD-SYMBOLS <variable> TYPE data.
     CALL TRANSFORMATION id SOURCE XML iv_type RESULT srtti = srtti.
 
-    DATA rtti_type TYPE REF TO cl_abap_typedescr.
+
     CALL METHOD srtti->(`GET_RTTI`)
       RECEIVING
         rtti = rtti_type.
 
-    DATA lo_datadescr TYPE REF TO cl_abap_datadescr.
+
     lo_datadescr ?= rtti_type.
 
     CREATE DATA result TYPE HANDLE lo_datadescr.
-    ASSIGN result->* TO FIELD-SYMBOL(<variable>).
+
+    ASSIGN result->* TO <variable>.
     CALL TRANSFORMATION id SOURCE XML iv_data RESULT dobj = <variable>.
 
   ENDMETHOD.

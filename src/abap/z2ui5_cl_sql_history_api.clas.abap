@@ -18,7 +18,7 @@ CLASS z2ui5_cl_sql_history_api DEFINITION
         sql_command TYPE string,
         result_data TYPE string,
       END OF ty_s_entry.
-    TYPES ty_t_entry TYPE STANDARD TABLE OF ty_s_entry WITH EMPTY KEY.
+    TYPES ty_t_entry TYPE STANDARD TABLE OF ty_s_entry WITH DEFAULT KEY.
 
     CLASS-METHODS db_create
       IMPORTING
@@ -70,8 +70,13 @@ CLASS z2ui5_cl_sql_history_api IMPLEMENTATION.
 
     DATA ls_entry TYPE ty_s_entry.
 
-    LOOP AT z2ui5_cl_sql_db=>load_multi_by_handle( uname  = val
-                                                    handle = c_handle_history ) REFERENCE INTO DATA(lr_db).
+    DATA temp1 TYPE z2ui5_cl_sql_db=>ty_t_db.
+    DATA temp2 LIKE LINE OF temp1.
+    DATA lr_db LIKE REF TO temp2.
+    temp1 = z2ui5_cl_sql_db=>load_multi_by_handle( uname = val handle = c_handle_history ).
+
+
+    LOOP AT temp1 REFERENCE INTO lr_db.
 
       z2ui5_cl_sql_context=>xml_parse( EXPORTING xml = lr_db->data
                                 IMPORTING any = ls_entry ).
@@ -83,8 +88,13 @@ CLASS z2ui5_cl_sql_history_api IMPLEMENTATION.
 
   METHOD db_delete.
 
-    LOOP AT z2ui5_cl_sql_db=>load_multi_by_handle( uname  = user
-                                                    handle = c_handle_history ) REFERENCE INTO DATA(lr_db).
+    DATA temp2 TYPE z2ui5_cl_sql_db=>ty_t_db.
+    DATA temp3 LIKE LINE OF temp2.
+    DATA lr_db LIKE REF TO temp3.
+    temp2 = z2ui5_cl_sql_db=>load_multi_by_handle( uname = user handle = c_handle_history ).
+
+
+    LOOP AT temp2 REFERENCE INTO lr_db.
 
       z2ui5_cl_sql_db=>delete_by_handle( uname        = lr_db->uname
                                           handle       = lr_db->handle
@@ -98,9 +108,11 @@ CLASS z2ui5_cl_sql_history_api IMPLEMENTATION.
 
   METHOD db_create_draft.
 
+    DATA temp3 TYPE string.
+    temp3 = val.
     z2ui5_cl_sql_db=>save( uname  = sy-uname
                             handle = c_handle_draft
-                            data   = CONV string( val ) ).
+                            data   = temp3 ).
 
   ENDMETHOD.
 
@@ -120,14 +132,25 @@ CLASS z2ui5_cl_sql_history_api IMPLEMENTATION.
 
     " the id comes from the history list, which is bound to the view - only
     " an entry of the user's own history is read, as db_read_multi_by_user
-    DATA(lt_db) = z2ui5_cl_sql_db=>load_multi_by_handle( uname   = sy-uname
+    DATA lt_db TYPE z2ui5_cl_sql_db=>ty_t_db.
+    FIELD-SYMBOLS <temp4> LIKE LINE OF lt_db.
+    DATA temp5 LIKE sy-tabix.
+    lt_db = z2ui5_cl_sql_db=>load_multi_by_handle( uname   = sy-uname
                                                           handle  = c_handle_history
                                                           handle2 = val ).
     IF lt_db IS INITIAL.
       RETURN.
     ENDIF.
 
-    z2ui5_cl_sql_context=>xml_parse( EXPORTING xml = lt_db[ 1 ]-data
+
+
+    temp5 = sy-tabix.
+    READ TABLE lt_db INDEX 1 ASSIGNING <temp4>.
+    sy-tabix = temp5.
+    IF sy-subrc <> 0.
+      ASSERT 1 = 0.
+    ENDIF.
+    z2ui5_cl_sql_context=>xml_parse( EXPORTING xml = <temp4>-data
                               IMPORTING any = result ).
 
   ENDMETHOD.
