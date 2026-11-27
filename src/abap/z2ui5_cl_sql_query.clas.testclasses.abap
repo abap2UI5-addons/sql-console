@@ -479,10 +479,13 @@ CLASS ltcl_parser IMPLEMENTATION.
                                         ( field = `F000002` ref_field = `CONNID` ) )
       CHANGING  ct_data      = lt_data ).
 
+    " typed, not VALUE #( ) in exp: the 7.02 downport cannot infer the type
+    DATA lt_exp LIKE lt_data.
+    lt_exp = VALUE #( ( f000001 = `AA` f000002 = 1 )
+                      ( f000001 = `LH` f000002 = 1 )
+                      ( f000001 = `LH` f000002 = 2 ) ).
     cl_abap_unit_assert=>assert_equals( act = lt_data
-                                        exp = VALUE #( ( f000001 = `AA` f000002 = 1 )
-                                                       ( f000001 = `LH` f000002 = 1 )
-                                                       ( f000001 = `LH` f000002 = 2 ) ) ).
+                                        exp = lt_exp ).
 
   ENDMETHOD.
 
@@ -508,11 +511,13 @@ CLASS ltcl_parser IMPLEMENTATION.
     z2ui5_cl_sql_query=>sort_rows( EXPORTING it_order = lt_order
                                    CHANGING  ct_data  = lt_data ).
 
+    DATA lt_exp LIKE lt_data.
+    lt_exp = VALUE #( ( f000001 = `LH` f000002 = 1 )
+                      ( f000001 = `LH` f000002 = 2 )
+                      ( f000001 = `AA` f000002 = 1 )
+                      ( f000001 = `AA` f000002 = 3 ) ).
     cl_abap_unit_assert=>assert_equals( act = lt_data
-                                        exp = VALUE #( ( f000001 = `LH` f000002 = 1 )
-                                                       ( f000001 = `LH` f000002 = 2 )
-                                                       ( f000001 = `AA` f000002 = 1 )
-                                                       ( f000001 = `AA` f000002 = 3 ) ) ).
+                                        exp = lt_exp ).
 
   ENDMETHOD.
 
