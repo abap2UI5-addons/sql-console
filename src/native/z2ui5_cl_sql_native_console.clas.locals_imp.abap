@@ -461,7 +461,7 @@ class main_view implementation.
                        )->a( n = `height` v = `100%` ).
 
     data(shell) = me->a_parser->ele( `Shell`
-                      )->a( n = `appWidthLimited` v = me->a_ui5_client->_bind_edit( i_state->page-app_width_limited ) ).
+                      )->a( n = `appWidthLimited` v = me->a_ui5_client->_bind( i_state->page-app_width_limited ) ).
 
       data(page) = shell->ele( `Page`
                        )->a( n = `title` v = |{ 'Native SQL Console'(001) }| ).
@@ -474,7 +474,7 @@ class main_view implementation.
                 )->a( n = `text` v = |{ 'Fallback Limit'(002) }|
                 )->tag( `Input`
                 )->a( n = `width` v = `15%`
-                )->a( n = `value` v = me->a_ui5_client->_bind_edit( i_state->sql_editor_pane-fallback_max_rows )
+                )->a( n = `value` v = me->a_ui5_client->_bind( i_state->sql_editor_pane-fallback_max_rows )
                 )->tag( `Button`
                 )->a( n = `text` v = |{ 'Run'(003) }|
                 )->a( n = `press` v = me->a_ui5_client->_event( on_run=>event_name( ) )
@@ -483,7 +483,7 @@ class main_view implementation.
                 )->tag( `Label`
                 )->a( n = `text` v = `Shell` ##NO_TEXT
                 )->tag( `Switch`
-                )->a( n = `state` v = me->a_ui5_client->_bind_edit( i_state->page-app_width_limited )
+                )->a( n = `state` v = me->a_ui5_client->_bind( i_state->page-app_width_limited )
                 )->tag( `Link`
                 )->a( n = `text` v = |{ 'Project on GitHub'(004) }|
                 )->a( n = `target` v = '_blank'
@@ -511,11 +511,11 @@ class main_view implementation.
                   data(esp_layout_data) = editor_split_pane->ele( n = `layoutData` ns = `layout` )  ##NO_TEXT.
 
                     esp_layout_data->ele( n = `SplitterLayoutData` ns = `layout`
-                        )->a( n = `size` v = me->a_ui5_client->_bind_edit( i_state->sql_editor_pane-layout_size ) ).
+                        )->a( n = `size` v = me->a_ui5_client->_bind( i_state->sql_editor_pane-layout_size ) ).
 
                   editor_split_pane->tag( n = `CodeEditor` ns = `editor`
                       )->a( n = `type` v = `sql`
-                      )->a( n = `value` v = me->a_ui5_client->_bind_edit( i_state->sql_editor_pane-statement ) ).
+                      )->a( n = `value` v = me->a_ui5_client->_bind( i_state->sql_editor_pane-statement ) ).
 
                 "History Pane
                 data(history_split_pane) = horizontal_pane_container->ele( n = `SplitPane` ns = `layout`
@@ -524,10 +524,10 @@ class main_view implementation.
                   data(h_layout_data) = history_split_pane->ele( n = `layoutData` ns = `layout` ) ##NO_TEXT.
 
                     h_layout_data->ele( n = `SplitterLayoutData` ns = `layout`
-                        )->a( n = `size` v = me->a_ui5_client->_bind_edit( i_state->history_pane-layout_size ) ).
+                        )->a( n = `size` v = me->a_ui5_client->_bind( i_state->history_pane-layout_size ) ).
 
                   data(h_list) = history_split_pane->ele( `List`
-                                     )->a( n = `items` v = me->a_ui5_client->_bind_edit( i_state->history_pane-items )
+                                     )->a( n = `items` v = me->a_ui5_client->_bind( i_state->history_pane-items )
                                      )->a( n = `mode` v = `MultiSelect`
                                      )->a( n = `sticky` v = `ColumnHeaders,HeaderToolbar` ).
 
@@ -571,7 +571,7 @@ class main_view implementation.
                 data(rsp_layout_data) = results_split_pane->ele( n = `layoutData` ns = `layout` )  ##NO_TEXT.
 
                   rsp_layout_data->ele( n = `SplitterLayoutData` ns = `layout`
-                      )->a( n = `size` v = me->a_ui5_client->_bind_edit( i_state->results_pane-layout_size ) ).
+                      )->a( n = `size` v = me->a_ui5_client->_bind( i_state->results_pane-layout_size ) ).
 
                 results_split_pane->ele( `VBox`
                     )->a( n = `id` v = `preview`
@@ -644,7 +644,7 @@ class data_result_view implementation.
 
             te_overflow_toolbar->tag( `Input`
                 )->a( n = `width` v = `50%`
-                )->a( n = `value` v = me->a_ui5_client->_bind_edit( i_state->results_pane-wide_filter_string )
+                )->a( n = `value` v = me->a_ui5_client->_bind( i_state->results_pane-wide_filter_string )
                 )->a( n = `description` v = |{ 'Filter any column on enter'(008) }|
                 )->a( n = `submit` v = me->a_ui5_client->_event( on_wide_filtering=>event_name( ) ) ).
 
@@ -701,7 +701,6 @@ class data_result_view implementation.
 
     me->set_for_display( ).
 
-    me->a_ui5_client->view_model_update( ).
 
     r_val = me.
 
@@ -798,7 +797,6 @@ class on_delete_history_items implementation.
         new history( )->delete_for_current_user( value #( for <e> in filter #( state->history_pane-items using key by_sel where selected eq abap_true )
                                                           ( <e>-id ) ) ).
 
-        i_ui5_client->view_model_update( ).
 
         i_ui5_client->message_toast_display( 'All entries successfully deleted from database'(014) ).
 
@@ -890,7 +888,6 @@ class on_select_all_history_items implementation.
                                          ( value #( base <e>
                                                     selected = abap_true ) ) ).
 
-    i_ui5_client->view_model_update( ).
 
   endmethod.
   method ui_interaction~id.
@@ -911,7 +908,6 @@ class on_deselect_all_history_items implementation.
                                          ( value #( base <e>
                                                     selected = abap_false ) ) ).
 
-    i_ui5_client->view_model_update( ).
 
   endmethod.
   method ui_interaction~id.
