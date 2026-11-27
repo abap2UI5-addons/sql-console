@@ -52,6 +52,23 @@ CLASS z2ui5_cl_sql_context DEFINITION
     CLASS-METHODS class_constructor.
 
     TYPES:
+      BEGIN OF ty_s_name_value,
+        n TYPE string,
+        v TYPE string,
+      END OF ty_s_name_value.
+    TYPES ty_t_name_value TYPE STANDARD TABLE OF ty_s_name_value WITH EMPTY KEY.
+
+    " the system fields sy_get hands out, in the types SYST gives them
+    TYPES:
+      BEGIN OF ty_s_sy,
+        datum TYPE d,
+        uzeit TYPE t,
+        uname TYPE c LENGTH 12,
+        sysid TYPE c LENGTH 8,
+        saprl TYPE c LENGTH 4,
+      END OF ty_s_sy.
+
+    TYPES:
       BEGIN OF ty_s_token,
         key      TYPE string,
         text     TYPE string,
@@ -231,6 +248,56 @@ CLASS z2ui5_cl_sql_context DEFINITION
       RETURNING
         VALUE(result) TYPE REF TO data.
 
+    CLASS-METHODS rtti_get_classname_by_ref
+      IMPORTING
+        val           TYPE REF TO object
+      RETURNING
+        VALUE(result) TYPE string.
+
+    " The source-code position an exception was raised at, as
+    " `<program> / <include> / line <n>`; empty when the runtime supplies
+    " none. Wraps cx_root->get_source_position so the dependency on the SAP
+    " standard exception API stays inside this class. This is what identifies
+    " the failing method for exceptions that carry no text of their own -
+    " a CX_SY_MOVE_CAST_ERROR only says which types did not match, the
+    " position says where.
+    CLASS-METHODS error_get_source_position
+      IMPORTING
+        val           TYPE REF TO cx_root
+      RETURNING
+        VALUE(result) TYPE string.
+
+    " Every public, non-static, non-constant attribute of an exception that
+    " has a printable value - the class-specific payload the text alone does
+    " not carry (source/target type of a cast error, the offending value of a
+    " conversion error, DB object of an SQL error, ...). The general cx_root
+    " attributes (PREVIOUS, TEXTID, IS_RESUMABLE, KERNEL_ERRID) are skipped -
+    " the caller renders them itself or they carry no information.
+    CLASS-METHODS error_get_attributes
+      IMPORTING
+        val           TYPE REF TO cx_root
+      RETURNING
+        VALUE(result) TYPE ty_t_name_value.
+
+    CLASS-METHODS rtti_get_t_attri_by_oref
+      IMPORTING
+        val           TYPE any
+      RETURNING
+        VALUE(result) TYPE abap_attrdescr_tab.
+
+    " THE one place that reads a system field for its VALUE - date, time,
+    " user, system id, release. Every other class asks here
+    " (sy_get( )-uname), for two reasons: ABAP for Cloud Development reports
+    " the old system fields on every statement that names one ("The old
+    " variant of SY-DATUM should not be used ..."), so one reader is one
+    " finding per field instead of one per use; and the day one of them
+    " has to come from another API, it changes here and nowhere else.
+    " Not meant: sy-subrc, sy-tabix and sy-index - those are the result of
+    " the statement before them and have to be read where it stands
+    CLASS-METHODS sy_get
+      RETURNING
+        VALUE(result) TYPE ty_s_sy.
+
   PROTECTED SECTION.
 
   PRIVATE SECTION.
@@ -258,9 +325,31 @@ CLASS z2ui5_cl_sql_context DEFINITION
 
     CLASS-DATA gt_class_exists TYPE HASHED TABLE OF ty_s_class_exists WITH UNIQUE KEY name.
 
-    " Guards the cycle z2ui5_cx_sql_error=>constructor -> uuid_get_c32 ->
-    " RAISE z2ui5_cx_sql_error -> ... see uuid_get_c32.
+    " Guards uuid_get_c32 against re-entering itself through the exception it
+    " raises (z2ui5_cx_sql_error reads a uuid for its full report).
     CLASS-DATA gv_uuid_failed TYPE abap_bool.
+
+    " whether a type kind is a number: i, int1, int2, int8, p, f,
+    " decfloat16, decfloat34 - the one list the number checks share. int8
+    " by its value `8`, a constant lower releases do not have
+    CLASS-METHODS rtti_check_typekind_number
+      IMPORTING
+        val           TYPE clike
+      RETURNING
+        VALUE(result) TYPE abap_bool.
+
+    " codepage: the IANA name CL_ABAP_CONV_CODEPAGE takes; encoding: the
+    " name or SAP code page number CL_ABAP_CONV_IN_CE takes. invalid is set
+    " when a converter ran and rejected the bytes; no converter at all
+    " raises UNSUPPORTED_CODEPAGE_API.
+    CLASS-METHODS conv_get_string_by_xstring_cp
+      IMPORTING
+        val      TYPE xstring
+        codepage TYPE string
+        encoding TYPE string
+      EXPORTING
+        result   TYPE string
+        invalid  TYPE abap_bool.
 ENDCLASS.
 
 
@@ -538,7 +627,16 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
     " a data object is no type name
     lo_type = cl_abap_typedescr=>describe_by_data( val ).
     IF lo_type->kind = cl_abap_typedescr=>kind_ref.
-      lo_type = cl_abap_typedescr=>describe_by_data_ref( val ).
+      " REFERENCE_IS_INITIAL - see rtti_get_t_attri_by_oref
+      cl_abap_typedescr=>describe_by_data_ref( EXPORTING  p_data_ref           = val
+                                               RECEIVING p_descr_ref           = lo_type
+                                               EXCEPTIONS reference_is_initial = 1
+                                                          OTHERS               = 2 ).
+      IF sy-subrc <> 0.
+        RAISE EXCEPTION TYPE z2ui5_cx_sql_error
+          EXPORTING
+            val = `RTTI_REFERENCE_IS_INITIAL`.
+      ENDIF.
     ENDIF.
 
     CASE lo_type->kind.
@@ -672,82 +770,28 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    CASE rtti_get_type_kind( val ).
-      WHEN cl_abap_datadescr=>typekind_int OR
-          cl_abap_datadescr=>typekind_int1 OR
-          cl_abap_datadescr=>typekind_int2 OR
-          cl_abap_datadescr=>typekind_packed OR
-          cl_abap_datadescr=>typekind_float OR
-          cl_abap_datadescr=>typekind_decfloat16 OR
-          cl_abap_datadescr=>typekind_decfloat34 OR
-          cl_abap_datadescr=>typekind_hex OR
-          `8`.
-        " `8`: typekind_int8, a constant lower releases do not have
-        result = abap_true.
-    ENDCASE.
+    DATA(lv_type_kind) = rtti_get_type_kind( val ).
+    result = xsdbool( lv_type_kind = cl_abap_datadescr=>typekind_hex
+                      OR rtti_check_typekind_number( lv_type_kind ) = abap_true ).
 
   ENDMETHOD.
 
   METHOD conv_get_string_by_xstring.
 
-    DATA conv          TYPE REF TO object.
-    DATA conv_codepage TYPE c LENGTH 21.
-    DATA conv_in_class TYPE c LENGTH 18.
-    DATA lx_first      TYPE REF TO cx_root.
+    DATA lv_invalid TYPE abap_bool.
 
-    TRY.
-
-        conv_codepage = `CL_ABAP_CONV_CODEPAGE`.
-        CALL METHOD (conv_codepage)=>create_in
-          RECEIVING
-            instance = conv.
-
-        CALL METHOD conv->(`IF_ABAP_CONV_IN~CONVERT`)
-          EXPORTING
-            source = val
-          RECEIVING
-            result = result.
-        RETURN.
-
-      CATCH cx_root INTO lx_first ##NO_HANDLER.
-        " deliberate: capturing the cause IS the handling - it is chained into
-        " UNSUPPORTED_CODEPAGE_API below if the classic API fails too. Falling
-        " through is the point; the modern class is absent on older releases,
-        " which is the whole reason both paths exist
-    ENDTRY.
-
-    " The classic API. Guarded by its own TRY since 2026-09: it used to be the
-    " BODY of the CATCH above, so when it failed too the dynamic-call
-    " exception left this method raw. On a release that has neither class -
-    " and in any runtime that is not an SAP system, where a dynamic
-    " CALL METHOD resolves nothing - that reached the caller as
-    " CX_SY_DYN_CALL_ILLEGAL_CLASS, which nothing here catches by name.
-    " The view builder is one of those callers and builds its
-    " control-character set through this method, so a missing codepage class
-    " took down every view render with an exception that named a kernel
-    " class rather than the framework.
-    TRY.
-
-        conv_in_class = `CL_ABAP_CONV_IN_CE`.
-        CALL METHOD (conv_in_class)=>create
-          EXPORTING
-            encoding = `UTF-8`
-          RECEIVING
-            conv     = conv.
-
-        CALL METHOD conv->(`CONVERT`)
-          EXPORTING
-            input = val
-          IMPORTING
-            data  = result.
-
-      CATCH cx_root.
-        RAISE EXCEPTION TYPE z2ui5_cx_sql_error
-          EXPORTING
-            val      = |UNSUPPORTED_CODEPAGE_API - neither CL_ABAP_CONV_CODEPAGE | &&
-                       |nor CL_ABAP_CONV_IN_CE could convert here|
-            previous = lx_first.
-    ENDTRY.
+    " UTF-8 through the code-page method: one implementation of the two
+    " conversion APIs and their fallback, not two
+    conv_get_string_by_xstring_cp( EXPORTING val      = val
+                                             codepage = `UTF-8`
+                                             encoding = `UTF-8`
+                                   IMPORTING result   = result
+                                             invalid  = lv_invalid ).
+    IF lv_invalid = abap_true.
+      RAISE EXCEPTION TYPE z2ui5_cx_sql_error
+        EXPORTING
+          val = `INVALID_UTF8 - the bytes are no valid UTF-8`.
+    ENDIF.
 
   ENDMETHOD.
 
@@ -821,9 +865,19 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
           CATCH cx_root.
 
             lv_fm = `GUID_CREATE`.
+            " error_message: a message the module sends would otherwise end
+            " the request, which no CATCH reaches
             CALL FUNCTION lv_fm
               IMPORTING
-                ev_guid_32 = lv_uuid.
+                ev_guid_32    = lv_uuid
+              EXCEPTIONS
+                error_message = 1
+                OTHERS        = 2.
+            IF sy-subrc <> 0.
+              RAISE EXCEPTION TYPE z2ui5_cx_sql_error
+                EXPORTING
+                  val = `GUID_CREATE_FAILED`.
+            ENDIF.
 
         ENDTRY.
 
@@ -834,10 +888,10 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
         " consumer's single top-level catch can turn it into a handled error.
         " ASSERT would raise the uncatchable ASSERTION_FAILED and bypass that
         " catch (short dump instead of a handled error response).
-        " z2ui5_cx_sql_error=>constructor itself calls uuid_get_c32, so the
-        " raise below re-enters this method. gv_uuid_failed makes that nested
-        " call return an empty UUID instead of raising again (endless recursion
-        " until the stack overflows, which would defeat the handled error above).
+        " z2ui5_cx_sql_error reads a uuid when it renders its full report,
+        " so a renderer running while the raise below is on its way would
+        " re-enter this method. gv_uuid_failed makes that nested call return an
+        " empty UUID instead of raising again.
         IF gv_uuid_failed = abap_true.
           RETURN.
         ENDIF.
@@ -891,6 +945,251 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
     CREATE DATA result TYPE HANDLE lo_datadescr.
     ASSIGN result->* TO FIELD-SYMBOL(<variable>).
     CALL TRANSFORMATION id SOURCE XML iv_data RESULT dobj = <variable>.
+
+  ENDMETHOD.
+
+  METHOD rtti_check_typekind_number.
+
+    CASE val.
+      WHEN cl_abap_typedescr=>typekind_int
+          OR cl_abap_typedescr=>typekind_int1
+          OR cl_abap_typedescr=>typekind_int2
+          OR cl_abap_typedescr=>typekind_packed
+          OR cl_abap_typedescr=>typekind_float
+          OR cl_abap_typedescr=>typekind_decfloat16
+          OR cl_abap_typedescr=>typekind_decfloat34
+          OR `8`.
+        result = abap_true.
+    ENDCASE.
+
+  ENDMETHOD.
+
+  METHOD conv_get_string_by_xstring_cp.
+
+    DATA conv          TYPE REF TO object.
+    DATA conv_codepage TYPE c LENGTH 21.
+    DATA conv_in_class TYPE c LENGTH 18.
+    DATA lv_encoding   TYPE c LENGTH 20.
+    DATA lx_first      TYPE REF TO cx_root.
+
+    CLEAR result.
+    invalid = abap_false.
+
+    TRY.
+
+        conv_codepage = `CL_ABAP_CONV_CODEPAGE`.
+        CALL METHOD (conv_codepage)=>create_in
+          EXPORTING
+            codepage = codepage
+          RECEIVING
+            instance = conv.
+
+        CALL METHOD conv->(`IF_ABAP_CONV_IN~CONVERT`)
+          EXPORTING
+            source = val
+          RECEIVING
+            result = result.
+        RETURN.
+
+      CATCH cx_sy_conversion_codepage.
+        " the API is there and the bytes are not valid in this code page -
+        " the classic API would reject them too
+        CLEAR result.
+        invalid = abap_true.
+        RETURN.
+
+      CATCH cx_root INTO lx_first ##NO_HANDLER.
+        " deliberate: capturing the cause IS the handling - it is chained into
+        " UNSUPPORTED_CODEPAGE_API below if the classic API fails too. Falling
+        " through is the point; the modern class is absent on older releases,
+        " which is the whole reason both paths exist. A code page the modern
+        " class does not know (CX_PARAMETER_INVALID_RANGE) falls through too
+    ENDTRY.
+
+    " The classic API. Guarded by its own TRY since 2026-09: it used to be the
+    " BODY of the CATCH above, so when it failed too the dynamic-call
+    " exception left this method raw. On a release that has neither class -
+    " and in any runtime that is not an SAP system, where a dynamic
+    " CALL METHOD resolves nothing - that reached the caller as
+    " CX_SY_DYN_CALL_ILLEGAL_CLASS, which nothing here catches by name.
+    " The view builder is one of those callers and builds its
+    " control-character set through this method, so a missing codepage class
+    " took down every view render with an exception that named a kernel
+    " class rather than the framework.
+    TRY.
+
+        conv_in_class = `CL_ABAP_CONV_IN_CE`.
+        lv_encoding = encoding.
+        CALL METHOD (conv_in_class)=>create
+          EXPORTING
+            encoding = lv_encoding
+          RECEIVING
+            conv     = conv.
+
+        CALL METHOD conv->(`CONVERT`)
+          EXPORTING
+            input = val
+          IMPORTING
+            data  = result.
+
+      CATCH cx_sy_conversion_codepage.
+        CLEAR result.
+        invalid = abap_true.
+
+      CATCH cx_root.
+        RAISE EXCEPTION TYPE z2ui5_cx_sql_error
+          EXPORTING
+            val      = |UNSUPPORTED_CODEPAGE_API - neither CL_ABAP_CONV_CODEPAGE | &&
+                       |nor CL_ABAP_CONV_IN_CE could convert here|
+            previous = lx_first.
+    ENDTRY.
+
+  ENDMETHOD.
+
+  METHOD rtti_get_classname_by_ref.
+
+    " an unbound reference has no class - answer with an empty name instead
+    " of letting the RTTI call fail. Callers ask this while rendering (error
+    " context, response header), where a half-built object graph is normal
+    IF val IS NOT BOUND.
+      RETURN.
+    ENDIF.
+
+    result = substring_after( val = cl_abap_classdescr=>get_class_name( val )
+                              sub = `\CLASS=` ).
+
+  ENDMETHOD.
+
+  METHOD error_get_source_position.
+
+    " typed like the EXPORTING parameters of get_source_position (syrepid is
+    " CHAR40) - they are passed by reference, so a string would not be
+    " type-compatible here
+    DATA lv_program TYPE c LENGTH 40.
+    DATA lv_include TYPE c LENGTH 40.
+    DATA lv_line    TYPE i.
+
+    IF val IS NOT BOUND.
+      RETURN.
+    ENDIF.
+
+    " open-abap - the transpiled JS runtime behind the node tests - implements
+    " get_source_position by reading a field that only the RAISE statement
+    " writes, and fails with a JS TypeError for every other exception (a
+    " runtime-thrown one, or one built with NEW). That error is not an ABAP
+    " exception, so the TRY below cannot intercept it and the caller would go
+    " down instead of reporting the error it was diagnosing. sy-saprl is
+    " `OPEN` on that runtime and a real release everywhere else.
+    IF sy_get( )-saprl = `OPEN`.
+      RETURN.
+    ENDIF.
+
+    TRY.
+        val->get_source_position( IMPORTING program_name = lv_program
+                                            include_name = lv_include
+                                            source_line  = lv_line ).
+      CATCH cx_root ##NO_HANDLER.
+        " never let the diagnostic be the reason a caller fails
+    ENDTRY.
+
+    IF lv_program IS INITIAL AND lv_line IS INITIAL.
+      RETURN.
+    ENDIF.
+
+    result = c_trim( lv_program ).
+    " the include is the interesting part for a class (...CM001 = the method
+    " that raised); repeating it when it equals the program adds nothing
+    IF lv_include IS NOT INITIAL AND lv_include <> lv_program.
+      result = |{ result } / { c_trim( lv_include ) }|.
+    ENDIF.
+    IF lv_line IS NOT INITIAL.
+      result = |{ result } / line { lv_line }|.
+    ENDIF.
+
+  ENDMETHOD.
+
+  METHOD error_get_attributes.
+
+    " declared, NOT `DATA(lv_name) = CONV string( lr_attri->name )`: a CONV
+    " that is the whole right-hand side of an assignment is "Redundant
+    " conversion for type STRING" in SLIN - the assignment converts by
+    " itself. The variable stays a string on purpose: the RTTI name is a
+    " CHAR field whose trailing blanks have no business in the rendered name
+    DATA lv_name TYPE string.
+
+    FIELD-SYMBOLS <comp> TYPE any.
+
+    IF val IS NOT BOUND.
+      RETURN.
+    ENDIF.
+
+    TRY.
+        DATA(lt_attri) = rtti_get_t_attri_by_oref( val ).
+      CATCH cx_root.
+        RETURN.
+    ENDTRY.
+
+    LOOP AT lt_attri REFERENCE INTO DATA(lr_attri) "#EC CI_SORTSEQ
+         WHERE visibility  = cv_objectdescr_public
+           AND is_constant = abap_false
+           AND is_class    = abap_false.
+
+      CASE lr_attri->name.
+          " rendered by the caller (PREVIOUS as the next chain entry,
+          " KERNEL_ERRID as its own line) or without information value
+        WHEN `PREVIOUS` OR `TEXTID` OR `IS_RESUMABLE` OR `KERNEL_ERRID`.
+          CONTINUE.
+      ENDCASE.
+
+      lv_name = lr_attri->name.
+      " UNASSIGN + IS ASSIGNED, not sy-subrc - see unassign_data for the
+      " release behaviour (#1937). INSIDE A LOOP the stale-subrc reading is
+      " not just "skipped one attribute": a failed ASSIGN leaves the symbol
+      " on the PREVIOUS iteration's attribute, so a stale 0 renders that
+      " value under this attribute's name - a wrong value in the error dump,
+      " which is the one place a reader has nothing else to go by
+      UNASSIGN <comp>.
+      ASSIGN val->(lv_name) TO <comp>.
+      IF <comp> IS NOT ASSIGNED.
+        CONTINUE.
+      ENDIF.
+      IF rtti_check_printable( <comp> ) = abap_false OR <comp> IS INITIAL.
+        CONTINUE.
+      ENDIF.
+
+      INSERT VALUE #( n = lv_name
+                      v = c_trim( |{ <comp> }| ) ) INTO TABLE result.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD rtti_get_t_attri_by_oref.
+
+    DATA lo_descr TYPE REF TO cl_abap_typedescr.
+
+    " describe_by_object_ref raises the classic exception REFERENCE_IS_INITIAL
+    " for an initial reference - called functionally that is a runtime error no
+    " CATCH reaches
+    cl_abap_objectdescr=>describe_by_object_ref( EXPORTING  p_object_ref         = val
+                                                 RECEIVING p_descr_ref           = lo_descr
+                                                 EXCEPTIONS reference_is_initial = 1
+                                                            OTHERS               = 2 ).
+    IF sy-subrc <> 0.
+      RAISE EXCEPTION TYPE z2ui5_cx_sql_error
+        EXPORTING
+          val = `RTTI_REFERENCE_IS_INITIAL`.
+    ENDIF.
+    result = CAST cl_abap_classdescr( lo_descr )->attributes.
+
+  ENDMETHOD.
+
+  METHOD sy_get.
+
+    result-datum = sy-datum.
+    result-uzeit = sy-uzeit.
+    result-uname = sy-uname.
+    result-sysid = sy-sysid.
+    result-saprl = sy-saprl.
 
   ENDMETHOD.
 ENDCLASS.
