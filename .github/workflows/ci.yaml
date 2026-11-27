@@ -6,8 +6,8 @@ name: ci
 #   abaplint      Standard ABAP (abaplint.jsonc) and ABAP Cloud
 #                 (.github/abaplint/abap_cloud.jsonc)
 #   unit          the ABAP Unit tests on the transpiled runtime (npm run unit)
-#   rename        the namespace rename check (npm run rename: the plain abaplint
-#                 rename with .github/abaplint/rename.json)
+#   rename        the namespace rename check (npm run rename:
+#                 .github/scripts/rename.mjs, abap2UI5's shared script)
 #   abap2ui5lint  the app classes and their views (abap2ui5lint.jsonc)
 #
 # The sibling addons are resolved at the commit .github/deps.json pins, and

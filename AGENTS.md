@@ -68,8 +68,9 @@ Follows the abap2UI5 core conventions (see its
 [AGENTS.md](https://github.com/abap2UI5/abap2UI5/blob/main/AGENTS.md)): Clean
 ABAP with backtick string literals and string templates (`|…{ }…|`). The
 `src/native/` classes are ZTOAD-derived and keep their own style
-(`errorNamespace` in `abaplint.jsonc` and `.github/abaplint/rename.json` is
-loosened for them, with `check_syntax` excludes for their test doubles).
+(`errorNamespace` in `abaplint.jsonc` is loosened for them, with
+`check_syntax` excludes for their test doubles; the namespace rename leaves
+`src/native/` out - package.json `config.renameSkip`).
 
 ## Validation
 

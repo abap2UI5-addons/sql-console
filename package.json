@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "description": "SQL Console in Your Browser, built with abap2UI5.",
   "scripts": {
-    "rename": "abaplint .github/abaplint/rename.json --rename",
+    "rename": "node .github/scripts/rename.mjs",
     "lint": "abaplint ./abaplint.jsonc",
     "check:cloud": "abaplint .github/abaplint/abap_cloud.jsonc",
     "check:abap2ui5": "abap2ui5lint",
@@ -18,6 +18,11 @@
     "unit": "node .github/scripts/unit.mjs",
     "site": "npm run build --prefix site",
     "site:dev": "npm run dev --prefix site"
+  },
+  "config": {
+    "renameSkip": {
+      "src/native/": "z2ui5_cl_sql_native_console_st already has the 30 characters a class may have, so it cannot take a longer name - a shorter name for that class brings the package in"
+    }
   },
   "repository": {
     "type": "git",

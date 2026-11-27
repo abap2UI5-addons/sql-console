@@ -3,6 +3,8 @@ output
 .github/out/
 .github/abaplint/output/
 .github/abaplint/rename_run.json
+/.rename_run.json
+.github/abaplint/rename-deps/
 
 # the linter's README badges: every run rewrites them, CI publishes them to
 # the `badges` branch - never committed here
