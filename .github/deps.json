@@ -1,5 +1,5 @@
 {
-  "abap2UI5-addons/popups": { "branch": "main", "sha": "510189e24a37697bafdc3a3cbb396a84450d8bf6" },
-  "abap2UI5-addons/custom-controls": { "branch": "main", "sha": "81df28fc056a01b93238117c630fc93c2bf1a68b" },
-  "abap2UI5-addons/layout-management": { "branch": "main", "sha": "d9a73b3b5933c34c789e26fb19b0d990efb07a67" }
+  "abap2UI5-addons/popups": { "branch": "main", "sha": "d4310347cbee2d76f7e70e30f395f6dea6add657" },
+  "abap2UI5-addons/custom-controls": { "branch": "main", "sha": "d1f19665bd0e07e319c25d52f41d85c1e9cd27b5" },
+  "abap2UI5-addons/layout-management": { "branch": "main", "sha": "2a91e974b6ea34c8763e7daab5b51d93f08e703b" }
 }
