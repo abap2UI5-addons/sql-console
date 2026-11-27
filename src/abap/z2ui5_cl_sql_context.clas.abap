@@ -302,6 +302,16 @@ CLASS z2ui5_cl_sql_context DEFINITION
 
   PRIVATE SECTION.
 
+    "! Whether a stored S-RTTI document names no class but the S-RTTI ones:
+    "! CALL TRANSFORMATION creates an object of every class the document
+    "! names, and a document read back from the database was written by
+    "! whoever could write that row
+    CLASS-METHODS xml_srtti_check_classes
+      IMPORTING
+        val           TYPE clike
+      RETURNING
+        VALUE(result) TYPE abap_bool.
+
     TYPES:
       BEGIN OF ty_s_attri_cache,
         absolute_name TYPE string,
@@ -931,8 +941,22 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
 
   METHOD xml_srtti_parse_pair.
 
+    " both documents come from the database - nothing is deserialized before
+    " each is known to hold S-RTTI objects only (the data document too: the
+    " type it is read into can hold object references)
+    IF xml_srtti_check_classes( iv_type ) = abap_false OR xml_srtti_check_classes( iv_data ) = abap_false.
+      RAISE EXCEPTION TYPE z2ui5_cx_sql_error
+        EXPORTING
+          val = `The stored document names a class that is not part of S-RTTI - it is not read`.
+    ENDIF.
+
     DATA srtti TYPE REF TO object.
     CALL TRANSFORMATION id SOURCE XML iv_type RESULT srtti = srtti.
+    IF srtti IS NOT BOUND.
+      RAISE EXCEPTION TYPE z2ui5_cx_sql_error
+        EXPORTING
+          val = `The stored document holds no S-RTTI type description`.
+    ENDIF.
 
     DATA rtti_type TYPE REF TO cl_abap_typedescr.
     CALL METHOD srtti->(`GET_RTTI`)
@@ -945,6 +969,94 @@ CLASS z2ui5_cl_sql_context IMPLEMENTATION.
     CREATE DATA result TYPE HANDLE lo_datadescr.
     ASSIGN result->* TO FIELD-SYMBOL(<variable>).
     CALL TRANSFORMATION id SOURCE XML iv_data RESULT dobj = <variable>.
+
+  ENDMETHOD.
+
+  METHOD xml_srtti_check_classes.
+
+    " asXML names the class of an object by the element that holds it, in an
+    " ABAP class namespace (http://www.sap.com/abapxml/classes/global, or
+    " .../class-pool/<pool> for a local class). Every such element must name
+    " an S-RTTI class. Read in upper case and stricter than XML where unsure
+    " - a refused document is a lost history entry, an accepted one would
+    " create objects of the writer's choice
+    CONSTANTS lc_class_ns TYPE string VALUE `HTTP://WWW.SAP.COM/ABAPXML/CLASSES/`.
+    DATA lt_decl     TYPE match_result_tab.
+    DATA lt_tag      TYPE match_result_tab.
+    DATA lt_prefix   TYPE string_table.
+    DATA ls_sub_pfx  TYPE submatch_result.
+    DATA ls_sub_val  TYPE submatch_result.
+    DATA lv_value    TYPE string.
+    DATA lv_prefix   TYPE string.
+    DATA lv_allowed  TYPE string.
+    DATA lv_offset   TYPE i.
+    DATA lv_ok       TYPE abap_bool.
+
+    DATA(lv_xml) = to_upper( val ).
+    DATA(lv_len) = strlen( lv_xml ).
+
+    " a DTD can declare namespaces and entities the scan below does not see
+    IF lv_xml CS `<!DOCTYPE` OR lv_xml CS `<!ENTITY`.
+      RETURN.
+    ENDIF.
+
+    " the class name prefixes S-RTTI writes: the copy in the abap2UI5 core -
+    " by type, so a namespace rename carries it - and the original project
+    DATA lo_srtti TYPE REF TO z2ui5_cl_srt_typedescr.
+    DATA(lo_srtti_ref) = CAST cl_abap_refdescr( cl_abap_typedescr=>describe_by_data( lo_srtti ) ).
+    DATA(lv_core_class) = lo_srtti_ref->get_referenced_type( )->get_relative_name( ).
+    DATA(lt_allowed) = VALUE string_table(
+        ( substring( val = lv_core_class
+                     len = strlen( lv_core_class ) - strlen( `TYPEDESCR` ) ) )
+        ( `ZCL_SRTTI_` ) ).
+
+    " every namespace declaration, xmlns="..." or xmlns:p="..."
+    FIND ALL OCCURRENCES OF REGEX `XMLNS(:[^\s=/>]*)?\s*=\s*("[^"]*"|'[^']*')`
+         IN lv_xml RESULTS lt_decl.
+    LOOP AT lt_decl INTO DATA(ls_decl).
+      CLEAR: ls_sub_pfx, ls_sub_val.
+      READ TABLE ls_decl-submatches INDEX 1 INTO ls_sub_pfx.
+      READ TABLE ls_decl-submatches INDEX 2 INTO ls_sub_val.
+      lv_value = condense( substring( val = lv_xml
+                                      off = ls_sub_val-offset + 1
+                                      len = ls_sub_val-length - 2 ) ).
+      " a character reference could spell a class namespace unseen
+      IF lv_value CS `&`.
+        RETURN.
+      ENDIF.
+      IF find( val = lv_value sub = lc_class_ns ) <> 0.
+        CONTINUE.
+      ENDIF.
+      " S-RTTI never makes a class namespace the default one
+      IF ls_sub_pfx-offset < 0 OR ls_sub_pfx-length <= 1.
+        RETURN.
+      ENDIF.
+      INSERT substring( val = lv_xml
+                        off = ls_sub_pfx-offset + 1
+                        len = ls_sub_pfx-length - 1 ) INTO TABLE lt_prefix.
+    ENDLOOP.
+
+    " every element in one of those namespaces names an S-RTTI class
+    LOOP AT lt_prefix INTO lv_prefix.
+      CLEAR lt_tag.
+      FIND ALL OCCURRENCES OF |<{ lv_prefix }:| IN lv_xml RESULTS lt_tag.
+      LOOP AT lt_tag INTO DATA(ls_tag).
+        lv_offset = ls_tag-offset + ls_tag-length.
+        lv_ok = abap_false.
+        LOOP AT lt_allowed INTO lv_allowed.
+          IF lv_offset + strlen( lv_allowed ) <= lv_len
+              AND substring( val = lv_xml off = lv_offset len = strlen( lv_allowed ) ) = lv_allowed.
+            lv_ok = abap_true.
+            EXIT.
+          ENDIF.
+        ENDLOOP.
+        IF lv_ok = abap_false.
+          RETURN.
+        ENDIF.
+      ENDLOOP.
+    ENDLOOP.
+
+    result = abap_true.
 
   ENDMETHOD.
 

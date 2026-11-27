@@ -833,8 +833,16 @@ class on_load_history_item implementation.
 
     data(state) = z2ui5_cl_sql_native_console_st=>instance( ).
 
-    data(previous_result) = new history( )->get_rslt_data_for_current_user( state->history_pane-items[ key by_key
-                                                                                                       id = exact #( i_ui5_client->get_event_arg( 1 ) ) ]-id ).
+    " the parse refuses a stored result that names a class other than the
+    " S-RTTI ones - the entry is then not loaded
+    try.
+        data(previous_result) = new history( )->get_rslt_data_for_current_user( state->history_pane-items[ key by_key
+                                                                                                           id = exact #( i_ui5_client->get_event_arg( 1 ) ) ]-id ).
+      catch z2ui5_cx_sql_error into data(parse_error).
+        i_ui5_client->message_box_display( text = parse_error->get_text( )
+                                           type = `error` ).
+        return.
+    endtry.
 
     data(line_type) = cast cl_abap_structdescr( cast cl_abap_tabledescr( cl_abap_typedescr=>describe_by_data_ref( previous_result-data ) )->get_table_line_type( ) ).
 
