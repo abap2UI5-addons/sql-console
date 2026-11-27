@@ -54,5 +54,5 @@ translate a UI5 XML view one to one. Two things to know before editing a chain:
   renders as an empty string, which UI5 reads as true.
 
 The frozen `z2ui5_cl_xml_view` is gone from this repository. Do not reintroduce
-it: it lives in the core's `src/99`, outside the released API, and the view gate
-can read nothing that is built with it.
+it: it lives in abap2UI5-ext (the core's `src/99` until 1.151.0), outside the
+released API, and the view gate can read nothing that is built with it.
