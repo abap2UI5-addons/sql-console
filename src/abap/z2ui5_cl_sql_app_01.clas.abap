@@ -47,7 +47,6 @@ CLASS z2ui5_cl_sql_app_01 DEFINITION PUBLIC.
 
     DATA:
       BEGIN OF ms_control,
-        callback_pop_session_load  TYPE string,
         callback_pop_history_clear TYPE string,
       END OF ms_control.
     DATA client TYPE REF TO z2ui5_if_client.
@@ -588,37 +587,21 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
 
   METHOD z2ui5_on_callback_pop_confirm.
 
-    CASE io_popup->z2ui5_if_app~id_app.
+    " Cancel keeps the history
+    IF    io_popup->z2ui5_if_app~id_app <> ms_control-callback_pop_history_clear
+       OR io_popup->result( ) = abap_false.
+      RETURN.
+    ENDIF.
 
-      WHEN ms_control-callback_pop_session_load.
-
-        IF io_popup->result( ).
-          DATA(lv_id) = z2ui5_cl_sql_history_api=>db_read_draft( ).
-          client->nav_app_leave( client->get_app( lv_id ) ).
-        ELSE.
-          z2ui5_on_init_set_app( ).
-        ENDIF.
-
-      WHEN ms_control-callback_pop_history_clear.
-
-        " Cancel keeps the history
-        IF io_popup->result( ) = abap_false.
-          RETURN.
-        ENDIF.
-
-        CLEAR ms_draft-history_tab.
-        client->view_model_update( ).
-        z2ui5_cl_sql_history_api=>db_delete( ).
-        client->message_toast_display( `All entries successfully deleted from database` ).
-
-    ENDCASE.
+    CLEAR ms_draft-history_tab.
+    client->view_model_update( ).
+    z2ui5_cl_sql_history_api=>db_delete( ).
+    client->message_toast_display( `All entries successfully deleted from database` ).
 
   ENDMETHOD.
 
 
   METHOD z2ui5_on_event.
-
-    z2ui5_cl_sql_history_api=>db_create_draft( client->get( )-s_draft-id ).
 
     CASE client->get( )-event.
       WHEN `START`.
