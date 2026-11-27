@@ -37,9 +37,9 @@ class z2ui5_cl_sql_assoc_processor implementation.
 
     ls_assoc_nav_data = i_data.
 
-    TRANSLATE ls_assoc_nav_data-association_target TO UPPER CASE.
-    TRANSLATE ls_assoc_nav_data-association_name   TO UPPER CASE.
-    TRANSLATE ls_assoc_nav_data-cds_entity_name    TO UPPER CASE.
+    ls_assoc_nav_data-association_target = to_upper( ls_assoc_nav_data-association_target ).
+    ls_assoc_nav_data-association_name   = to_upper( ls_assoc_nav_data-association_name ).
+    ls_assoc_nav_data-cds_entity_name    = to_upper( ls_assoc_nav_data-cds_entity_name ).
 
     LOOP AT ls_assoc_nav_data-selected_row_data INTO ls_selected_row_data.
       CLEAR ls_source_data.
@@ -57,7 +57,7 @@ class z2ui5_cl_sql_assoc_processor implementation.
         WHEN 'T'.
 
           lv_tab_name = ls_assoc_nav_data-association_target.
-          TRANSLATE lv_tab_name TO UPPER CASE.
+          lv_tab_name = to_upper( lv_tab_name ).
           CALL FUNCTION 'DB_EXISTS_TABLE'
             EXPORTING
               tabname = lv_tab_name
@@ -75,7 +75,7 @@ class z2ui5_cl_sql_assoc_processor implementation.
         WHEN 'V'.
 
           lv_view_name = ls_assoc_nav_data-association_target.
-          TRANSLATE lv_view_name TO UPPER CASE.
+          lv_view_name = to_upper( lv_view_name ).
           CALL FUNCTION 'DB_EXISTS_VIEW'
             EXPORTING
               viewname = lv_view_name

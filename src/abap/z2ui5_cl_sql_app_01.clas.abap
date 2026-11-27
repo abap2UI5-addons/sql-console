@@ -226,7 +226,6 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
 
     ENDIF.
 
-    client->view_model_update( ).
     preview_view( ).
     client->message_toast_display( `History entry successfully loaded` ).
 
@@ -236,7 +235,7 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
   METHOD history_view.
 
     view_history->ele( `List`
-        )->a( n = `items` v = client->_bind_edit( ms_draft-history_tab )
+        )->a( n = `items` v = client->_bind( ms_draft-history_tab )
         )->a( n = `mode` v = `SingleSelectMaster`
         )->a( n = `selectionChange` v = client->_event( val = `HISTORY_LOAD` )
         )->a( n = `sticky` v = `ColumnHeaders,HeaderToolbar`
@@ -371,7 +370,7 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
                           )->tag( `ToolbarSpacer`
                           )->tag( `Input`
                           )->a( n = `width` v = `30%`
-                          )->a( n = `value` v = client->_bind_edit( ms_draft-s_preview-search_field )
+                          )->a( n = `value` v = client->_bind( ms_draft-s_preview-search_field )
                           )->a( n = `description` v = `All Column Search`
                           )->a( n = `submit` v = client->_event( `PREVIEW_SEARCH` )
                           )->tag( `Button`
@@ -481,7 +480,6 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
     ms_draft-s_preview-title = |Number of Rows: { lines( <tab2> ) }|.
 
     history_db_save( ).
-    client->view_model_update( ).
 
   ENDMETHOD.
 
@@ -513,7 +511,7 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
 
     view_sql->tag( n = `CodeEditor` ns = `editor`
         )->a( n = `type` v = `sql`
-        )->a( n = `value` v = client->_bind_edit( ms_draft-sql_input ) ).
+        )->a( n = `value` v = client->_bind( ms_draft-sql_input ) ).
 
   ENDMETHOD.
 
@@ -604,7 +602,6 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
         ENDIF.
 
         CLEAR ms_draft-history_tab.
-        client->view_model_update( ).
         z2ui5_cl_sql_history_api=>db_delete( ).
         client->message_toast_display( `All entries successfully deleted from database` ).
 
@@ -643,7 +640,6 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
           lr_hist->selkz = abap_false.
         ENDLOOP.
         INSERT VALUE #( selkz = abap_true ) INTO TABLE ms_draft-history_tab.
-        client->view_model_update( ).
 
       WHEN `HISTORY_LOAD`.
         history_on_load( ).
@@ -682,7 +678,7 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
                      )->a( n = `displayBlock` v = `true`
                      )->a( n = `height` v = `100%` ).
     DATA(page) = view->ele( `Shell`
-                     )->a( n = `appWidthLimited` v = client->_bind_edit( ms_draft-appwidthlimited )
+                     )->a( n = `appWidthLimited` v = client->_bind( ms_draft-appwidthlimited )
                      )->ele( `Page`
                      )->a( n = `title` v = `ABAP SQL Console`
                      )->a( n = `navButtonPress` v = client->_event( `BACK` )
@@ -693,7 +689,7 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
                      )->a( n = `text` v = `Max Rows`
                      )->tag( `Input`
                      )->a( n = `width` v = `15%`
-                     )->a( n = `value` v = client->_bind_edit( ms_draft-sql_max_rows )
+                     )->a( n = `value` v = client->_bind( ms_draft-sql_max_rows )
                      )->tag( `Button`
                      )->a( n = `text` v = `Run`
                      )->a( n = `press` v = client->_event( `RUN` )
@@ -702,7 +698,7 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
                      )->tag( `Label`
                      )->a( n = `text` v = `Shell`
                      )->tag( `Switch`
-                     )->a( n = `state` v = client->_bind_edit( ms_draft-appwidthlimited )
+                     )->a( n = `state` v = client->_bind( ms_draft-appwidthlimited )
                      )->tag( `Link`
                      )->a( n = `text` v = `Project on GitHub`
                      )->a( n = `target` v = `_blank`
@@ -721,7 +717,7 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
                          )->a( n = `requiredParentWidth` v = `600`
                          )->ele( n = `layoutData` ns = `layout`
                          )->ele( n = `SplitterLayoutData` ns = `layout`
-                         )->a( n = `size` v = client->_bind_edit( ms_draft-sql_cont_size )
+                         )->a( n = `size` v = client->_bind( ms_draft-sql_cont_size )
                          )->end(
                          )->end( ).
 
@@ -731,7 +727,7 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
                              )->a( n = `requiredParentWidth` v = `400`
                              )->ele( n = `layoutData` ns = `layout`
                              )->ele( n = `SplitterLayoutData` ns = `layout`
-                             )->a( n = `size` v = client->_bind_edit( ms_draft-history_cont_size )
+                             )->a( n = `size` v = client->_bind( ms_draft-history_cont_size )
                              )->end(
                              )->end( ).
 
@@ -741,7 +737,7 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
         )->a( n = `requiredParentWidth` v = `400`
         )->ele( n = `layoutData` ns = `layout`
         )->ele( n = `SplitterLayoutData` ns = `layout`
-        )->a( n = `size` v = client->_bind_edit( ms_draft-s_preview-cont_size )
+        )->a( n = `size` v = client->_bind( ms_draft-s_preview-cont_size )
         )->end(
         )->end(
         )->ele( `VBox`
