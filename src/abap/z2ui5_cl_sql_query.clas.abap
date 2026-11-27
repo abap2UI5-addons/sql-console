@@ -76,6 +76,9 @@ CLASS z2ui5_cl_sql_query DEFINITION
   PROTECTED SECTION.
   PRIVATE SECTION.
 
+    "! the cap run( ) applies when it is given none
+    CONSTANTS c_max_rows_default TYPE i VALUE 500.
+
     TYPES:
       BEGIN OF ty_s_item,
         text  TYPE string,
@@ -213,8 +216,11 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
     FIELD-SYMBOLS <lt_part>   TYPE STANDARD TABLE.
     DATA lr_part TYPE REF TO data.
 
+    " an empty or negative cap is the default one, never every row
+    DATA(lv_max_rows) = COND i( WHEN max_rows > 0 THEN max_rows ELSE c_max_rows_default ).
+
     DATA(lt_clauses) = parse( query    = query
-                              max_rows = max_rows ).
+                              max_rows = lv_max_rows ).
 
     DATA(ls_first) = lt_clauses[ 1 ].
     DATA(ls_target) = build_target( ls_first ).
@@ -316,7 +322,21 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
     FIND FIRST OCCURRENCE OF REGEX `UP TO ([0-9]+) ROWS` IN lv_mask IGNORING CASE
          MATCH OFFSET lv_match_offset MATCH LENGTH lv_match_length SUBMATCHES lv_rows.
     IF sy-subrc = 0.
+      " checked before the conversion - a number beyond type i ended in a
+      " conversion overflow instead of a message
+      lv_rows = shift_left( val = lv_rows
+                            sub = `0` ).
+      IF strlen( lv_rows ) > 9.
+        RAISE EXCEPTION TYPE z2ui5_cx_sql_error
+          EXPORTING
+            val = |SQL_PARSER_ERROR - UP TO { lv_rows } ROWS is too large|.
+      ENDIF.
       result-rows = lv_rows.
+      " UP TO 0 ROWS reads every row, and a larger number than the cap
+      " overrode it - the cap of the console applies to both
+      IF result-rows = 0 OR ( max_rows > 0 AND result-rows > max_rows ).
+        result-rows = max_rows.
+      ENDIF.
       lv_segment = replace( val = lv_segment
                             off = lv_match_offset
                             len = lv_match_length

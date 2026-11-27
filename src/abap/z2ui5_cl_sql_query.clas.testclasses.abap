@@ -31,6 +31,9 @@ CLASS ltcl_parser DEFINITION FINAL FOR TESTING
     METHODS keyword_in_having_literal FOR TESTING RAISING cx_static_check.
     METHODS union_in_literal FOR TESTING RAISING cx_static_check.
     METHODS up_to_into_in_literal FOR TESTING RAISING cx_static_check.
+    METHODS up_to_rows_capped FOR TESTING RAISING cx_static_check.
+    METHODS up_to_zero_rows_capped FOR TESTING RAISING cx_static_check.
+    METHODS up_to_rows_too_large FOR TESTING RAISING cx_static_check.
 ENDCLASS.
 
 
@@ -380,6 +383,39 @@ CLASS ltcl_parser IMPLEMENTATION.
                                         exp = 100 ).
     cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-where
                                         exp = `carrname = 'up to 5 rows into x'` ).
+
+  ENDMETHOD.
+
+  METHOD up_to_rows_capped.
+
+    " a larger UP TO overrode the cap of the console
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse( query    = `SELECT * FROM t100 UP TO 1000 ROWS`
+                                                  max_rows = 100 ).
+
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-rows
+                                        exp = 100 ).
+
+  ENDMETHOD.
+
+  METHOD up_to_zero_rows_capped.
+
+    " UP TO 0 ROWS read every row of the table
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse( query    = `SELECT * FROM t100 UP TO 0 ROWS`
+                                                  max_rows = 100 ).
+
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-rows
+                                        exp = 100 ).
+
+  ENDMETHOD.
+
+  METHOD up_to_rows_too_large.
+
+    TRY.
+        z2ui5_cl_sql_query=>parse( query    = `SELECT * FROM t100 UP TO 99999999999 ROWS`
+                                   max_rows = 100 ).
+        cl_abap_unit_assert=>fail( `a row count beyond type i must raise` ).
+      CATCH z2ui5_cx_sql_error ##NO_HANDLER.
+    ENDTRY.
 
   ENDMETHOD.
 
