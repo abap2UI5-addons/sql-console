@@ -39,7 +39,7 @@ jobs:
     # request; every job that runs the code keeps a read-only token
     permissions:
       contents: write
-    uses: abap2UI5-addons/rap-ext/.github/workflows/addon-check.yaml@c81dfd461f69e42bb3678f51f80804066e2c9f96 # ci-v1.0.0
+    uses: abap2UI5-addons/rap-ext/.github/workflows/addon-check.yaml@d599eb227a476d120b473ae3b707fe983ab3e441 # ci-v1.1.0
     with:
       abaplint: '["./abaplint.jsonc", ".github/abaplint/abap_cloud.jsonc"]'
       npm-scripts: '["check:702"]'
