@@ -119,7 +119,7 @@ Cloud releases - depends on the system the addon runs in, so none is built in
 and none is planned. Whoever opens the app to more people than its developers
 adds the check that fits their system.
 
-## Todo
+## Limitations
 
 * Extend the input-to-SQL translation
 * Fix ABAP Cloud Readiness
