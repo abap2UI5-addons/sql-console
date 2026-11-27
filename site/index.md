@@ -28,11 +28,12 @@ features:
 
 ## What it does
 
-sql-console is an abap2UI5 app that runs an SQL query entered in the browser and shows the result as a table with search, filter, spreadsheet export and a per-user query history. The Open SQL console (src/abap) is ABAP-Cloud-clean; the native SQL console (src/native) runs statements through ADBC on Standard ABAP. Use it when you want a quick look at the data of a system without starting Eclipse or SAP GUI. It is a developer tool without authorization checks of its own, so read the Security section before using it beyond a development system.
+sql-console is an abap2UI5 app that runs an SQL query entered in the browser and shows the result as a table with search, filter, spreadsheet export and a per-user query history. The Open SQL console (src/abap) uses released APIs only and passes the ABAP Cloud check; the native SQL console (src/native) runs statements through ADBC on Standard ABAP. Use it when you want a quick look at the data of a system without starting Eclipse or SAP GUI. It is a developer tool without authorization checks of its own, so read the Security section before using it beyond a development system.
 
 ## Requirements
 
 - abap2UI5
+- abap2UI5-addons/layout-management (needed by popups)
 - abap2UI5-addons/popups
 - abap2UI5-addons/custom-controls (spreadsheet export, z2ui5_cl_cci_spreadsheet)
 - ABAP Cloud or Standard ABAP on NetWeaver 7.50 or higher
@@ -43,7 +44,7 @@ sql-console is an abap2UI5 app that runs an SQL query entered in the browser and
 
 With [abapGit](https://abapgit.org), from [the repository](https://github.com/abap2UI5-addons/sql-console):
 
-- Install with abapGit in this order: 1. abap2UI5, 2. popups, 3. custom-controls, 4. this repository (branch main)
+- Install with abapGit in this order: 1. abap2UI5, 2. layout-management, 3. popups, 4. custom-controls, 5. this repository (branch main, or 702 on NetWeaver 7.02 - 7.40)
 - Start with ?app_start=z2ui5_cl_sql_app_01 (Open SQL) or ?app_start=z2ui5_cl_sql_native_console (native, Standard ABAP only)
 - Add your own authorization checks before using it beyond a development system
 

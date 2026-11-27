@@ -42,11 +42,23 @@ management:
   repository's stricter abaplint rules disagree with the master's code, the
   copy is excluded from that rule in `abaplint.jsonc` instead of rewritten.
 
+`.github/abap-util.json` names the copies and their masters for abap-util's
+`sync-check`: with abap-util checked out next to this repository,
+`node ../abap-util/.github/scripts/sync-check.mjs --consumer . --report`
+lists every method whose body or declaration differs from the master and
+every method only this copy has. `commit` is the abap-util commit the copies
+match: run the script without `--report` at that commit and it fails on any
+difference that is not named under `settled` or `own`. After a refresh, set
+`commit` to the commit the copies were taken from.
+
 ## Dependencies
 
 Installed alongside via abapGit; declared in the abaplint configs:
 
 * [abap2UI5](https://github.com/abap2UI5/abap2UI5)
+* [layout-management](https://github.com/abap2UI5-addons/layout-management) —
+  not used here, but popups' value help and search help popups need it, so it
+  is installed before popups
 * [popups](https://github.com/abap2UI5-addons/popups)
 * [custom-controls](https://github.com/abap2UI5-addons/custom-controls) — `z2ui5_cl_cci_spreadsheet`
 
@@ -56,7 +68,8 @@ This is a developer tool. It runs the SQL the user enters, without an
 authorization check of its own; the native path uses ADBC and therefore
 bypasses ABAP authorizations and client separation. Before using it beyond a
 development system, add your own authorization checks and restrict who may run
-the app. See the README Todo — full ABAP Cloud readiness is still open.
+the app. The Open SQL console passes the ABAP Cloud check; a run on a real
+ABAP Cloud system is still open (README Todo).
 
 **Shipping without an authorization check is a deliberate decision of the
 maintainer (2026-11-17), stated in the README - do not add one and do not
@@ -88,6 +101,11 @@ one job per check:
   internals the package reads. `src/abap/` must stay ABAP-Cloud-clean.
 * `abap2ui5lint` — the abap2UI5-linter over the app classes and their views
   (`abap2ui5lint.jsonc`)
+* `npm run check:702` — the 7.02 gate of a pull request:
+  `.github/scripts/check-702.sh` downports a scratch copy of `src/` in
+  `build/702` and lints it with `.github/abaplint/abap_702.jsonc`, which
+  leaves `src/native/` out as the `702` branch does (`src/` itself is never
+  rewritten)
 * `unit` — the ABAP Unit tests on abap2UI5's transpiled Node runtime, the way abap2UI5 tests itself: `npm run unit` (`.github/scripts/unit.mjs`) copies the packages into a checkout of abap2UI5's `main` (abap2UI5-ext, layout-management, popups and custom-controls beside it; `src/native` stays out - its ADT classes are on-premise only), downports, transpiles and runs the tests of this repository's classes
 * `rename` — namespace-rename check (`.github/abaplint/rename.json`,
   against the 9-character placeholder `zabap2ui5`). It resolves types like

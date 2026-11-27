@@ -5,6 +5,9 @@ name: ci
 #
 #   abaplint      Standard ABAP (abaplint.jsonc) and ABAP Cloud
 #                 (.github/abaplint/abap_cloud.jsonc)
+#   npm-scripts   check:702 (a scratch copy of src/ downported and linted
+#                 with abap_702.jsonc - the 7.02 gate of a pull request;
+#                 ci-702 publishes the branch)
 #   unit          the ABAP Unit tests on the transpiled runtime (npm run unit)
 #   rename        the namespace rename check (npm run rename:
 #                 .github/scripts/rename.mjs, abap2UI5's shared script)
@@ -36,9 +39,10 @@ jobs:
     # request; every job that runs the code keeps a read-only token
     permissions:
       contents: write
-    uses: abap2UI5-addons/rap-ext/.github/workflows/addon-check.yaml@c81dfd461f69e42bb3678f51f80804066e2c9f96 # ci-v1.0.0
+    uses: abap2UI5-addons/rap-ext/.github/workflows/addon-check.yaml@d599eb227a476d120b473ae3b707fe983ab3e441 # ci-v1.1.0
     with:
       abaplint: '["./abaplint.jsonc", ".github/abaplint/abap_cloud.jsonc"]'
+      npm-scripts: '["check:702"]'
       unit: true
       rename: true
       canary: ${{ github.event_name == 'schedule' }}
