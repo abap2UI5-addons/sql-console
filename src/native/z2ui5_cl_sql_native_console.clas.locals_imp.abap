@@ -1030,21 +1030,33 @@ class sql_statement implementation.
 
     data(result) = me->a_processor->execute_query( statement_to_run ).
 
-    data(result_metadata) = result->get_metadata( ).
+    " the result set holds a database cursor until it is closed - also when
+    " reading it fails
+    try.
 
-    data(empty_line) = result->get_struct_ref( result_metadata ).
+        data(result_metadata) = result->get_metadata( ).
 
-    data(line_type) = cast cl_abap_structdescr( cl_abap_typedescr=>describe_by_data_ref( empty_line ) ).
+        data(empty_line) = result->get_struct_ref( result_metadata ).
 
-    data(table_type) = cl_abap_tabledescr=>get( line_type ).
+        data(line_type) = cast cl_abap_structdescr( cl_abap_typedescr=>describe_by_data_ref( empty_line ) ).
 
-    create data data type handle table_type.
+        data(table_type) = cl_abap_tabledescr=>get( line_type ).
 
-    assign data->* to <table>.
+        create data data type handle table_type.
 
-    result->set_param_table( data ).
+        assign data->* to <table>.
 
-    result->next_package( ).
+        result->set_param_table( data ).
+
+        result->next_package( ).
+
+      cleanup.
+
+        result->close( ).
+
+    endtry.
+
+    result->close( ).
 
     r_val = value #( data = data
                      line_type = line_type
