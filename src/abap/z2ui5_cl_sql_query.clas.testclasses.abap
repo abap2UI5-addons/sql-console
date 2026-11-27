@@ -545,3 +545,98 @@ CLASS ltcl_parser IMPLEMENTATION.
   ENDMETHOD.
 
 ENDCLASS.
+
+"! The history parse (z2ui5_cl_sql_context=>xml_srtti_parse): a stored
+"! document is read back only when it names no class but the S-RTTI ones
+CLASS ltcl_srtti DEFINITION FINAL FOR TESTING
+  DURATION SHORT
+  RISK LEVEL HARMLESS.
+
+  PRIVATE SECTION.
+    METHODS round_trip FOR TESTING RAISING cx_static_check.
+    METHODS refuses_other_class FOR TESTING RAISING cx_static_check.
+    METHODS refuses_default_class_ns FOR TESTING RAISING cx_static_check.
+    METHODS refuses_char_reference FOR TESTING RAISING cx_static_check.
+    METHODS refuses_doctype FOR TESTING RAISING cx_static_check.
+
+    "! the document must be refused by the class check - a z2ui5_cx_sql_error
+    METHODS assert_refused
+      IMPORTING
+        val TYPE string.
+
+ENDCLASS.
+
+
+CLASS ltcl_srtti IMPLEMENTATION.
+
+  METHOD assert_refused.
+
+    TRY.
+        z2ui5_cl_sql_context=>xml_srtti_parse( val ).
+        cl_abap_unit_assert=>fail( `the document must be refused` ).
+      CATCH z2ui5_cx_sql_error INTO DATA(lx).
+        " by the class check - not by a transformation that already ran
+        cl_abap_unit_assert=>assert_char_cp( act = lx->get_text( )
+                                             exp = `*not part of S-RTTI*` ).
+    ENDTRY.
+
+  ENDMETHOD.
+
+  METHOD round_trip.
+
+    DATA(lt_data) = VALUE string_table( ( `A` ) ( `B` ) ).
+
+    DATA(lr_back) = z2ui5_cl_sql_context=>xml_srtti_parse(
+        z2ui5_cl_sql_context=>xml_srtti_stringify( lt_data ) ).
+
+    FIELD-SYMBOLS <back> TYPE string_table.
+    ASSIGN lr_back->* TO <back>.
+    cl_abap_unit_assert=>assert_equals( exp = lt_data
+                                        act = <back> ).
+
+  ENDMETHOD.
+
+  METHOD refuses_other_class.
+
+    " the same document, its S-RTTI objects named as objects of another class
+    DATA lo_srtti TYPE REF TO z2ui5_cl_srt_typedescr.
+    DATA(lo_ref) = CAST cl_abap_refdescr( cl_abap_typedescr=>describe_by_data( lo_srtti ) ).
+    DATA(lv_class) = lo_ref->get_referenced_type( )->get_relative_name( ).
+    DATA(lv_prefix) = substring( val = lv_class
+                                 len = strlen( lv_class ) - strlen( `TYPEDESCR` ) ).
+
+    DATA(lv_xml) = z2ui5_cl_sql_context=>xml_srtti_stringify( VALUE string_table( ( `A` ) ) ).
+    cl_abap_unit_assert=>assert_char_cp( act = to_upper( lv_xml )
+                                         exp = |*{ lv_prefix }*| ).
+    REPLACE ALL OCCURRENCES OF lv_prefix IN lv_xml WITH `ZCL_OTHER_` IGNORING CASE.
+
+    assert_refused( lv_xml ).
+
+  ENDMETHOD.
+
+  METHOD refuses_default_class_ns.
+
+    assert_refused( `<asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">`
+                 && `<asx:values><SRTTI href="#o1"/></asx:values>`
+                 && `<asx:heap xmlns="http://www.sap.com/abapxml/classes/global"><CL_OTHER id="o1"/></asx:heap>`
+                 && `</asx:abap>` ).
+
+  ENDMETHOD.
+
+  METHOD refuses_char_reference.
+
+    assert_refused( `<asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0">`
+                 && `<asx:values><SRTTI href="#o1"/></asx:values>`
+                 && `<asx:heap xmlns:c="http&#58;//www.sap.com/abapxml/classes/global"><c:CL_OTHER id="o1"/></asx:heap>`
+                 && `</asx:abap>` ).
+
+  ENDMETHOD.
+
+  METHOD refuses_doctype.
+
+    assert_refused( `<!DOCTYPE asx:abap [ <!ENTITY c "classes"> ]>`
+                 && `<asx:abap xmlns:asx="http://www.sap.com/abapxml" version="1.0"><asx:values/></asx:abap>` ).
+
+  ENDMETHOD.
+
+ENDCLASS.

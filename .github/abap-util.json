@@ -27,7 +27,11 @@
       "settled": {
         "rtti_check_class_exists": "reads the cache with READ TABLE ... REFERENCE INTO where the master ASSIGNs a table expression - the same lookup in the form this copy took",
         "rtti_get_t_attri_by_any": "same - READ TABLE ... REFERENCE INTO where the master ASSIGNs a table expression",
-        "xml_srtti_stringify": "calls the S-RTTI classes of the abap2UI5 core (z2ui5_cl_srt_typedescr), which this addon does not vendor; the master calls its own zabaputil_cl_srt_typedescr"
+        "xml_srtti_stringify": "calls the S-RTTI classes of the abap2UI5 core (z2ui5_cl_srt_typedescr), which this addon does not vendor; the master calls its own zabaputil_cl_srt_typedescr",
+        "xml_srtti_parse_pair": "refuses a document that names a class other than the S-RTTI ones (xml_srtti_check_classes) before deserializing it, and a document without a type description - the history documents come back from the database; to be synced back"
+      },
+      "own": {
+        "xml_srtti_check_classes": "the class allow-list behind xml_srtti_parse_pair; not in the master yet - to be synced back"
       }
     },
     {

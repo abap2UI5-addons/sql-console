@@ -77,8 +77,18 @@ CLASS z2ui5_cl_sql_history_api IMPLEMENTATION.
     LOOP AT z2ui5_cl_sql_db=>load_multi_by_handle( uname  = val
                                                     handle = c_handle_history ) REFERENCE INTO DATA(lr_db).
 
+      " only the requested user's own history rows are read
+      IF lr_db->uname <> val OR lr_db->handle <> c_handle_history.
+        CONTINUE.
+      ENDIF.
+      CLEAR ls_entry.
       z2ui5_cl_sql_context=>xml_parse( EXPORTING xml = lr_db->data
                                 IMPORTING any = ls_entry ).
+      " db_create writes the user and the id into the entry as well - a row
+      " whose content claims another user or id was not written by it
+      IF ls_entry-uname <> lr_db->uname OR ls_entry-uuid <> lr_db->handle2.
+        CONTINUE.
+      ENDIF.
       INSERT ls_entry INTO TABLE result.
 
     ENDLOOP.
@@ -130,9 +140,18 @@ CLASS z2ui5_cl_sql_history_api IMPLEMENTATION.
     IF lt_db IS INITIAL.
       RETURN.
     ENDIF.
+    DATA(ls_db) = lt_db[ 1 ].
+    IF ls_db-uname <> sy-uname OR ls_db-handle <> c_handle_history OR ls_db-handle2 <> val.
+      RETURN.
+    ENDIF.
 
-    z2ui5_cl_sql_context=>xml_parse( EXPORTING xml = lt_db[ 1 ]-data
+    z2ui5_cl_sql_context=>xml_parse( EXPORTING xml = ls_db-data
                               IMPORTING any = result ).
+    " the caller deserializes result_data into objects - only an entry that
+    " is the user's own by its content too is handed out (see db_create)
+    IF result-uname <> sy-uname OR result-uuid <> val.
+      CLEAR result.
+    ENDIF.
 
   ENDMETHOD.
 

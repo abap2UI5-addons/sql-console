@@ -75,6 +75,16 @@ ABAP Cloud system is still open (README Todo).
 maintainer (2026-11-17), stated in the README - do not add one and do not
 report its absence as a finding.**
 
+The history documents (`z2ui5_t_33` via `z2ui5_cl_sql_history_api`,
+`z2ui5_t_32` in the native console) are deserialized into objects, so they
+are treated as untrusted input: `z2ui5_cl_sql_history_api` hands out only rows
+of the current user whose content names the same user and id, and
+`z2ui5_cl_sql_context=>xml_srtti_parse` refuses (raises
+`z2ui5_cx_sql_error`) any document that names a class outside S-RTTI
+(`xml_srtti_check_classes` - the core's prefix is derived from
+`z2ui5_cl_srt_typedescr` by type). Every caller of the parse catches that
+exception; a new reader of stored documents must go through the same parse.
+
 ## Coding Style
 
 Follows the abap2UI5 core conventions (see its

@@ -197,6 +197,13 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
 
     DATA(ls_arg) = ms_draft-history_tab[ selkz = abap_true ].
     DATA(ls_entry) = z2ui5_cl_sql_history_api=>db_read_by_id( ls_arg-s_db-uuid ).
+    " an id none of the user's own entries has - the list is bound. The
+    " empty row of a new entry has no id and still clears the editor
+    IF ls_entry IS INITIAL AND ls_arg-s_db-uuid IS NOT INITIAL.
+      client->message_box_display( text = `History entry not found`
+                                   type = `error` ).
+      RETURN.
+    ENDIF.
     ms_draft-sql_input = ls_entry-sql_command.
     " history_db_save stamps the entry with it - left as it was, the table of
     " the previous run went into the loaded entry on its next save
@@ -206,25 +213,35 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
     CLEAR ms_draft-s_preview-tab.
 
     IF ls_entry-result_data IS NOT INITIAL.
-      lr_preview = z2ui5_cl_sql_context=>xml_srtti_parse( ls_entry-result_data ).
+      " the parse refuses a stored document that names a class other than
+      " the S-RTTI ones - the entry is then not loaded
+      TRY.
+          lr_preview = z2ui5_cl_sql_context=>xml_srtti_parse( ls_entry-result_data ).
 
-      FIELD-SYMBOLS <any> TYPE any.
-      ASSIGN lr_preview->('title') TO <any>.
-      ms_draft-s_preview-title = <any>.
-      ASSIGN lr_preview->('search_field') TO <any>.
-      ms_draft-s_preview-search_field = <any>.
-      ASSIGN lr_preview->('t_filter') TO <any>.
-      ms_draft-s_preview-t_filter = <any>.
+          FIELD-SYMBOLS <any> TYPE any.
+          ASSIGN lr_preview->('title') TO <any>.
+          ms_draft-s_preview-title = <any>.
+          ASSIGN lr_preview->('search_field') TO <any>.
+          ms_draft-s_preview-search_field = <any>.
+          ASSIGN lr_preview->('t_filter') TO <any>.
+          ms_draft-s_preview-t_filter = <any>.
 
-      DATA lr_data TYPE REF TO data.
+          DATA lr_data TYPE REF TO data.
 
-      ASSIGN lr_preview->('rtti_data') TO <any>.
-      lr_data = z2ui5_cl_sql_context=>xml_srtti_parse( <any> ).
-      ms_draft-s_preview-tab = z2ui5_cl_sql_context=>conv_copy_ref_data( lr_data ).
+          ASSIGN lr_preview->('rtti_data') TO <any>.
+          lr_data = z2ui5_cl_sql_context=>xml_srtti_parse( <any> ).
+          ms_draft-s_preview-tab = z2ui5_cl_sql_context=>conv_copy_ref_data( lr_data ).
 
-      ASSIGN lr_preview->('rtti_data_back') TO <any>.
-      lr_data = z2ui5_cl_sql_context=>xml_srtti_parse( <any> ).
-      ms_draft-s_preview-tab_backup = z2ui5_cl_sql_context=>conv_copy_ref_data( lr_data ).
+          ASSIGN lr_preview->('rtti_data_back') TO <any>.
+          lr_data = z2ui5_cl_sql_context=>xml_srtti_parse( <any> ).
+          ms_draft-s_preview-tab_backup = z2ui5_cl_sql_context=>conv_copy_ref_data( lr_data ).
+
+        CATCH z2ui5_cx_sql_error INTO DATA(lx_parse).
+          CLEAR: ms_draft-s_preview-tab, ms_draft-s_preview-tab_backup.
+          client->message_box_display( text = lx_parse->get_text( )
+                                       type = `error` ).
+          RETURN.
+      ENDTRY.
 
     ENDIF.
 

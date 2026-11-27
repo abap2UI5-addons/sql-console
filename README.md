@@ -125,6 +125,15 @@ Cloud releases - depends on the system the addon runs in, so none is built in
 and none is planned. Whoever opens the app to more people than its developers
 adds the check that fits their system.
 
+The query history is stored as documents in `Z2UI5_T_33` (Open SQL console)
+and `Z2UI5_T_32` (native console) and read back into objects when an entry is
+loaded. Whoever can write those tables - SE16N, this console's own native SQL,
+a table upload tool - chooses what is read back. The console therefore loads
+only rows of the current user whose content names that user and id too, and
+refuses a stored document that names any class but the S-RTTI type
+descriptions it wrote. Keep both tables out of reach of generic table editors
+on any system where more than the developers use the console.
+
 ## Limitations
 
 * Extend the input-to-SQL translation
