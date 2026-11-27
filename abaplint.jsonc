@@ -505,7 +505,12 @@
     "redundant_cast": true,
     "smim_consistency": true,
     "sort_empty_key": true,
-    "subrc_after_assign": true,
+    "subrc_after_assign": {
+      // z2ui5_cl_sql_context is a renamed copy of abap-util's
+      // zabaputil_cl_util_context, kept as-is so the periodic sync can diff it
+      // against the master: itab_filter_by_val reads sy-subrc after ASSIGN
+      "exclude": ["z2ui5_cl_sql_context\\.clas\\.abap"]
+    },
     // The rest of abap2UI5's rule set, added 2026-11 with their findings fixed.
     // Exceptions, all in z2ui5_cl_sql_app_01 (PUBLIC and not FINAL, so its
     // PUBLIC and PROTECTED members are API for callers and subclasses):
