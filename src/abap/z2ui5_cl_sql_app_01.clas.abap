@@ -74,6 +74,9 @@ CLASS z2ui5_cl_sql_app_01 DEFINITION PUBLIC.
         io_popup TYPE REF TO z2ui5_cl_popup_to_confirm.
     METHODS history_on_load.
     METHODS history_db_save.
+    "! Selects a new, empty row for the next run - every run is an entry of
+    "! its own
+    METHODS history_new_entry.
     "! DATE and TIME of a history row, from its timestamp (UTC)
     METHODS history_set_date_time
       CHANGING
@@ -147,22 +150,45 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
       ls_preview-rtti_data_back = z2ui5_cl_sql_context=>xml_srtti_stringify( <tab_back> ).
     ENDIF.
 
-    lr_hist->s_db-timestampl = z2ui5_cl_sql_context=>time_get_timestampl( ).
+    " a run fills the new row history_new_entry selected; a search or a
+    " filter updates the entry of the result it works on and keeps that
+    " entry's query - the editor may hold an edited one that has not run
     IF lr_hist->s_db-uuid IS INITIAL.
       lr_hist->s_db-uuid = z2ui5_cl_sql_context=>uuid_get_c32( ).
+      lr_hist->s_db-sql_command = ms_draft-sql_input.
+      lr_hist->s_db-tabname = ms_draft-sql_s_command-name.
     ENDIF.
+    lr_hist->s_db-timestampl = z2ui5_cl_sql_context=>time_get_timestampl( ).
+    lr_hist->s_db-counter = lines( <tab> ).
     z2ui5_cl_sql_history_api=>db_create( VALUE #(
-        sql_command = ms_draft-sql_input
-        tabname     = ms_draft-sql_s_command-name
+        sql_command = lr_hist->s_db-sql_command
+        tabname     = lr_hist->s_db-tabname
         timestampl  = lr_hist->s_db-timestampl
         uuid        = lr_hist->s_db-uuid
-        counter     = lines( <tab> )
+        counter     = lr_hist->s_db-counter
         result_data = z2ui5_cl_sql_context=>xml_srtti_stringify( ls_preview ) ) ).
 
-    lr_hist->s_db-sql_command = ms_draft-sql_input.
-    lr_hist->s_db-tabname = ms_draft-sql_s_command-name.
-    lr_hist->s_db-counter = lines( <tab> ).
     history_set_date_time( CHANGING cs_out = lr_hist->* ).
+
+  ENDMETHOD.
+
+
+  METHOD history_new_entry.
+
+    " New, or the empty list: a selected row without an id is still free
+    LOOP AT ms_draft-history_tab REFERENCE INTO DATA(lr_hist) WHERE selkz = abap_true.
+      IF lr_hist->s_db-uuid IS INITIAL.
+        RETURN.
+      ENDIF.
+    ENDLOOP.
+
+    " history_db_save writes into the selected row - left selected, the
+    " loaded or the last entry was overwritten by the next run
+    LOOP AT ms_draft-history_tab REFERENCE INTO lr_hist WHERE selkz = abap_true.
+      lr_hist->selkz = abap_false.
+    ENDLOOP.
+    " the newest row on top, as history_db_read sorts the list
+    INSERT VALUE #( selkz = abap_true ) INTO ms_draft-history_tab INDEX 1.
 
   ENDMETHOD.
 
@@ -515,6 +541,7 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
     ENDTRY.
 
     ms_draft-sql_s_command-name = ls_result-tabname.
+    history_new_entry( ).
 
     result_display(
         fw_table     = ls_result-from
@@ -637,12 +664,7 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
         history_on_clear_pressed( ).
 
       WHEN `HISTORY_CREATE`.
-        " the new entry is the selected one - history_db_save writes into the
-        " first selected row, which would still be the old entry otherwise
-        LOOP AT ms_draft-history_tab REFERENCE INTO DATA(lr_hist) WHERE selkz = abap_true.
-          lr_hist->selkz = abap_false.
-        ENDLOOP.
-        INSERT VALUE #( selkz = abap_true ) INTO TABLE ms_draft-history_tab.
+        history_new_entry( ).
 
       WHEN `HISTORY_LOAD`.
         history_on_load( ).
