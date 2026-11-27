@@ -30,6 +30,9 @@ CLASS z2ui5_cl_sql_query DEFINITION
         order_by    TYPE string,
         rows        TYPE i,
         distinct    TYPE abap_bool,
+        " joined to the segments before it with UNION ALL, which keeps
+        " duplicate rows - a plain UNION removes them
+        union_all   TYPE abap_bool,
       END OF ty_s_clauses.
     TYPES ty_t_clauses TYPE STANDARD TABLE OF ty_s_clauses WITH EMPTY KEY.
 
@@ -76,6 +79,9 @@ CLASS z2ui5_cl_sql_query DEFINITION
   PROTECTED SECTION.
   PRIVATE SECTION.
 
+    "! the cap run( ) applies when it is given none
+    CONSTANTS c_max_rows_default TYPE i VALUE 500.
+
     TYPES:
       BEGIN OF ty_s_item,
         text  TYPE string,
@@ -85,6 +91,13 @@ CLASS z2ui5_cl_sql_query DEFINITION
         alias TYPE string,
       END OF ty_s_item.
     TYPES ty_t_item TYPE STANDARD TABLE OF ty_s_item WITH EMPTY KEY.
+
+    TYPES:
+      BEGIN OF ty_s_order,
+        name       TYPE string,
+        descending TYPE abap_bool,
+      END OF ty_s_order.
+    TYPES ty_t_order TYPE STANDARD TABLE OF ty_s_order WITH EMPTY KEY.
 
     TYPES:
       BEGIN OF ty_s_target,
@@ -193,6 +206,32 @@ CLASS z2ui5_cl_sql_query DEFINITION
       RETURNING
         VALUE(result) TYPE string_table.
 
+    "! The sort order of an ORDER BY clause over the columns of a result:
+    "! every item must name a column of the select list, by field or alias
+    CLASS-METHODS get_order
+      IMPORTING
+        order_by      TYPE clike
+        it_fieldlist  TYPE ty_t_fieldlist
+      RETURNING
+        VALUE(result) TYPE ty_t_order
+      RAISING
+        z2ui5_cx_sql_error.
+
+    "! Sorts by every column of the order in turn - a SORT BY (otab) the
+    "! transpiled runtime does not know, one stable sort per column instead
+    CLASS-METHODS sort_rows
+      IMPORTING
+        it_order TYPE ty_t_order
+      CHANGING
+        ct_data  TYPE STANDARD TABLE.
+
+    "! Removes duplicate rows, as a UNION without ALL does
+    CLASS-METHODS delete_duplicates
+      IMPORTING
+        it_fieldlist TYPE ty_t_fieldlist
+      CHANGING
+        ct_data      TYPE STANDARD TABLE.
+
     CLASS-METHODS select_into
       IMPORTING
         is_clauses  TYPE ty_s_clauses
@@ -212,9 +251,34 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
     FIELD-SYMBOLS <lt_result> TYPE STANDARD TABLE.
     FIELD-SYMBOLS <lt_part>   TYPE STANDARD TABLE.
     DATA lr_part TYPE REF TO data.
+    DATA lr_clauses TYPE REF TO ty_s_clauses.
+
+    " an empty or negative cap is the default one, never every row
+    DATA(lv_max_rows) = COND i( WHEN max_rows > 0 THEN max_rows ELSE c_max_rows_default ).
 
     DATA(lt_clauses) = parse( query    = query
-                              max_rows = max_rows ).
+                              max_rows = lv_max_rows ).
+
+    " UP TO and ORDER BY at the end of a union belong to the whole result:
+    " every segment is read up to the cap, the combined rows are sorted and
+    " cut afterwards. Rows beyond the cap of a segment are not read, so with
+    " more rows than the cap the sorted result is a sorted part of them.
+    DATA(lv_union_rows) = 0.
+    DATA(lv_union_order_by) = ``.
+    DATA(lv_last) = lines( lt_clauses ).
+    IF lv_last > 1.
+      DATA(lv_before_last) = lv_last - 1.
+      LOOP AT lt_clauses REFERENCE INTO lr_clauses TO lv_before_last WHERE order_by IS NOT INITIAL.
+        RAISE EXCEPTION TYPE z2ui5_cx_sql_error
+          EXPORTING
+            val = `SQL_PARSER_ERROR - the ORDER BY of a UNION belongs after its last SELECT`.
+      ENDLOOP.
+      lr_clauses = REF #( lt_clauses[ lv_last ] ).
+      lv_union_rows = lr_clauses->rows.
+      lv_union_order_by = lr_clauses->order_by.
+      lr_clauses->rows = lv_max_rows.
+      CLEAR lr_clauses->order_by.
+    ENDIF.
 
     DATA(ls_first) = lt_clauses[ 1 ].
     DATA(ls_target) = build_target( ls_first ).
@@ -227,8 +291,10 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
                  CHANGING  ct_data     = <lt_result> ).
 
     " union segments are executed separately and appended to the
-    " result of the first segment, converted to its line type
-    LOOP AT lt_clauses REFERENCE INTO DATA(lr_clauses) FROM 2.
+    " result of the segments before, converted to its line type - a UNION
+    " is evaluated from left to right, so a plain one removes the duplicates
+    " of everything read so far and a UNION ALL after it keeps its own
+    LOOP AT lt_clauses REFERENCE INTO lr_clauses FROM 2.
 
       DATA(ls_target2) = build_target( lr_clauses->* ).
       CREATE DATA lr_part TYPE HANDLE ls_target-o_table.
@@ -240,7 +306,24 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
 
       APPEND LINES OF <lt_part> TO <lt_result>.
 
+      IF lr_clauses->union_all = abap_false.
+        delete_duplicates( EXPORTING it_fieldlist = ls_target-fieldlist
+                           CHANGING  ct_data      = <lt_result> ).
+      ENDIF.
+
     ENDLOOP.
+
+    IF lv_last > 1.
+      IF lv_union_order_by IS NOT INITIAL.
+        sort_rows( EXPORTING it_order = get_order( order_by     = lv_union_order_by
+                                                   it_fieldlist = ls_target-fieldlist )
+                   CHANGING  ct_data  = <lt_result> ).
+      ENDIF.
+      IF lv_union_rows > 0 AND lines( <lt_result> ) > lv_union_rows.
+        DATA(lv_first_cut) = lv_union_rows + 1.
+        DELETE <lt_result> FROM lv_first_cut.
+      ENDIF.
+    ENDIF.
 
     DATA(lt_source) = get_sources( ls_first-from ).
     result-fieldlist = ls_target-fieldlist.
@@ -271,27 +354,37 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
 
   METHOD parse.
 
-    DATA lt_segment TYPE string_table.
+    DATA lv_kind TYPE string.
+    DATA lv_offset TYPE i.
+    DATA lv_length TYPE i.
+    DATA lv_union_all TYPE abap_bool.
+    DATA ls_clauses TYPE ty_s_clauses.
     DATA(lv_query) = normalize( query ).
     " keywords are searched in the masked copy, so a literal never splits the query
     DATA(lv_mask) = mask_literals( lv_query ).
 
     DO.
-      FIND FIRST OCCURRENCE OF ` UNION SELECT ` IN lv_mask IGNORING CASE MATCH OFFSET DATA(lv_offset).
-      IF sy-subrc <> 0.
-        INSERT lv_query INTO TABLE lt_segment.
+      CLEAR lv_kind.
+      FIND FIRST OCCURRENCE OF REGEX ` UNION (ALL |DISTINCT )?SELECT ` IN lv_mask IGNORING CASE
+           MATCH OFFSET lv_offset MATCH LENGTH lv_length SUBMATCHES lv_kind.
+      DATA(lv_found) = xsdbool( sy-subrc = 0 ).
+      ls_clauses = parse_segment( val      = COND #( WHEN lv_found = abap_true
+                                                     THEN substring( val = lv_query
+                                                                     len = lv_offset )
+                                                     ELSE lv_query )
+                                  max_rows = max_rows ).
+      ls_clauses-union_all = lv_union_all.
+      INSERT ls_clauses INTO TABLE result.
+      IF lv_found = abap_false.
         EXIT.
       ENDIF.
-      INSERT lv_query(lv_offset) INTO TABLE lt_segment.
-      lv_offset = lv_offset + 7.
+      " the kind of this UNION belongs to the segment after it
+      lv_union_all = xsdbool( to_upper( condense( lv_kind ) ) = `ALL` ).
+      " the next segment starts at its SELECT
+      lv_offset = lv_offset + lv_length - 7.
       lv_query = lv_query+lv_offset.
       lv_mask = lv_mask+lv_offset.
     ENDDO.
-
-    LOOP AT lt_segment REFERENCE INTO DATA(lr_segment).
-      INSERT parse_segment( val      = lr_segment->*
-                            max_rows = max_rows ) INTO TABLE result.
-    ENDLOOP.
 
   ENDMETHOD.
 
@@ -316,7 +409,21 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
     FIND FIRST OCCURRENCE OF REGEX `UP TO ([0-9]+) ROWS` IN lv_mask IGNORING CASE
          MATCH OFFSET lv_match_offset MATCH LENGTH lv_match_length SUBMATCHES lv_rows.
     IF sy-subrc = 0.
+      " checked before the conversion - a number beyond type i ended in a
+      " conversion overflow instead of a message
+      lv_rows = shift_left( val = lv_rows
+                            sub = `0` ).
+      IF strlen( lv_rows ) > 9.
+        RAISE EXCEPTION TYPE z2ui5_cx_sql_error
+          EXPORTING
+            val = |SQL_PARSER_ERROR - UP TO { lv_rows } ROWS is too large|.
+      ENDIF.
       result-rows = lv_rows.
+      " UP TO 0 ROWS reads every row, and a larger number than the cap
+      " overrode it - the cap of the console applies to both
+      IF result-rows = 0 OR ( max_rows > 0 AND result-rows > max_rows ).
+        result-rows = max_rows.
+      ENDIF.
       lv_segment = replace( val = lv_segment
                             off = lv_match_offset
                             len = lv_match_length
@@ -921,6 +1028,75 @@ CLASS z2ui5_cl_sql_query IMPLEMENTATION.
     IF lv_token IS NOT INITIAL.
       INSERT lv_token INTO TABLE result.
     ENDIF.
+
+  ENDMETHOD.
+
+  METHOD get_order.
+
+    LOOP AT tokenize( order_by ) INTO DATA(lv_token).
+
+      DATA(lv_last) = lines( result ).
+      IF lv_token = `ASCENDING` OR lv_token = `DESCENDING`.
+        IF lv_last > 0.
+          result[ lv_last ]-descending = xsdbool( lv_token = `DESCENDING` ).
+        ENDIF.
+        CONTINUE.
+      ENDIF.
+
+      IF lv_token = `PRIMARY` OR lv_token = `KEY`.
+        RAISE EXCEPTION TYPE z2ui5_cx_sql_error
+          EXPORTING
+            val = `SQL_PARSER_ERROR - ORDER BY PRIMARY KEY is not supported after a UNION, name the columns`.
+      ENDIF.
+
+      " a column is named by its field or alias, a table prefix is no part of it
+      DATA(lv_name) = lv_token.
+      IF lv_name CS `~`.
+        lv_name = substring_after( val = lv_name
+                                   sub = `~` ).
+      ENDIF.
+      READ TABLE it_fieldlist INTO DATA(ls_field) WITH KEY ref_field = lv_name.
+      IF sy-subrc <> 0.
+        RAISE EXCEPTION TYPE z2ui5_cx_sql_error
+          EXPORTING
+            val = |SQL_PARSER_ERROR - ORDER BY { lv_token } is no column of the UNION result|.
+      ENDIF.
+      INSERT VALUE #( name = ls_field-field ) INTO TABLE result.
+
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD sort_rows.
+
+    DATA lv_name TYPE string.
+
+    " the last column first: every further sort is stable, so the earlier
+    " columns decide and the later ones order what they leave equal
+    DATA(lv_index) = lines( it_order ).
+    WHILE lv_index > 0.
+      lv_name = it_order[ lv_index ]-name.
+      IF it_order[ lv_index ]-descending = abap_true.
+        SORT ct_data STABLE BY (lv_name) DESCENDING.
+      ELSE.
+        SORT ct_data STABLE BY (lv_name) ASCENDING.
+      ENDIF.
+      lv_index = lv_index - 1.
+    ENDWHILE.
+
+  ENDMETHOD.
+
+  METHOD delete_duplicates.
+
+    DATA lt_order TYPE ty_t_order.
+
+    " sorted by every column, equal rows are adjacent
+    LOOP AT it_fieldlist REFERENCE INTO DATA(lr_field).
+      INSERT VALUE #( name = lr_field->field ) INTO TABLE lt_order.
+    ENDLOOP.
+    sort_rows( EXPORTING it_order = lt_order
+               CHANGING  ct_data  = ct_data ).
+    DELETE ADJACENT DUPLICATES FROM ct_data COMPARING ALL FIELDS.
 
   ENDMETHOD.
 

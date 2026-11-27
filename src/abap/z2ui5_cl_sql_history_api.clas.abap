@@ -40,10 +40,14 @@ CLASS z2ui5_cl_sql_history_api DEFINITION
       IMPORTING
         user TYPE clike DEFAULT sy-uname.
 
+    "! Deprecated - the console no longer keeps a draft; this method has no
+    "! caller left and will be removed in a later release
     CLASS-METHODS db_create_draft
       IMPORTING
         VALUE(val) TYPE clike.
 
+    "! Deprecated - the console no longer keeps a draft; this method has no
+    "! caller left and will be removed in a later release
     CLASS-METHODS db_read_draft
       RETURNING
         VALUE(result) TYPE string.

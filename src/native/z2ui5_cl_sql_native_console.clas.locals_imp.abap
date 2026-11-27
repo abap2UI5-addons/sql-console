@@ -988,6 +988,10 @@ class sql_statement implementation.
   method add_limit_if_none.
 
     constants ends_with_limit_clause type string value `(?i)\blimit\s+\d+\s*;?\s*\Z`.
+    " only the outer SELECT - a TOP in a subquery limits the subquery alone
+    constants starts_with_top_clause type string value `(?i)\A\s*select\s+top\s` ##NO_TEXT.
+    " only the statement's own terminator - a semicolon in a literal stays
+    constants ends_with_semicolon type string value `;\s*\z`.
 
     data(condensed) = condense( replace( val = me->a_sql_statement
                                          sub = cl_abap_char_utilities=>cr_lf
@@ -995,12 +999,11 @@ class sql_statement implementation.
                                          occ = 0 ) ).
 
     me->a_sql_statement = cond #( when find( val = condensed
-                                             sub = `select top` ##NO_TEXT
-                                             case = abap_false ) eq -1
+                                             pcre = starts_with_top_clause ) eq -1
                                        and find( val = condensed
                                                  pcre = ends_with_limit_clause ) eq -1
                                   then |{ replace( val = me->a_sql_statement
-                                                   sub = `;`
+                                                   pcre = ends_with_semicolon
                                                    with = `` ) }{ cl_abap_char_utilities=>cr_lf }  limit { i_fallback_limit };|
                                   else me->a_sql_statement ).
 
@@ -1023,21 +1026,33 @@ class sql_statement implementation.
 
     data(result) = me->a_processor->execute_query( statement_to_run ).
 
-    data(result_metadata) = result->get_metadata( ).
+    " the result set holds a database cursor until it is closed - also when
+    " reading it fails
+    try.
 
-    data(empty_line) = result->get_struct_ref( result_metadata ).
+        data(result_metadata) = result->get_metadata( ).
 
-    data(line_type) = cast cl_abap_structdescr( cl_abap_typedescr=>describe_by_data_ref( empty_line ) ).
+        data(empty_line) = result->get_struct_ref( result_metadata ).
 
-    data(table_type) = cl_abap_tabledescr=>get( line_type ).
+        data(line_type) = cast cl_abap_structdescr( cl_abap_typedescr=>describe_by_data_ref( empty_line ) ).
 
-    create data data type handle table_type.
+        data(table_type) = cl_abap_tabledescr=>get( line_type ).
 
-    assign data->* to <table>.
+        create data data type handle table_type.
 
-    result->set_param_table( data ).
+        assign data->* to <table>.
 
-    result->next_package( ).
+        result->set_param_table( data ).
+
+        result->next_package( ).
+
+      cleanup.
+
+        result->close( ).
+
+    endtry.
+
+    result->close( ).
 
     r_val = value #( data = data
                      line_type = line_type

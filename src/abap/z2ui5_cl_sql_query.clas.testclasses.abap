@@ -31,6 +31,15 @@ CLASS ltcl_parser DEFINITION FINAL FOR TESTING
     METHODS keyword_in_having_literal FOR TESTING RAISING cx_static_check.
     METHODS union_in_literal FOR TESTING RAISING cx_static_check.
     METHODS up_to_into_in_literal FOR TESTING RAISING cx_static_check.
+    METHODS up_to_rows_capped FOR TESTING RAISING cx_static_check.
+    METHODS up_to_zero_rows_capped FOR TESTING RAISING cx_static_check.
+    METHODS up_to_rows_too_large FOR TESTING RAISING cx_static_check.
+    METHODS parse_union_all FOR TESTING RAISING cx_static_check.
+    METHODS parse_union_distinct FOR TESTING RAISING cx_static_check.
+    METHODS union_deletes_duplicates FOR TESTING RAISING cx_static_check.
+    METHODS union_order_by_columns FOR TESTING RAISING cx_static_check.
+    METHODS union_order_by_unknown FOR TESTING RAISING cx_static_check.
+    METHODS union_order_by_not_last FOR TESTING RAISING cx_static_check.
 ENDCLASS.
 
 
@@ -380,6 +389,158 @@ CLASS ltcl_parser IMPLEMENTATION.
                                         exp = 100 ).
     cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-where
                                         exp = `carrname = 'up to 5 rows into x'` ).
+
+  ENDMETHOD.
+
+  METHOD up_to_rows_capped.
+
+    " a larger UP TO overrode the cap of the console
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse( query    = `SELECT * FROM t100 UP TO 1000 ROWS`
+                                                  max_rows = 100 ).
+
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-rows
+                                        exp = 100 ).
+
+  ENDMETHOD.
+
+  METHOD up_to_zero_rows_capped.
+
+    " UP TO 0 ROWS read every row of the table
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse( query    = `SELECT * FROM t100 UP TO 0 ROWS`
+                                                  max_rows = 100 ).
+
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-rows
+                                        exp = 100 ).
+
+  ENDMETHOD.
+
+  METHOD up_to_rows_too_large.
+
+    TRY.
+        z2ui5_cl_sql_query=>parse( query    = `SELECT * FROM t100 UP TO 99999999999 ROWS`
+                                   max_rows = 100 ).
+        cl_abap_unit_assert=>fail( `a row count beyond type i must raise` ).
+      CATCH z2ui5_cx_sql_error ##NO_HANDLER.
+    ENDTRY.
+
+  ENDMETHOD.
+
+  METHOD parse_union_all.
+
+    " UNION ALL SELECT was not split - the whole text was one segment
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse( `SELECT carrid FROM spfli UNION ALL SELECT carrid FROM scarr` ).
+
+    cl_abap_unit_assert=>assert_equals( act = lines( lt_clauses )
+                                        exp = 2 ).
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 1 ]-from
+                                        exp = `SPFLI` ).
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 2 ]-from
+                                        exp = `SCARR` ).
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 2 ]-union_all
+                                        exp = abap_true ).
+
+  ENDMETHOD.
+
+  METHOD parse_union_distinct.
+
+    DATA(lt_clauses) = z2ui5_cl_sql_query=>parse(
+        `SELECT carrid FROM spfli UNION DISTINCT SELECT carrid FROM scarr union select carrid from sflight` ).
+
+    cl_abap_unit_assert=>assert_equals( act = lines( lt_clauses )
+                                        exp = 3 ).
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 2 ]-from
+                                        exp = `SCARR` ).
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 2 ]-union_all
+                                        exp = abap_false ).
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 3 ]-from
+                                        exp = `SFLIGHT` ).
+    cl_abap_unit_assert=>assert_equals( act = lt_clauses[ 3 ]-union_all
+                                        exp = abap_false ).
+
+  ENDMETHOD.
+
+  METHOD union_deletes_duplicates.
+
+    TYPES:
+      BEGIN OF ty_s_row,
+        f000001 TYPE string,
+        f000002 TYPE i,
+      END OF ty_s_row.
+    DATA lt_data TYPE STANDARD TABLE OF ty_s_row WITH EMPTY KEY.
+
+    lt_data = VALUE #( ( f000001 = `LH` f000002 = 2 )
+                       ( f000001 = `AA` f000002 = 1 )
+                       ( f000001 = `LH` f000002 = 1 )
+                       ( f000001 = `LH` f000002 = 2 )
+                       ( f000001 = `AA` f000002 = 1 ) ).
+
+    z2ui5_cl_sql_query=>delete_duplicates(
+      EXPORTING it_fieldlist = VALUE #( ( field = `F000001` ref_field = `CARRID` )
+                                        ( field = `F000002` ref_field = `CONNID` ) )
+      CHANGING  ct_data      = lt_data ).
+
+    " typed, not VALUE #( ) in exp: the 7.02 downport cannot infer the type
+    DATA lt_exp LIKE lt_data.
+    lt_exp = VALUE #( ( f000001 = `AA` f000002 = 1 )
+                      ( f000001 = `LH` f000002 = 1 )
+                      ( f000001 = `LH` f000002 = 2 ) ).
+    cl_abap_unit_assert=>assert_equals( act = lt_data
+                                        exp = lt_exp ).
+
+  ENDMETHOD.
+
+  METHOD union_order_by_columns.
+
+    TYPES:
+      BEGIN OF ty_s_row,
+        f000001 TYPE string,
+        f000002 TYPE i,
+      END OF ty_s_row.
+    DATA lt_data TYPE STANDARD TABLE OF ty_s_row WITH EMPTY KEY.
+
+    lt_data = VALUE #( ( f000001 = `AA` f000002 = 1 )
+                       ( f000001 = `LH` f000002 = 1 )
+                       ( f000001 = `AA` f000002 = 3 )
+                       ( f000001 = `LH` f000002 = 2 ) ).
+
+    " a column by alias and with table prefix, as the select list names them
+    DATA(lt_order) = z2ui5_cl_sql_query=>get_order(
+        order_by     = `A~CARRID DESCENDING, NUM`
+        it_fieldlist = VALUE #( ( field = `F000001` ref_field = `CARRID` )
+                                ( field = `F000002` ref_field = `NUM` ) ) ).
+    z2ui5_cl_sql_query=>sort_rows( EXPORTING it_order = lt_order
+                                   CHANGING  ct_data  = lt_data ).
+
+    DATA lt_exp LIKE lt_data.
+    lt_exp = VALUE #( ( f000001 = `LH` f000002 = 1 )
+                      ( f000001 = `LH` f000002 = 2 )
+                      ( f000001 = `AA` f000002 = 1 )
+                      ( f000001 = `AA` f000002 = 3 ) ).
+    cl_abap_unit_assert=>assert_equals( act = lt_data
+                                        exp = lt_exp ).
+
+  ENDMETHOD.
+
+  METHOD union_order_by_unknown.
+
+    TRY.
+        z2ui5_cl_sql_query=>get_order( order_by     = `CONNID`
+                                       it_fieldlist = VALUE #( ( field = `F000001` ref_field = `CARRID` ) ) ).
+        cl_abap_unit_assert=>fail( `ORDER BY a column outside the result must raise` ).
+      CATCH z2ui5_cx_sql_error ##NO_HANDLER.
+    ENDTRY.
+
+  ENDMETHOD.
+
+  METHOD union_order_by_not_last.
+
+    " the ORDER BY of a segment in the middle sorted that segment only
+    TRY.
+        z2ui5_cl_sql_query=>run(
+            `SELECT handle FROM z2ui5_t_33 ORDER BY handle UNION SELECT handle FROM z2ui5_t_33` ).
+        cl_abap_unit_assert=>fail( `ORDER BY before the last SELECT of a UNION must raise` ).
+      CATCH z2ui5_cx_sql_error ##NO_HANDLER.
+    ENDTRY.
 
   ENDMETHOD.
 

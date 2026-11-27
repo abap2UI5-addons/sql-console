@@ -314,6 +314,10 @@ class _t_sql_statement definition
     "! {@link sql_statement.METH:add_limit_if_none} should add a limit clause at the end of the original statement
     methods without_row_cap_adds_limit for testing raising cx_static_check.
 
+    "! <p class="shorttext synchronized" lang="EN">TOP only in a subquery, semicolon in a literal</p>
+    "! {@link sql_statement.METH:add_limit_if_none} should limit the outer statement and keep the literal
+    methods inner_top_or_semicolon_kept for testing raising cx_static_check.
+
     methods execute_calls_methods for testing raising cx_static_check.
 
     methods execute_uses_original for testing raising cx_static_check.
@@ -690,6 +694,25 @@ class _t_sql_statement implementation.
                                            exp = |* LIMIT { max_no_of_rows };|
                                            quit = if_abap_unit_constant=>quit-no
                                            msg = |'{ statement->* }' should have added a LIMIT clause| ).
+
+    endloop.
+
+  endmethod.
+  method inner_top_or_semicolon_kept.
+
+    "arrange
+    data(statements) = value string_table( ( `SELECT * FROM (SELECT TOP 1 * FROM dbtab) WHERE a = 'x;y';` )
+                                           ( `select * from dbtab where a = 'x;y' and b in (select top 5 b from dbtab2)` ) ).
+
+    loop at statements reference into data(statement).
+
+      "act & assert
+      cl_abap_unit_assert=>assert_char_cp( act = cast _sql_statement_t_double( new _sql_statement_t_double( i_sql_statement = statement->*
+                                                                                                            i_association_processor = new z2ui5_cl_sql_assoc_processor( )
+                                                                                                            i_processor = new cl_sql_statement( ) )->add_limit_if_none( 7 ) )->value( )
+                                           exp = |*'x;y'* LIMIT 7;|
+                                           quit = if_abap_unit_constant=>quit-no
+                                           msg = |'{ statement->* }' should keep its literal and get a LIMIT clause| ).
 
     endloop.
 
