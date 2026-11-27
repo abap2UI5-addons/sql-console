@@ -91,6 +91,20 @@ CLASS z2ui5_cx_sql_error IMPLEMENTATION.
         " crash itself. Such a val degrades to an empty text instead
         IF z2ui5_cl_sql_context=>rtti_check_printable( val ) = abap_true.
           lv_text = val.
+        ELSEIF val IS NOT INITIAL.
+          " a message structure or table - a BAPIRET2 row or table, sy - is
+          " the obvious val in BAPI-wrapping code, and its text was lost to
+          " UNKNOWN_ERROR. Its own TRY, for the reason above
+          TRY.
+              DATA(lt_msg) = z2ui5_cl_sql_context=>msg_get_t( val ).
+              DATA lt_text TYPE string_table.
+              LOOP AT lt_msg REFERENCE INTO DATA(lr_msg) WHERE text IS NOT INITIAL.
+                INSERT lr_msg->text INTO TABLE lt_text.
+              ENDLOOP.
+              lv_text = concat_lines_of( table = lt_text
+                                         sep   = `; ` ).
+            CATCH cx_root ##NO_HANDLER.
+          ENDTRY.
         ENDIF.
     ENDTRY.
 

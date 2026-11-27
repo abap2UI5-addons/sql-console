@@ -1,6 +1,6 @@
 {
   "master": "abap-util/abap-util",
-  "commit": "305e491ec17c324b0e59e4407cec6d6d009131aa",
+  "commit": "274a05a92b7171463e6228dabacf4cc445862305",
   "rename": [
     [
       "z2ui5_cl_sql_context",

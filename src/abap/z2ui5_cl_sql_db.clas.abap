@@ -55,6 +55,11 @@ CLASS z2ui5_cl_sql_db DEFINITION
 
   PROTECTED SECTION.
   PRIVATE SECTION.
+    CLASS-METHODS get_id_by_handle
+      IMPORTING
+        is_db         TYPE ty_s_db
+      RETURNING
+        VALUE(result) TYPE string.
 ENDCLASS.
 
 
@@ -171,13 +176,27 @@ CLASS z2ui5_cl_sql_db IMPLEMENTATION.
         uname   = uname
         handle  = handle
         handle2 = handle2
-        handle3 = handle3
-        data    = z2ui5_cl_sql_context=>xml_stringify( data ) ).
+        handle3 = handle3 ).
+    " the declared static exception of xml_stringify (data it cannot
+    " serialize) left save( ) as CX_SY_NO_HANDLER
+    TRY.
+        ls_db-data = z2ui5_cl_sql_context=>xml_stringify( data ).
+      CATCH cx_transformation_error INTO DATA(x).
+        RAISE EXCEPTION TYPE z2ui5_cx_sql_error
+          EXPORTING val      = `DB_SAVE_FAILED - the data cannot be serialized`
+                    previous = x.
+    ENDTRY.
 
+    " The table's key is the id alone, and nothing locks the handles: two
+    " saves of the same handles running in parallel both found no row,
+    " each inserted one under a random id, and from then on save and
+    " load_by_handle picked either row - a lost update that looked like
+    " random data. An id derived from the handles makes the second MODIFY
+    " an update of the first. A row that already exists keeps its id
     IF lv_id IS NOT INITIAL.
       ls_db-id = lv_id.
     ELSE.
-      ls_db-id = z2ui5_cl_sql_context=>uuid_get_c32( ).
+      ls_db-id = get_id_by_handle( ls_db ).
     ENDIF.
 
     MODIFY z2ui5_t_33 FROM @ls_db.
@@ -192,6 +211,26 @@ CLASS z2ui5_cl_sql_db IMPLEMENTATION.
     ENDIF.
 
     result = ls_db-id.
+
+  ENDMETHOD.
+
+  METHOD get_id_by_handle.
+
+    " each handle with its length in front, so that no two tuples give the
+    " same text; SHA-256 in hex, its first 32 characters fill the id
+    DATA(lv_key) = |{ strlen( is_db-uname ) }:{ is_db-uname }|
+                && |{ strlen( is_db-handle ) }:{ is_db-handle }|
+                && |{ strlen( is_db-handle2 ) }:{ is_db-handle2 }|
+                && |{ strlen( is_db-handle3 ) }:{ is_db-handle3 }|.
+    DATA(lv_hash) = to_upper( z2ui5_cl_sql_context=>hash_string( lv_key ) ).
+
+    " no digest class answers: hash_string gives the text back - a random
+    " id then, as before
+    IF strlen( lv_hash ) = 64 AND lv_hash CO `0123456789ABCDEF`.
+      result = lv_hash(32).
+    ELSE.
+      result = z2ui5_cl_sql_context=>uuid_get_c32( ).
+    ENDIF.
 
   ENDMETHOD.
 

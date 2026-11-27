@@ -82,8 +82,14 @@ CLASS z2ui5_cl_sql_history_api IMPLEMENTATION.
         CONTINUE.
       ENDIF.
       CLEAR ls_entry.
-      z2ui5_cl_sql_context=>xml_parse( EXPORTING xml = lr_db->data
-                                IMPORTING any = ls_entry ).
+      " a row that no longer fits the entry type is left out - one broken
+      " row must not hide the rest of the history
+      TRY.
+          z2ui5_cl_sql_context=>xml_parse( EXPORTING xml = lr_db->data
+                                    IMPORTING any = ls_entry ).
+        CATCH z2ui5_cx_sql_error.
+          CONTINUE.
+      ENDTRY.
       " db_create writes the user and the id into the entry as well - a row
       " whose content claims another user or id was not written by it
       IF ls_entry-uname <> lr_db->uname OR ls_entry-uuid <> lr_db->handle2.
@@ -145,8 +151,14 @@ CLASS z2ui5_cl_sql_history_api IMPLEMENTATION.
       RETURN.
     ENDIF.
 
-    z2ui5_cl_sql_context=>xml_parse( EXPORTING xml = ls_db-data
-                              IMPORTING any = result ).
+    " an entry that no longer fits the entry type reads as not found
+    TRY.
+        z2ui5_cl_sql_context=>xml_parse( EXPORTING xml = ls_db-data
+                                  IMPORTING any = result ).
+      CATCH z2ui5_cx_sql_error.
+        CLEAR result.
+        RETURN.
+    ENDTRY.
     " the caller deserializes result_data into objects - only an entry that
     " is the user's own by its content too is handed out (see db_create)
     IF result-uname <> sy-uname OR result-uuid <> val.
