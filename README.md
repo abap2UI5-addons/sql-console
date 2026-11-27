@@ -97,8 +97,9 @@ COMMIT WORK.
 3. The result comes up as a table: search it, filter it with a range popup and
    export it with the spreadsheet button.
 4. Every run goes into your history as an entry of its own; a search or a
-   filter on the result updates the entry of that run. Select an entry to
-   load the query and its result again, or clear the history.
+   filter on the result updates the entry of that run. The newest 100
+   entries are kept. Select an entry to load the query and its result again,
+   or clear the history.
 
 **Native SQL Console** (`z2ui5_cl_sql_native_console`, package `src/native`)
 
