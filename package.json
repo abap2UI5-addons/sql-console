@@ -7,6 +7,7 @@
     "rename": "node .github/scripts/rename.mjs",
     "lint": "abaplint ./abaplint.jsonc",
     "check:cloud": "abaplint .github/abaplint/abap_cloud.jsonc",
+    "check:702": "bash .github/scripts/check-702.sh",
     "check:abap2ui5": "abap2ui5lint",
     "check": "npm run lint && npm run check:cloud && npm run check:abap2ui5 && npm run rename",
     "test": "npm run check",
