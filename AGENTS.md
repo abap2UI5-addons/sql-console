@@ -47,6 +47,9 @@ management:
 Installed alongside via abapGit; declared in the abaplint configs:
 
 * [abap2UI5](https://github.com/abap2UI5/abap2UI5)
+* [layout-management](https://github.com/abap2UI5-addons/layout-management) —
+  not used here, but popups' value help and search help popups need it, so it
+  is installed before popups
 * [popups](https://github.com/abap2UI5-addons/popups)
 * [custom-controls](https://github.com/abap2UI5-addons/custom-controls) — `z2ui5_cl_cci_spreadsheet`
 
@@ -56,7 +59,8 @@ This is a developer tool. It runs the SQL the user enters, without an
 authorization check of its own; the native path uses ADBC and therefore
 bypasses ABAP authorizations and client separation. Before using it beyond a
 development system, add your own authorization checks and restrict who may run
-the app. See the README Todo — full ABAP Cloud readiness is still open.
+the app. The Open SQL console passes the ABAP Cloud check; a run on a real
+ABAP Cloud system is still open (README Todo).
 
 **Shipping without an authorization check is a deliberate decision of the
 maintainer (2026-11-17), stated in the README - do not add one and do not

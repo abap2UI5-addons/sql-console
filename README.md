@@ -1,8 +1,9 @@
 # sql-console
 
 [![abap2UI5-addons](https://img.shields.io/badge/abap2UI5--addons-app-1873b4)](https://github.com/abap2UI5-addons)
-[![ABAP](https://img.shields.io/badge/ABAP-Cloud%20%7C%20Standard%20%E2%89%A5%207.50-blue)](#installation)
+[![ABAP](https://img.shields.io/badge/ABAP-Cloud%20%7C%20Standard%20%E2%89%A5%207.50%20%7C%207.02-blue)](#installation)
 [![abap2UI5](https://img.shields.io/badge/requires-abap2UI5-blue)](https://github.com/abap2UI5/abap2UI5)
+[![layout-management](https://img.shields.io/badge/requires-layout--management-blue)](https://github.com/abap2UI5-addons/layout-management)
 [![popups](https://img.shields.io/badge/requires-popups-blue)](https://github.com/abap2UI5-addons/popups)
 [![custom-controls](https://img.shields.io/badge/requires-custom--controls-blue)](https://github.com/abap2UI5-addons/custom-controls)
 [![License](https://img.shields.io/github/license/abap2UI5-addons/sql-console)](LICENSE)
@@ -32,7 +33,8 @@ the system, as an abap2UI5 app.
 Good for:
 
 - **ABAP developers** who want to check data without starting Eclipse or SAP GUI.
-- **ABAP Cloud systems** - the Open SQL console (`src/abap`) is ABAP-Cloud-clean.
+- **ABAP Cloud systems** - the Open SQL console (`src/abap`) uses released
+  APIs only and passes the ABAP Cloud check of CI.
 - **Native SQL on Standard ABAP** - the native console (`src/native`) runs the
   statement through ADBC.
 
@@ -48,8 +50,11 @@ before you use it beyond a development system.
   7.50 or higher. The native SQL console (`src/native`, ADBC) needs Standard
   ABAP; on ABAP Cloud, use the Open SQL console (`src/abap`).
 - NetWeaver 7.02 - 7.40: the branch `702`, downported automatically from
-  `main` on every push, with the Open SQL console only (no `src/native`) - pull abap2UI5, popups and custom-controls from their `702` branches as well
+  `main` on every push, with the Open SQL console only (no `src/native`) - pull abap2UI5, layout-management, popups and custom-controls from their `702` branches as well
 - [abap2UI5](https://github.com/abap2UI5/abap2UI5)
+- [abap2UI5-addons/layout-management](https://github.com/abap2UI5-addons/layout-management) -
+  needed by popups, whose value help and search help popups fail activation
+  without it
 - [abap2UI5-addons/popups](https://github.com/abap2UI5-addons/popups)
 - [abap2UI5-addons/custom-controls](https://github.com/abap2UI5-addons/custom-controls) -
   the spreadsheet export (`z2ui5_cl_cci_spreadsheet`)
@@ -71,9 +76,10 @@ COMMIT WORK.
 **Steps** - with [abapGit](https://abapgit.org), in this order:
 
 1. [abap2UI5](https://github.com/abap2UI5/abap2UI5)
-2. [abap2UI5-addons/popups](https://github.com/abap2UI5-addons/popups)
-3. [abap2UI5-addons/custom-controls](https://github.com/abap2UI5-addons/custom-controls)
-4. this repository (branch `main`)
+2. [abap2UI5-addons/layout-management](https://github.com/abap2UI5-addons/layout-management)
+3. [abap2UI5-addons/popups](https://github.com/abap2UI5-addons/popups)
+4. [abap2UI5-addons/custom-controls](https://github.com/abap2UI5-addons/custom-controls)
+5. this repository - branch `main`, or `702` on NetWeaver 7.02 - 7.40
 
 **Start** - like any abap2UI5 app:
 
@@ -122,7 +128,9 @@ adds the check that fits their system.
 ## Limitations
 
 * Extend the input-to-SQL translation
-* Fix ABAP Cloud Readiness
+* Run the Open SQL console on a real ABAP Cloud system - it passes the ABAP
+  Cloud check of CI, but has not been tried on one (the native console stays
+  Standard ABAP only)
 
 ## Development
 
