@@ -640,3 +640,133 @@ CLASS ltcl_srtti IMPLEMENTATION.
   ENDMETHOD.
 
 ENDCLASS.
+
+"! The history store (z2ui5_cl_sql_history_api) - here, beside the other
+"! tests, because the API class has no test include. It writes the history
+"! of the current user: setup keeps that user's rows, teardown puts them
+"! back
+CLASS ltcl_history DEFINITION FINAL FOR TESTING
+  DURATION MEDIUM
+  RISK LEVEL DANGEROUS.
+
+  PRIVATE SECTION.
+    DATA mt_saved TYPE z2ui5_cl_sql_db=>ty_t_db.
+
+    METHODS setup.
+    METHODS teardown.
+
+    METHODS list_without_result FOR TESTING RAISING cx_static_check.
+    METHODS reads_single_document FOR TESTING RAISING cx_static_check.
+    METHODS keeps_newest_entries FOR TESTING RAISING cx_static_check.
+    METHODS delete_removes_all FOR TESTING RAISING cx_static_check.
+
+    METHODS entry
+      IMPORTING
+        val           TYPE i
+      RETURNING
+        VALUE(result) TYPE z2ui5_cl_sql_history_api=>ty_s_entry.
+
+ENDCLASS.
+
+
+CLASS ltcl_history IMPLEMENTATION.
+
+  METHOD setup.
+
+    mt_saved = z2ui5_cl_sql_db=>load_multi_by_handle( uname  = sy-uname
+                                                       handle = z2ui5_cl_sql_history_api=>c_handle_history ).
+    z2ui5_cl_sql_history_api=>db_delete( ).
+
+  ENDMETHOD.
+
+  METHOD teardown.
+
+    z2ui5_cl_sql_history_api=>db_delete( ).
+    IF mt_saved IS NOT INITIAL.
+      MODIFY z2ui5_t_33 FROM TABLE @mt_saved.
+      COMMIT WORK AND WAIT.
+    ENDIF.
+
+  ENDMETHOD.
+
+  METHOD entry.
+
+    result = VALUE #( uuid        = |LTCL_HISTORY_{ val }|
+                      timestampl  = 20260101000000 + val
+                      tabname     = `T100`
+                      counter     = `1`
+                      sql_command = |SELECT * FROM T100 -- { val }|
+                      result_data = |RESULT { val }| ).
+
+  ENDMETHOD.
+
+  METHOD list_without_result.
+
+    DATA(ls_entry) = entry( 1 ).
+    z2ui5_cl_sql_history_api=>db_create( ls_entry ).
+
+    DATA(lt_list) = z2ui5_cl_sql_history_api=>db_read_multi_by_user( ).
+    cl_abap_unit_assert=>assert_equals( exp = 1
+                                        act = lines( lt_list ) ).
+    cl_abap_unit_assert=>assert_equals( exp = ls_entry-sql_command
+                                        act = lt_list[ 1 ]-sql_command ).
+    cl_abap_unit_assert=>assert_initial( lt_list[ 1 ]-result_data ).
+
+    cl_abap_unit_assert=>assert_equals(
+        exp = ls_entry-result_data
+        act = z2ui5_cl_sql_history_api=>db_read_by_id( ls_entry-uuid )-result_data ).
+
+  ENDMETHOD.
+
+  METHOD reads_single_document.
+
+    " an entry written before the result got a document of its own
+    DATA(ls_entry) = entry( 2 ).
+    ls_entry-uname = sy-uname.
+    z2ui5_cl_sql_db=>save( uname   = sy-uname
+                            handle  = z2ui5_cl_sql_history_api=>c_handle_history
+                            handle2 = ls_entry-uuid
+                            data    = ls_entry ).
+
+    DATA(lt_list) = z2ui5_cl_sql_history_api=>db_read_multi_by_user( ).
+    cl_abap_unit_assert=>assert_equals( exp = 1
+                                        act = lines( lt_list ) ).
+    cl_abap_unit_assert=>assert_initial( lt_list[ 1 ]-result_data ).
+
+    cl_abap_unit_assert=>assert_equals(
+        exp = ls_entry-result_data
+        act = z2ui5_cl_sql_history_api=>db_read_by_id( ls_entry-uuid )-result_data ).
+
+  ENDMETHOD.
+
+  METHOD keeps_newest_entries.
+
+    DATA(lv_count) = z2ui5_cl_sql_history_api=>c_history_max + 1.
+    DO lv_count TIMES.
+      z2ui5_cl_sql_history_api=>db_create( entry( sy-index ) ).
+    ENDDO.
+
+    DATA(lt_list) = z2ui5_cl_sql_history_api=>db_read_multi_by_user( ).
+    cl_abap_unit_assert=>assert_equals( exp = z2ui5_cl_sql_history_api=>c_history_max
+                                        act = lines( lt_list ) ).
+    " the oldest went, with its result
+    DATA(lv_oldest) = entry( 1 )-uuid.
+    DATA(lv_newest) = entry( lv_count )-uuid.
+    cl_abap_unit_assert=>assert_false( xsdbool( line_exists( lt_list[ uuid = lv_oldest ] ) ) ).
+    cl_abap_unit_assert=>assert_initial( z2ui5_cl_sql_history_api=>db_read_by_id( lv_oldest ) ).
+    cl_abap_unit_assert=>assert_true( xsdbool( line_exists( lt_list[ uuid = lv_newest ] ) ) ).
+
+  ENDMETHOD.
+
+  METHOD delete_removes_all.
+
+    z2ui5_cl_sql_history_api=>db_create( entry( 3 ) ).
+    z2ui5_cl_sql_history_api=>db_delete( ).
+
+    cl_abap_unit_assert=>assert_initial(
+        z2ui5_cl_sql_db=>load_multi_by_handle( uname  = sy-uname
+                                                handle = z2ui5_cl_sql_history_api=>c_handle_history ) ).
+
+  ENDMETHOD.
+
+ENDCLASS.
