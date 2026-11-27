@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "abap2ui5": {
+      "command": "npx",
+      "args": ["--yes", "@abap2ui5/mcp-server"]
+    }
+  }
+}
