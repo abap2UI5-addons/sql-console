@@ -24,12 +24,6 @@ CLASS z2ui5_cl_sql_db DEFINITION
       RETURNING
         VALUE(result) TYPE string.
 
-    CLASS-METHODS load_by_id
-      IMPORTING
-        id            TYPE clike OPTIONAL
-      EXPORTING
-        VALUE(result) TYPE any.
-
     CLASS-METHODS load_by_handle
       IMPORTING
         uname         TYPE clike OPTIONAL
@@ -136,27 +130,6 @@ CLASS z2ui5_cl_sql_db IMPLEMENTATION.
         AND handle2 IN @lr_handle2
         AND handle3 IN @lr_handle3 "#EC WARNOK
       INTO CORRESPONDING FIELDS OF TABLE @result.
-
-  ENDMETHOD.
-
-
-  METHOD load_by_id.
-
-    SELECT SINGLE data
-      FROM z2ui5_t_33
-      WHERE id = @id  "#EC WARNOK
-      INTO @DATA(lv_data).
-    IF sy-subrc <> 0.
-      RAISE EXCEPTION TYPE z2ui5_cx_sql_error
-        EXPORTING
-          val = |NO_ENTRY_FOR_ID_EXISTS: { id }|.
-    ENDIF.
-
-    z2ui5_cl_sql_context=>xml_parse(
-      EXPORTING
-        xml = lv_data
-      IMPORTING
-        any = result ).
 
   ENDMETHOD.
 

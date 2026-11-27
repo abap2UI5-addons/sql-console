@@ -35,6 +35,10 @@ CLASS z2ui5_cl_sql_history_api DEFINITION
       RETURNING
         VALUE(result) TYPE ty_t_entry.
 
+    "! One entry of the user's own history, with its result
+    "! @parameter val | the entry's id (uuid). Pass it: the default
+    "! sy-uname is deprecated - it looks for an entry whose id is the user
+    "! name - and will be removed in a later release
     CLASS-METHODS db_read_by_id
       IMPORTING
         val           TYPE clike DEFAULT sy-uname

@@ -27,7 +27,7 @@ management:
 | Object | Copy of | How |
 |---|---|---|
 | `z2ui5_cl_sql_context` | `zabaputil_cl_util_context` | renamed, trimmed to the methods this repository uses plus the helpers they need |
-| `z2ui5_cl_sql_db` | `zabaputil_cl_util_db` | renamed, as-is (the key/value store for history and draft) |
+| `z2ui5_cl_sql_db` | `zabaputil_cl_util_db` | renamed, as-is (the key/value store for history and draft) - except `load_by_id`, left out (`trimmed` in `.github/abap-util.json`): it read any user's row by its id, past the own-rows rule below, and nothing called it |
 | `z2ui5_t_33` | `zabaputil_t_91` | renamed, as-is (the table of `z2ui5_cl_sql_db`; 10 characters, so the namespace rename stays within 16) |
 | `z2ui5_cx_sql_error` | `zabaputil_cx_util_error` | renamed, as-is |
 

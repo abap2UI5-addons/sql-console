@@ -36,7 +36,8 @@
     },
     {
       "copy": "src/abap/z2ui5_cl_sql_db.clas.abap",
-      "master": "src/zabaputil_cl_util_db.clas.abap"
+      "master": "src/zabaputil_cl_util_db.clas.abap",
+      "trimmed": true
     },
     {
       "copy": "src/abap/z2ui5_cx_sql_error.clas.abap",
