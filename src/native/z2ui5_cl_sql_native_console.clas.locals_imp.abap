@@ -992,6 +992,10 @@ class sql_statement implementation.
   method add_limit_if_none.
 
     constants ends_with_limit_clause type string value `(?i)\blimit\s+\d+\s*;?\s*\Z`.
+    " only the outer SELECT - a TOP in a subquery limits the subquery alone
+    constants starts_with_top_clause type string value `(?i)\A\s*select\s+top\s` ##NO_TEXT.
+    " only the statement's own terminator - a semicolon in a literal stays
+    constants ends_with_semicolon type string value `;\s*\z`.
 
     data(condensed) = condense( replace( val = me->a_sql_statement
                                          sub = cl_abap_char_utilities=>cr_lf
@@ -999,12 +1003,11 @@ class sql_statement implementation.
                                          occ = 0 ) ).
 
     me->a_sql_statement = cond #( when find( val = condensed
-                                             sub = `select top` ##NO_TEXT
-                                             case = abap_false ) eq -1
+                                             pcre = starts_with_top_clause ) eq -1
                                        and find( val = condensed
                                                  pcre = ends_with_limit_clause ) eq -1
                                   then |{ replace( val = me->a_sql_statement
-                                                   sub = `;`
+                                                   pcre = ends_with_semicolon
                                                    with = `` ) }{ cl_abap_char_utilities=>cr_lf }  limit { i_fallback_limit };|
                                   else me->a_sql_statement ).
 
