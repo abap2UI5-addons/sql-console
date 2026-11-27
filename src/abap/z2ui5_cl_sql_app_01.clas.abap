@@ -199,6 +199,9 @@ CLASS z2ui5_cl_sql_app_01 IMPLEMENTATION.
     DATA(ls_arg) = ms_draft-history_tab[ selkz = abap_true ].
     DATA(ls_entry) = z2ui5_cl_sql_history_api=>db_read_by_id( ls_arg-s_db-uuid ).
     ms_draft-sql_input = ls_entry-sql_command.
+    " history_db_save stamps the entry with it - left as it was, the table of
+    " the previous run went into the loaded entry on its next save
+    ms_draft-sql_s_command-name = ls_entry-tabname.
 
     DATA lr_preview TYPE REF TO data.
     CLEAR ms_draft-s_preview-tab.
