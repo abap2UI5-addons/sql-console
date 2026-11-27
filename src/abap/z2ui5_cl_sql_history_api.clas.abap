@@ -21,7 +21,7 @@ CLASS z2ui5_cl_sql_history_api DEFINITION
         sql_command TYPE string,
         result_data TYPE string,
       END OF ty_s_entry.
-    TYPES ty_t_entry TYPE STANDARD TABLE OF ty_s_entry WITH EMPTY KEY.
+    TYPES ty_t_entry TYPE STANDARD TABLE OF ty_s_entry WITH DEFAULT KEY.
 
     CLASS-METHODS db_create
       IMPORTING
@@ -87,13 +87,15 @@ ENDCLASS.
 CLASS z2ui5_cl_sql_history_api IMPLEMENTATION.
 
   METHOD db_create.
+    DATA ls_list LIKE val.
 
     val-uname = sy-uname.
 
     " two documents per entry: the list fields alone (handle3 initial) and
     " the whole entry with its result (handle3 RESULT) - the list reads and
     " parses only the small ones, a result is parsed when it is loaded
-    DATA(ls_list) = val.
+
+    ls_list = val.
     CLEAR ls_list-result_data.
     z2ui5_cl_sql_db=>save( uname        = val-uname
                             handle       = c_handle_history
@@ -117,9 +119,13 @@ CLASS z2ui5_cl_sql_history_api IMPLEMENTATION.
 
     DATA ls_entry TYPE ty_s_entry.
 
-    LOOP AT z2ui5_cl_sql_db=>load_multi_by_handle( uname   = val
-                                                    handle  = c_handle_history
-                                                    handle3 = `` ) REFERENCE INTO DATA(lr_db).
+    DATA temp1 TYPE z2ui5_cl_sql_db=>ty_t_db.
+    DATA temp2 LIKE LINE OF temp1.
+    DATA lr_db LIKE REF TO temp2.
+    temp1 = z2ui5_cl_sql_db=>load_multi_by_handle( uname = val handle = c_handle_history handle3 = `` ).
+
+
+    LOOP AT temp1 REFERENCE INTO lr_db.
 
       " only the requested user's own history rows are read, and of each
       " entry the document without the result
@@ -151,8 +157,13 @@ CLASS z2ui5_cl_sql_history_api IMPLEMENTATION.
 
   METHOD db_delete.
 
-    LOOP AT z2ui5_cl_sql_db=>load_multi_by_handle( uname  = user
-                                                    handle = c_handle_history ) REFERENCE INTO DATA(lr_db).
+    DATA temp2 TYPE z2ui5_cl_sql_db=>ty_t_db.
+    DATA temp3 LIKE LINE OF temp2.
+    DATA lr_db LIKE REF TO temp3.
+    temp2 = z2ui5_cl_sql_db=>load_multi_by_handle( uname = user handle = c_handle_history ).
+
+
+    LOOP AT temp2 REFERENCE INTO lr_db.
 
       z2ui5_cl_sql_db=>delete_by_handle( uname        = lr_db->uname
                                           handle       = lr_db->handle
@@ -167,9 +178,11 @@ CLASS z2ui5_cl_sql_history_api IMPLEMENTATION.
 
   METHOD db_create_draft.
 
+    DATA temp3 TYPE string.
+    temp3 = val.
     z2ui5_cl_sql_db=>save( uname  = sy-uname
                             handle = c_handle_draft
-                            data   = CONV string( val ) ).
+                            data   = temp3 ).
 
   ENDMETHOD.
 
@@ -189,7 +202,11 @@ CLASS z2ui5_cl_sql_history_api IMPLEMENTATION.
 
     " the id comes from the history list, which is bound to the view - only
     " an entry of the user's own history is read, as db_read_multi_by_user
-    DATA(lt_db) = z2ui5_cl_sql_db=>load_multi_by_handle( uname   = sy-uname
+    DATA lt_db TYPE z2ui5_cl_sql_db=>ty_t_db.
+    DATA ls_db LIKE LINE OF lt_db.
+    FIELD-SYMBOLS <temp4> LIKE LINE OF lt_db.
+    DATA temp5 LIKE sy-tabix.
+    lt_db = z2ui5_cl_sql_db=>load_multi_by_handle( uname   = sy-uname
                                                           handle  = c_handle_history
                                                           handle2 = val
                                                           handle3 = c_handle3_result ).
@@ -204,7 +221,16 @@ CLASS z2ui5_cl_sql_history_api IMPLEMENTATION.
     IF lt_db IS INITIAL.
       RETURN.
     ENDIF.
-    DATA(ls_db) = lt_db[ 1 ].
+
+
+
+    temp5 = sy-tabix.
+    READ TABLE lt_db INDEX 1 ASSIGNING <temp4>.
+    sy-tabix = temp5.
+    IF sy-subrc <> 0.
+      ASSERT 1 = 0.
+    ENDIF.
+    ls_db = <temp4>.
     IF ls_db-uname <> sy-uname OR ls_db-handle <> c_handle_history OR ls_db-handle2 <> val.
       RETURN.
     ENDIF.
@@ -232,19 +258,26 @@ CLASS z2ui5_cl_sql_history_api IMPLEMENTATION.
         timestampl TYPE timestampl,
         uuid       TYPE ty_s_entry-uuid,
       END OF ty_s_age.
-    DATA lt_age   TYPE STANDARD TABLE OF ty_s_age WITH EMPTY KEY.
+    DATA lt_age   TYPE STANDARD TABLE OF ty_s_age WITH DEFAULT KEY.
     DATA ls_entry TYPE ty_s_entry.
 
     " the small list documents only - and those are parsed only once the
     " history has grown beyond its limit
-    DATA(lt_db) = z2ui5_cl_sql_db=>load_multi_by_handle( uname   = uname
+    DATA lt_db TYPE z2ui5_cl_sql_db=>ty_t_db.
+    DATA temp4 LIKE LINE OF lt_db.
+    DATA lr_db LIKE REF TO temp4.
+      DATA temp5 TYPE ty_s_age.
+    DATA ls_age LIKE LINE OF lt_age.
+    lt_db = z2ui5_cl_sql_db=>load_multi_by_handle( uname   = uname
                                                           handle  = c_handle_history
                                                           handle3 = `` ).
     IF lines( lt_db ) <= c_history_max.
       RETURN.
     ENDIF.
 
-    LOOP AT lt_db REFERENCE INTO DATA(lr_db).
+
+
+    LOOP AT lt_db REFERENCE INTO lr_db.
       IF lr_db->handle2 = keep.
         CONTINUE.
       ENDIF.
@@ -257,13 +290,17 @@ CLASS z2ui5_cl_sql_history_api IMPLEMENTATION.
         CATCH z2ui5_cx_sql_error.
           CLEAR ls_entry.
       ENDTRY.
-      INSERT VALUE #( timestampl = ls_entry-timestampl
-                      uuid       = lr_db->handle2 ) INTO TABLE lt_age.
+
+      CLEAR temp5.
+      temp5-timestampl = ls_entry-timestampl.
+      temp5-uuid = lr_db->handle2.
+      INSERT temp5 INTO TABLE lt_age.
     ENDLOOP.
 
     " the kept entry is one of the c_history_max
     SORT lt_age BY timestampl DESCENDING.
-    LOOP AT lt_age INTO DATA(ls_age) FROM c_history_max.
+
+    LOOP AT lt_age INTO ls_age FROM c_history_max.
       entry_delete( uname = uname
                     uuid  = ls_age-uuid ).
     ENDLOOP.
