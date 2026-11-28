@@ -650,13 +650,17 @@ class data_result_view implementation.
 
             te_overflow_toolbar->tag( `ToolbarSpacer` ).
 
-            te_overflow_toolbar->tag( n = `ExportSpreadsheet` ns = `z2ui5`
-                )->a( n = `tableId` v = `previewTab`
-                )->a( n = `icon` v = 'sap-icon://excel-attachment'
-                )->a( n = `type` v = `Emphasized` ##NO_TEXT
-                )->a( n = `columnconfig` v = me->a_ui5_client->_bind( val = i_state->results_pane-column_config
-                                                                                                        custom_filter = new z2ui5_cl_cci_json_filter( )
-                                                                                                        custom_mapper = z2ui5_cl_ajson_mapping=>create_lower_case( ) ) ).
+            " the control's XML element belongs to custom-controls, which
+            " delivers the matching JavaScript; it turns the upper-case ABAP
+            " field names into the names the exporter reads, and omit_initial
+            " keeps the settings left initial out of the workbook description
+            z2ui5_cl_cci_spreadsheet=>render(
+                view    = te_overflow_toolbar
+                tableid = `previewTab`
+                icon    = `sap-icon://excel-attachment`
+                type    = `Emphasized` ##NO_TEXT
+                columns = me->a_ui5_client->_bind( val          = i_state->results_pane-column_config
+                                                   omit_initial = abap_true ) ).
 
         data(columns) = table->ele( n = `columns` ns = `table` ).
 
